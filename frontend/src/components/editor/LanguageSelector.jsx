@@ -4,18 +4,23 @@ import { SUPPORTED_LANGUAGES } from '../../utils/constants';
 export default function LanguageSelector({ selectedLanguage, onChange }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="text-xs text-slate-400 font-mono">Env:</label>
-      <select
-        value={selectedLanguage}
-        onChange={(e) => onChange(e.target.value)}
-        className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 font-mono focus:outline-none focus:border-cyan-400"
-      >
+      <span className="text-xs font-mono font-semibold text-slate-400">Language:</span>
+      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
         {SUPPORTED_LANGUAGES.map((lang) => (
-          <option key={lang.id} value={lang.id}>
+          <button
+            key={lang.id}
+            type="button"
+            onClick={() => onChange(lang.id)}
+            className={`px-2.5 py-1 text-xs font-mono rounded-md font-semibold transition ${
+              selectedLanguage === lang.id
+                ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
             {lang.name}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
     </div>
   );
 }

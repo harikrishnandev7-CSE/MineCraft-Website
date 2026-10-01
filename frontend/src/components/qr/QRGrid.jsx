@@ -1,15 +1,15 @@
 import React from 'react';
 import QRCard from './QRCard';
 
-export default function QRGrid({ blocks = [], scannedBlockIds = [], onSelectBlock }) {
+export default function QRGrid({ qrTokens = [], scannedQRIds = [], onSelectQR }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {blocks.map((block) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      {qrTokens.map((item) => (
         <QRCard
-          key={block.id || block._id}
-          block={block}
-          isScanned={scannedBlockIds.includes(block.id || block._id)}
-          onClick={() => onSelectBlock && onSelectBlock(block)}
+          key={item.qrId}
+          qrItem={item}
+          isScanned={scannedQRIds.includes(item.qrId)}
+          onClick={() => onSelectQR(item)}
         />
       ))}
     </div>

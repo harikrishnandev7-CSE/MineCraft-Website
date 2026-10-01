@@ -1,28 +1,36 @@
-export const APP_NAME = 'Mind Craft';
-export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const APP_NAME = "MIND CRAFT";
+export const APP_SUBTITLE = "QR Hunt & Code Assembly";
 
-export const SUPPORTED_LANGUAGES = [
-  { id: 'python', name: 'Python 3', judge0Id: 71, extension: 'py', template: '# Write your solution here\n' },
-  { id: 'javascript', name: 'JavaScript (Node.js)', judge0Id: 63, extension: 'js', template: '// Write your solution here\n' },
-  { id: 'cpp', name: 'C++ 17', judge0Id: 54, extension: 'cpp', template: '#include <iostream>\nusing namespace std;\n\nint main() {\n  return 0;\n}\n' },
-  { id: 'java', name: 'Java 11', judge0Id: 62, extension: 'java', template: 'public class Main {\n  public static void main(String[] args) {\n  }\n}\n' },
-];
+export const DEFAULT_DURATION_SECONDS = 20 * 60; // 20 minutes
 
-export const SUBMISSION_STATUS = {
-  PENDING: 'PENDING',
-  COMPILING: 'COMPILING',
-  RUNNING: 'RUNNING',
-  ACCEPTED: 'ACCEPTED',
-  WRONG_ANSWER: 'WRONG_ANSWER',
-  TIME_LIMIT_EXCEEDED: 'TIME_LIMIT_EXCEEDED',
-  COMPILATION_ERROR: 'COMPILATION_ERROR',
-  RUNTIME_ERROR: 'RUNTIME_ERROR',
+export const STORAGE_KEYS = {
+  PARTICIPANT: 'mc_participant',
+  CHALLENGE_SESSION: 'mc_challenge_session',
+  START_TIME: 'mc_start_time',
+  QR_PROGRESS: 'mc_qr_progress',
+  UNLOCKED_BLOCKS: 'mc_unlocked_blocks',
+  ASSEMBLY_ORDER: 'mc_assembly_order',
+  SUBMISSION_ATTEMPTS: 'mc_submission_attempts',
+  FINAL_RESULT: 'mc_final_result',
+  LEADERBOARD: 'mc_leaderboard',
+  ADMIN_CHALLENGES: 'mc_admin_challenges',
 };
 
-export const QR_BLOCK_TYPES = {
-  IMPORT: 'IMPORT',
-  LOGIC: 'LOGIC',
-  FUNCTION: 'FUNCTION',
-  WRAPPER: 'WRAPPER',
-  OUTPUT: 'OUTPUT',
+export const SUPPORTED_LANGUAGES = [
+  { id: 'python', name: 'Python', extension: '.py', monacoLang: 'python' },
+  { id: 'c', name: 'C', extension: '.c', monacoLang: 'c' },
+  { id: 'cpp', name: 'C++', extension: '.cpp', monacoLang: 'cpp' },
+  { id: 'java', name: 'Java', extension: '.java', monacoLang: 'java' },
+];
+
+export const STATUS_TYPES = {
+  IDLE: 'IDLE',
+  COMPILING: 'COMPILING',
+  RUNNING: 'RUNNING',
+  VALIDATING: 'VALIDATING',
+  ACCEPTED: 'ACCEPTED',
+  WRONG_ANSWER: 'WRONG_ANSWER',
+  COMPILATION_ERROR: 'COMPILATION_ERROR',
+  RUNTIME_ERROR: 'RUNTIME_ERROR',
+  TIME_EXPIRED: 'TIME_EXPIRED',
 };

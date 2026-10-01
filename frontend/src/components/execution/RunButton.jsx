@@ -1,15 +1,19 @@
 import React from 'react';
 import Button from '../common/Button';
+import { Play } from 'lucide-react';
 
-export default function RunButton({ onClick, isLoading }) {
+export default function RunButton({ onClick, isLoading, disabled }) {
   return (
     <Button
-      variant="secondary"
+      variant="cyber"
+      size="md"
+      icon={Play}
       onClick={onClick}
       isLoading={isLoading}
-      className="gap-2 border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/30"
+      disabled={disabled}
+      className="gap-2"
     >
-      ▶ Run Code
+      ▶ RUN CODE
     </Button>
   );
 }

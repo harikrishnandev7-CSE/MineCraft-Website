@@ -1,28 +1,15 @@
 import React from 'react';
 import LanguageSelector from './LanguageSelector';
+import { Terminal } from 'lucide-react';
 
-export default function EditorToolbar({ language, onLanguageChange, onFormat, onReset }) {
+export default function EditorToolbar({ language, onLanguageChange }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border border-slate-800 rounded-t-xl">
-      <LanguageSelector selectedLanguage={language} onChange={onLanguageChange} />
-      <div className="flex items-center gap-2">
-        {onFormat && (
-          <button
-            onClick={onFormat}
-            className="text-xs px-2.5 py-1 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded transition"
-          >
-            Format
-          </button>
-        )}
-        {onReset && (
-          <button
-            onClick={onReset}
-            className="text-xs px-2.5 py-1 text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900 rounded transition"
-          >
-            Reset
-          </button>
-        )}
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-t-2xl">
+      <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 font-bold">
+        <Terminal className="w-4 h-4" />
+        <span>VIRTUAL CODE RUNNER</span>
       </div>
+      <LanguageSelector selectedLanguage={language} onChange={onLanguageChange} />
     </div>
   );
 }
