@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  judge0-server:
+    image: judge0/judge0:1.13.0
+    container_name: judge0-server
+    restart: always
+    ports:
+      - "2358:2358"
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    environment:
+      - REDIS_URL=redis://judge0-redis:6379
+      - POSTGRES_URL=postgresql://judge0:judge0password@judge0-db:5432/judge0
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-workers:
+    image: judge0/judge0:1.13.0
+    container_name: judge0-workers
+    restart: always
+    privileged: true
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    environment:
+      - REDIS_URL=redis://judge0-redis:6379
+      - POSTGRES_URL=postgresql://judge0:judge0password@judge0-db:5432/judge0
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-db:
+    image: postgres:13-alpine
+    container_name: judge0-db
+    restart: always
+    environment:
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0password
+      - POSTGRES_DB=judge0
+    volumes:
+      - judge0-postgres-data:/var/lib/postgresql/data
+
+  judge0-redis:
+    image: redis:6-alpine
+    container_name: judge0-redis
+    restart: always
+    volumes:
+      - judge0-redis-data:/data
+
+volumes:
+  judge0-postgres-data:
+  judge0-redis-data:
