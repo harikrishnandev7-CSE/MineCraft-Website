@@ -49,6 +49,67 @@ body {
   animation: slideUp 0.25s ease-out forwards;
 }
 
+/* ── Chest open lid animation ── */
+@keyframes chestLid {
+  0%   { transform: rotateX(0deg); }
+  40%  { transform: rotateX(-110deg); }
+  70%  { transform: rotateX(-100deg); }
+  100% { transform: rotateX(-110deg); }
+}
+.animate-chestLid {
+  transform-origin: top center;
+  animation: chestLid 0.6s ease-out forwards;
+}
+
+/* ── Fragment card slide out ── */
+@keyframes fragmentReveal {
+  from { opacity: 0; transform: translateY(-18px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fragmentReveal {
+  animation: fragmentReveal 0.45s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+/* ── Key badge pulse ── */
+@keyframes keyGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0); }
+  50%       { box-shadow: 0 0 16px 4px rgba(250,204,21,0.45); }
+}
+.animate-keyGlow {
+  animation: keyGlow 1.4s ease-in-out infinite;
+}
+
+/* ── Chest ready glow ── */
+@keyframes chestReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
+  50%       { box-shadow: 0 0 18px 4px rgba(34,211,238,0.35); }
+}
+.animate-chestReady {
+  animation: chestReady 1.8s ease-in-out infinite;
+}
+
+/* ── Phase completed burst ── */
+@keyframes phaseBurst {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.06); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-phaseBurst {
+  animation: phaseBurst 0.5s ease-out forwards;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-chestLid,
+  .animate-fragmentReveal,
+  .animate-keyGlow,
+  .animate-chestReady,
+  .animate-phaseBurst {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

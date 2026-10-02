@@ -1,457 +1,520 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CHALLENGES } from '../data/challenges';
 import { localStorageService } from '../services/localStorageService';
-import { STORAGE_KEYS } from '../utils/constants';
-import { combineBlocks } from '../utils/assembly';
+import {
+  STORAGE_KEYS,
+  WRONG_ANSWER_PENALTY_SECONDS,
+  WRONG_ANSWER_COOLDOWN_SECONDS,
+  USE_MOCK_JUDGE,
+} from '../utils/constants';
+import { combineFragments, seededShuffle } from '../utils/assembly';
 import { runCode as mockRunCode } from '../services/mockCompiler';
 import { judgeSubmission as mockJudgeSubmission } from '../services/mockJudge';
 import { challengeApi } from '../services/challengeApi';
-import { submissionApi } from '../services/submissionApi';
 import { runCode as apiRunCode, submitSolution as apiSubmitSolution } from '../services/api';
 
 const ChallengeContext = createContext(null);
 
+// ─── helpers ───────────────────────────────────────────────────────────────
+
+function getStaticChallenge(id) {
+  return CHALLENGES.find((c) => c.id === id) || CHALLENGES[0];
+}
+
+/** Build initial chestStates for a given language config */
+function buildInitialChestStates(langConfig) {
+  if (!langConfig?.chests) return {};
+  const states = {};
+  langConfig.chests.forEach((chest, idx) => {
+    states[chest.id] = {
+      status: idx === 0 ? 'active' : 'locked', // first chest starts active
+      currentQuizIdx: 0,
+      attempts: 0,
+      cooldownUntil: null,
+      keyEarned: false,
+    };
+  });
+  return states;
+}
+
+/** Pick the next quiz id for a chest, cycling through the pool */
+function pickQuizId(chest, chestState) {
+  const pool = chest.quizPool || [];
+  if (pool.length === 0) return null;
+  const idx = (chestState.currentQuizIdx || 0) % pool.length;
+  return pool[idx];
+}
+
+// ─── Provider ──────────────────────────────────────────────────────────────
+
 export function ChallengeProvider({ children }) {
-  // Check URL query parameters for dynamic challenge ID
   const searchParams = new URLSearchParams(window.location.search);
   const urlChallengeId = searchParams.get('id') || searchParams.get('challengeId');
 
-  // Dynamic remote challenges loaded from backend
-  const [remoteChallenges, setRemoteChallenges] = useState([]);
-  const [activeRemoteChallenge, setActiveRemoteChallenge] = useState(null);
-  const [remoteBlocks, setRemoteBlocks] = useState([]);
-
-  // Current challenge ID
+  // ── challenge selection ──
   const [challengeId, setChallengeId] = useState(() => {
     if (urlChallengeId) return urlChallengeId;
     const session = localStorageService.get(STORAGE_KEYS.CHALLENGE_SESSION, null);
     return session?.challengeId || CHALLENGES[0].id;
   });
 
+  // ── phase machine ──
+  // "SETUP" | "HUNT" | "ASSEMBLE" | "DONE"
+  const [phase, setPhase] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.PHASE, 'SETUP')
+  );
+
+  // ── language (locked after first chest opens) ──
   const [language, setLanguage] = useState(() => {
     const session = localStorageService.get(STORAGE_KEYS.CHALLENGE_SESSION, null);
-    return session?.language || 'java';
+    return session?.language || 'python';
   });
+  const [languageLocked, setLanguageLocked] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.LANGUAGE_LOCKED, false)
+  );
 
-  const [startTime, setStartTime] = useState(() => {
-    return localStorageService.get(STORAGE_KEYS.START_TIME, null);
-  });
+  // ── timer ──
+  const [startTime, setStartTime] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.START_TIME, null)
+  );
 
-  const [scannedQRIds, setScannedQRIds] = useState(() => {
-    return localStorageService.get(STORAGE_KEYS.QR_PROGRESS, []);
-  });
+  // ── chest states ──
+  const [chestStates, setChestStates] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.CHEST_STATES, null)
+  );
+  const [activeChestId, setActiveChestId] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.ACTIVE_CHEST_ID, null)
+  );
 
-  const [unlockedBlocks, setUnlockedBlocks] = useState(() => {
-    const raw = localStorageService.get(STORAGE_KEYS.UNLOCKED_BLOCKS, []);
-    const seen = new Set();
-    return (Array.isArray(raw) ? raw : []).filter((b) => {
-      if (!b?.blockId || seen.has(b.blockId)) return false;
-      seen.add(b.blockId);
-      return true;
-    });
-  });
+  // ── fragments ──
+  const [collectedFragmentIds, setCollectedFragmentIds] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.COLLECTED_FRAGMENTS, [])
+  );
 
-  const [assemblyBlocks, setAssemblyBlocks] = useState(() => {
-    return localStorageService.get(STORAGE_KEYS.ASSEMBLY_ORDER, []);
-  });
+  // ── assembly (ASSEMBLE phase) ──
+  const [shuffledVaultOrder, setShuffledVaultOrder] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.SHUFFLED_VAULT, [])
+  );
+  const [assemblyOrder, setAssemblyOrder] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.ASSEMBLY_ORDER, [])
+  );
 
-  const [attempts, setAttempts] = useState(() => {
-    return localStorageService.get(STORAGE_KEYS.SUBMISSION_ATTEMPTS, 0);
-  });
+  // ── scoring ──
+  const [penaltySeconds, setPenaltySeconds] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.PENALTY_SECONDS, 0)
+  );
+  const [quizAttempts, setQuizAttempts] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.QUIZ_ATTEMPTS, 0)
+  );
+  const [submissionAttempts, setSubmissionAttempts] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.SUBMISSION_ATTEMPTS, 0)
+  );
 
-  const [finalResult, setFinalResult] = useState(() => {
-    return localStorageService.get(STORAGE_KEYS.FINAL_RESULT, null);
-  });
+  // ── result ──
+  const [finalResult, setFinalResult] = useState(() =>
+    localStorageService.get(STORAGE_KEYS.FINAL_RESULT, null)
+  );
 
+  // ── execution state ──
   const [isCompiling, setIsCompiling] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [compileOutput, setCompileOutput] = useState(null);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
 
-  // Sync challengeId if URL param changes
-  useEffect(() => {
-    if (urlChallengeId && urlChallengeId !== challengeId) {
-      setChallengeId(urlChallengeId);
-    }
-  }, [urlChallengeId]);
+  // ── cooldown ticker ──
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const cooldownRef = useRef(null);
 
-  // Load challenges from backend API on mount
-  useEffect(() => {
-    async function loadApiChallenges() {
-      try {
-        const res = await challengeApi.getAll();
-        if (res.success && Array.isArray(res.challenges) && res.challenges.length > 0) {
-          setRemoteChallenges(res.challenges);
-        }
-      } catch (err) {
-        // Backend offline or fallback to static
-      }
-    }
-    loadApiChallenges();
-  }, []);
+  // double-submit guard
+  const submittingRef = useRef(false);
+  const openingChestRef = useRef(false);
 
-  // Fetch active challenge details and blocks if it's a backend challenge
-  useEffect(() => {
-    async function fetchChallengeDetails() {
-      const isMongoId = /^[0-9a-fA-F]{24}$/.test(challengeId);
-      const isRemote = isMongoId || remoteChallenges.some((c) => c._id === challengeId || c.slug === challengeId);
+  // ── derived: current challenge definition ──
+  const currentChallenge = useMemo(() => getStaticChallenge(challengeId), [challengeId]);
 
-      if (isRemote || isMongoId) {
-        try {
-          const [chalRes, blocksRes] = await Promise.all([
-            challengeApi.getById(challengeId),
-            challengeApi.getBlocks(challengeId),
-          ]);
-
-          if (chalRes.success && chalRes.challenge) {
-            setActiveRemoteChallenge(chalRes.challenge);
-            if (chalRes.challenge.sourceLanguage) {
-              setLanguage(chalRes.challenge.sourceLanguage);
-            }
-          }
-
-          if (blocksRes.success && Array.isArray(blocksRes.blocks)) {
-            setRemoteBlocks(blocksRes.blocks);
-            // Automatically initialize initially unlocked blocks
-            const unlocked = blocksRes.blocks.filter((b) => b.isUnlocked);
-            setUnlockedBlocks(unlocked);
-          }
-        } catch (err) {
-          console.error('Failed to load challenge from API:', err);
-        }
-      } else {
-        setActiveRemoteChallenge(null);
-        setRemoteBlocks([]);
-      }
-    }
-
-    if (challengeId) {
-      fetchChallengeDetails();
-    }
-  }, [challengeId, remoteChallenges]);
-
-  // Active challenge definition (Merged: Backend Challenge OR Static Challenge)
-  const currentChallenge = useMemo(() => {
-    if (activeRemoteChallenge) {
-      return {
-        id: activeRemoteChallenge._id,
-        _id: activeRemoteChallenge._id,
-        title: activeRemoteChallenge.title,
-        subtitle: activeRemoteChallenge.category || 'Blind Coding Task',
-        difficulty: activeRemoteChallenge.difficulty || 'Medium',
-        points: activeRemoteChallenge.points || 100,
-        category: activeRemoteChallenge.category || 'Algorithms',
-        description: activeRemoteChallenge.description,
-        instructions: activeRemoteChallenge.instructions,
-        duration: activeRemoteChallenge.timeLimitSeconds || 1200,
-        sampleInput: activeRemoteChallenge.sampleInput || '',
-        sampleOutput: activeRemoteChallenge.sampleOutput || '',
-        inputFormat: activeRemoteChallenge.inputFormat || '',
-        outputFormat: activeRemoteChallenge.outputFormat || '',
-        constraints: activeRemoteChallenge.constraints || '',
-        tasks: activeRemoteChallenge.tasks || [],
-        isRemote: true,
-      };
-    }
-
-    const foundRemote = remoteChallenges.find((c) => c._id === challengeId || c.slug === challengeId);
-    if (foundRemote) {
-      return {
-        id: foundRemote._id,
-        _id: foundRemote._id,
-        title: foundRemote.title,
-        subtitle: foundRemote.category,
-        difficulty: foundRemote.difficulty,
-        points: foundRemote.points,
-        category: foundRemote.category,
-        description: foundRemote.description,
-        instructions: foundRemote.instructions,
-        duration: foundRemote.timeLimitSeconds || 1200,
-        sampleInput: foundRemote.sampleInput || '',
-        sampleOutput: foundRemote.sampleOutput || '',
-        inputFormat: foundRemote.inputFormat || '',
-        outputFormat: foundRemote.outputFormat || '',
-        constraints: foundRemote.constraints || '',
-        tasks: foundRemote.tasks || [],
-        isRemote: true,
-      };
-    }
-
-    const staticChal = CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
-    return {
-      ...staticChal,
-      tasks: staticChal.tasks || [],
-    };
-  }, [challengeId, activeRemoteChallenge, remoteChallenges]);
-
-  // Active language config
+  // ── derived: language config (fragments, chests, quizzes) ──
   const langConfig = useMemo(() => {
-    if (currentChallenge.isRemote && remoteBlocks.length > 0) {
-      return {
-        name: language.toUpperCase(),
-        blocks: remoteBlocks.map((b) => ({
-          blockId: b.blockId,
-          code: b.code || b.codeSnippet,
-          codeSnippet: b.code || b.codeSnippet,
-          type: b.blockType || 'LOGIC',
-          hint: b.hint || '',
-          taskId: b.taskId,
-          isDecoy: !!b.isDecoy,
-          isUnlocked: b.isUnlocked,
-          qrTokens: [{ qrId: `QR-${b.blockId}`, blockId: b.blockId, token: b.qrHash }],
-        })),
-      };
+    const langs = currentChallenge.languages || {};
+    return langs[language] || langs.python || langs.java || Object.values(langs)[0];
+  }, [currentChallenge, language]);
+
+  // ── derived: all fragments for this lang, as a map id→fragment ──
+  const fragmentMap = useMemo(() => {
+    const map = {};
+    (langConfig?.fragments || []).forEach((f) => (map[f.id] = f));
+    return map;
+  }, [langConfig]);
+
+  // ── derived: collected fragments as objects (in collection order) ──
+  const collectedFragments = useMemo(
+    () => collectedFragmentIds.map((id) => fragmentMap[id]).filter(Boolean),
+    [collectedFragmentIds, fragmentMap]
+  );
+
+  // ── derived: assembled fragments as objects (board order) ──
+  const assemblyFragments = useMemo(
+    () => assemblyOrder.map((id) => fragmentMap[id]).filter(Boolean),
+    [assemblyOrder, fragmentMap]
+  );
+
+  // ── derived: assembled source code ──
+  const assembledCode = useMemo(() => combineFragments(assemblyFragments), [assemblyFragments]);
+
+  // ── init chest states when langConfig changes & no saved state ──
+  useEffect(() => {
+    if (!langConfig?.chests || phase === 'SETUP') return;
+    if (chestStates && Object.keys(chestStates).length > 0) {
+      // verify keys match current language (language switch clears)
+      const firstKey = Object.keys(chestStates)[0];
+      if (langConfig.chests.some((c) => c.id === firstKey)) return; // still valid
     }
+    const initial = buildInitialChestStates(langConfig);
+    setChestStates(initial);
+    setActiveChestId(langConfig.chests[0]?.id || null);
+  }, [langConfig, phase]);
 
-    const staticChal = CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
-    return staticChal.languages[language] || staticChal.languages.python || staticChal.languages.java;
-  }, [currentChallenge, remoteBlocks, language, challengeId]);
+  // ── init shuffledVault when entering ASSEMBLE ──
+  useEffect(() => {
+    if (phase !== 'ASSEMBLE') return;
+    if (shuffledVaultOrder.length > 0) return; // already seeded
+    const canonicalIds = (langConfig?.fragments || []).map((f) => f.id);
+    const seed = startTime ? Number(startTime) % 99991 : 12345;
+    const shuffled = seededShuffle(canonicalIds, seed);
+    setShuffledVaultOrder(shuffled);
+    setAssemblyOrder(shuffled); // start board = shuffled vault
+  }, [phase, langConfig, startTime, shuffledVaultOrder.length]);
 
-  // Derived assembled source code
-  const assembledCode = useMemo(() => {
-    return combineBlocks(assemblyBlocks);
-  }, [assemblyBlocks]);
+  // ─── persist all state ──────────────────────────────────────────
 
-  // Persist state changes
+  useEffect(() => {
+    localStorageService.set(STORAGE_KEYS.PHASE, phase);
+  }, [phase]);
+
   useEffect(() => {
     localStorageService.set(STORAGE_KEYS.CHALLENGE_SESSION, { challengeId, language });
   }, [challengeId, language]);
 
   useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.QR_PROGRESS, scannedQRIds);
-  }, [scannedQRIds]);
+    localStorageService.set(STORAGE_KEYS.LANGUAGE_LOCKED, languageLocked);
+  }, [languageLocked]);
 
   useEffect(() => {
-    const seen = new Set();
-    const unique = unlockedBlocks.filter((b) => {
-      if (!b?.blockId || seen.has(b.blockId)) return false;
-      seen.add(b.blockId);
-      return true;
-    });
-    localStorageService.set(STORAGE_KEYS.UNLOCKED_BLOCKS, unique);
-  }, [unlockedBlocks]);
+    if (chestStates) localStorageService.set(STORAGE_KEYS.CHEST_STATES, chestStates);
+  }, [chestStates]);
 
   useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.ASSEMBLY_ORDER, assemblyBlocks);
-  }, [assemblyBlocks]);
+    localStorageService.set(STORAGE_KEYS.ACTIVE_CHEST_ID, activeChestId);
+  }, [activeChestId]);
 
   useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.SUBMISSION_ATTEMPTS, attempts);
-  }, [attempts]);
+    localStorageService.set(STORAGE_KEYS.COLLECTED_FRAGMENTS, collectedFragmentIds);
+  }, [collectedFragmentIds]);
 
   useEffect(() => {
-    if (finalResult) {
-      localStorageService.set(STORAGE_KEYS.FINAL_RESULT, finalResult);
-    }
+    localStorageService.set(STORAGE_KEYS.SHUFFLED_VAULT, shuffledVaultOrder);
+  }, [shuffledVaultOrder]);
+
+  useEffect(() => {
+    localStorageService.set(STORAGE_KEYS.ASSEMBLY_ORDER, assemblyOrder);
+  }, [assemblyOrder]);
+
+  useEffect(() => {
+    localStorageService.set(STORAGE_KEYS.PENALTY_SECONDS, penaltySeconds);
+  }, [penaltySeconds]);
+
+  useEffect(() => {
+    localStorageService.set(STORAGE_KEYS.QUIZ_ATTEMPTS, quizAttempts);
+  }, [quizAttempts]);
+
+  useEffect(() => {
+    localStorageService.set(STORAGE_KEYS.SUBMISSION_ATTEMPTS, submissionAttempts);
+  }, [submissionAttempts]);
+
+  useEffect(() => {
+    if (finalResult) localStorageService.set(STORAGE_KEYS.FINAL_RESULT, finalResult);
   }, [finalResult]);
 
-  // START CHALLENGE
-  const startChallenge = (selectedChalId) => {
+  // ─── cooldown ticker ────────────────────────────────────────────
+
+  useEffect(() => {
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    if (!activeChestId || !chestStates) { setCooldownRemaining(0); return; }
+    const cs = chestStates[activeChestId];
+    if (!cs?.cooldownUntil) { setCooldownRemaining(0); return; }
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((cs.cooldownUntil - Date.now()) / 1000));
+      setCooldownRemaining(remaining);
+      if (remaining === 0) {
+        clearInterval(cooldownRef.current);
+        // advance quiz question
+        setChestStates((prev) => {
+          if (!prev || !prev[activeChestId]) return prev;
+          const chest = langConfig?.chests?.find((c) => c.id === activeChestId);
+          const pool = chest?.quizPool || [];
+          const nextIdx = ((prev[activeChestId].currentQuizIdx || 0) + 1) % Math.max(pool.length, 1);
+          return {
+            ...prev,
+            [activeChestId]: {
+              ...prev[activeChestId],
+              cooldownUntil: null,
+              currentQuizIdx: nextIdx,
+            },
+          };
+        });
+      }
+    };
+    tick();
+    cooldownRef.current = setInterval(tick, 500);
+    return () => clearInterval(cooldownRef.current);
+  }, [activeChestId, chestStates, langConfig]);
+
+  // ─── actions ────────────────────────────────────────────────────
+
+  /** Pick language (only before first chest opened / language locked) */
+  const selectLanguage = useCallback((lang) => {
+    if (languageLocked) return;
+    setLanguage(lang);
+    // Reset chest states for new language
+    setChestStates(null);
+    setCollectedFragmentIds([]);
+    setAssemblyOrder([]);
+    setShuffledVaultOrder([]);
+  }, [languageLocked]);
+
+  /** Start the hunt (called from Rules page or SETUP phase) */
+  const startChallenge = useCallback((selectedChalId) => {
     const targetId = selectedChalId || challengeId;
     const now = Date.now();
     setChallengeId(targetId);
     setStartTime(now);
     localStorageService.set(STORAGE_KEYS.START_TIME, now);
-    setScannedQRIds([]);
-    setUnlockedBlocks([]);
-    setAssemblyBlocks([]);
-    setAttempts(0);
+    setPhase('HUNT');
+    setLanguageLocked(false);
+    setChestStates(null); // will be rebuilt by effect
+    setActiveChestId(null);
+    setCollectedFragmentIds([]);
+    setShuffledVaultOrder([]);
+    setAssemblyOrder([]);
+    setPenaltySeconds(0);
+    setQuizAttempts(0);
+    setSubmissionAttempts(0);
     setFinalResult(null);
     setCompileOutput(null);
     setIsTimeExpired(false);
-  };
+  }, [challengeId]);
 
-  // CHANGE LANGUAGE
-  const selectLanguage = (newLang) => {
-    setLanguage(newLang);
-    if (!currentChallenge.isRemote) {
-      const staticChal = CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
-      const newLangConfig = staticChal.languages[newLang];
-      if (newLangConfig) {
-        const blockMap = new Map(newLangConfig.blocks.map((b) => [b.blockId, b]));
-        setUnlockedBlocks((prev) =>
-          prev.map((b) => blockMap.get(b.blockId) || b).filter(Boolean)
-        );
-        setAssemblyBlocks((prev) =>
-          prev.map((b) => blockMap.get(b.blockId) || b).filter(Boolean)
-        );
-      }
+  /**
+   * Submit a quiz answer for the active chest.
+   * Returns { correct: boolean, explain: string, penalty: number }
+   */
+  const submitQuizAnswer = useCallback((chestId, answer) => {
+    if (!chestStates || !langConfig) return { correct: false, explain: '' };
+    const cs = chestStates[chestId];
+    if (!cs || cs.keyEarned || cs.cooldownUntil) return { correct: false, explain: 'Wait for cooldown.' };
+
+    const chest = langConfig.chests.find((c) => c.id === chestId);
+    if (!chest) return { correct: false, explain: '' };
+
+    const quizId = pickQuizId(chest, cs);
+    const quiz = currentChallenge.quizzes?.[quizId];
+    if (!quiz) return { correct: false, explain: 'Quiz not found.' };
+
+    setQuizAttempts((prev) => prev + 1);
+
+    // ── evaluate answer ──
+    let correct = false;
+    if (quiz.type === 'mcq') {
+      correct = Number(answer) === Number(quiz.answer);
+    } else if (quiz.type === 'output') {
+      const norm = (s) => String(s).replace(/\r\n/g, '\n').trim();
+      correct = norm(answer) === norm(quiz.answer);
+    } else if (quiz.type === 'fill') {
+      const norm = (s) => String(s).replace(/\r\n/g, '\n').trim().toLowerCase();
+      const answers = Array.isArray(quiz.answer) ? quiz.answer : [quiz.answer];
+      correct = answers.some((a) => norm(answer) === norm(a));
     }
-  };
 
-  // SCAN QR
-  const unlockQR = (qrItem) => {
-    if (scannedQRIds.includes(qrItem.qrId)) return false;
+    if (correct) {
+      setChestStates((prev) => ({
+        ...prev,
+        [chestId]: { ...prev[chestId], keyEarned: true, status: 'key-earned' },
+      }));
+      // lock language after first correct answer
+      if (!languageLocked) setLanguageLocked(true);
+      return { correct: true, explain: quiz.explain || '' };
+    } else {
+      // wrong: add penalty, start cooldown
+      setPenaltySeconds((prev) => prev + WRONG_ANSWER_PENALTY_SECONDS);
+      const cooldownUntil = Date.now() + WRONG_ANSWER_COOLDOWN_SECONDS * 1000;
+      setChestStates((prev) => ({
+        ...prev,
+        [chestId]: {
+          ...prev[chestId],
+          attempts: (prev[chestId]?.attempts || 0) + 1,
+          cooldownUntil,
+        },
+      }));
+      return {
+        correct: false,
+        explain: quiz.explain || 'Incorrect.',
+        penalty: WRONG_ANSWER_PENALTY_SECONDS,
+        cooldown: WRONG_ANSWER_COOLDOWN_SECONDS,
+      };
+    }
+  }, [chestStates, langConfig, currentChallenge, languageLocked]);
 
-    const block = langConfig.blocks.find((b) => b.blockId === qrItem.blockId);
-    if (!block) return false;
+  /**
+   * Open a chest (only if keyEarned for that chest).
+   * Adds the associated fragment to collectedFragmentIds.
+   * If last chest opened → automatically transition to ASSEMBLE.
+   */
+  const openChest = useCallback((chestId) => {
+    if (openingChestRef.current) return null;
+    if (!chestStates || !langConfig) return null;
+    const cs = chestStates[chestId];
+    if (!cs || !cs.keyEarned || cs.status === 'opened') return null;
 
-    setScannedQRIds((prev) => (prev.includes(qrItem.qrId) ? prev : [...prev, qrItem.qrId]));
+    openingChestRef.current = true;
 
-    setUnlockedBlocks((prev) => {
-      if (prev.some((b) => b.blockId === block.blockId)) return prev;
-      return [...prev, { ...block, isUnlocked: true }];
+    // find which fragment this chest reveals
+    const chestIdx = langConfig.chests.findIndex((c) => c.id === chestId);
+    if (chestIdx < 0) { openingChestRef.current = false; return null; }
+    const fragmentId = langConfig.revealOrder[chestIdx];
+    const fragment = fragmentMap[fragmentId];
+    if (!fragment) { openingChestRef.current = false; return null; }
+
+    // add fragment (deduplicate)
+    setCollectedFragmentIds((prev) => {
+      if (prev.includes(fragmentId)) return prev;
+      return [...prev, fragmentId];
     });
-    return block;
-  };
 
-  // DIRECT REVEAL NEXT BLOCK (Blind Coding Reveal Mechanic, supports task-based reveal)
-  const revealNextBlock = async (options = {}) => {
-    const payload = typeof options === 'string' ? { taskId: options } : (options || {});
-    // If connected to a backend challenge, call backend API
-    if (currentChallenge.isRemote) {
-      try {
-        const res = await challengeApi.revealBlock(currentChallenge.id, payload);
-        if (res.success && res.revealedBlock) {
-          const revealed = {
-            blockId: res.revealedBlock.blockId,
-            code: res.revealedBlock.code,
-            codeSnippet: res.revealedBlock.code,
-            type: res.revealedBlock.blockType || 'LOGIC',
-            hint: res.revealedBlock.hint || '',
-            taskId: res.revealedBlock.taskId,
-            isUnlocked: true,
-          };
-          setUnlockedBlocks((prev) => {
-            if (prev.some((b) => b.blockId === revealed.blockId)) return prev;
-            return [...prev, revealed];
-          });
-          return revealed;
-        }
-      } catch (err) {
-        console.warn('API reveal failed, checking local remote blocks pool:', err);
-      }
+    // find next unopened chest to set as active
+    const newStates = {
+      ...chestStates,
+      [chestId]: { ...cs, status: 'opened', keyEarned: false },
+    };
+    // mark next locked chest as active
+    const nextChest = langConfig.chests.find(
+      (c) => c.id !== chestId && newStates[c.id]?.status === 'locked'
+    );
+    if (nextChest) {
+      newStates[nextChest.id] = { ...newStates[nextChest.id], status: 'active' };
+      setActiveChestId(nextChest.id);
+    } else {
+      setActiveChestId(null);
+    }
+    setChestStates(newStates);
+
+    // check if all chests opened
+    const totalChests = langConfig.chests.length;
+    const openedCount = Object.values(newStates).filter((s) => s.status === 'opened').length;
+    if (openedCount >= totalChests) {
+      // transition to ASSEMBLE after brief animation time
+      setTimeout(() => setPhase('ASSEMBLE'), 400);
     }
 
-    // Local / static fallback reveal (uses functional state to avoid batching race conditions)
-    const allBlocks = langConfig.blocks || [];
-    let unlockedItem = null;
-    setUnlockedBlocks((prev) => {
-      const currentIds = new Set(prev.map((b) => b.blockId));
-      let nextLocked = null;
-      if (payload.taskId) {
-        nextLocked = allBlocks.find((b) => b.taskId === payload.taskId && !currentIds.has(b.blockId));
-      }
-      if (!nextLocked) {
-        nextLocked = allBlocks.find((b) => !currentIds.has(b.blockId));
-      }
-      if (nextLocked && !currentIds.has(nextLocked.blockId)) {
-        unlockedItem = { ...nextLocked, isUnlocked: true };
-        return [...prev, unlockedItem];
-      }
-      return prev;
+    openingChestRef.current = false;
+    return fragment;
+  }, [chestStates, langConfig, fragmentMap]);
+
+  /** Reorder assembly board by swapping two indices */
+  const reorderAssembly = useCallback((sourceIdx, destIdx) => {
+    setAssemblyOrder((prev) => {
+      if (
+        sourceIdx < 0 || sourceIdx >= prev.length ||
+        destIdx < 0   || destIdx   >= prev.length
+      ) return prev;
+      const result = [...prev];
+      const [removed] = result.splice(sourceIdx, 1);
+      result.splice(destIdx, 0, removed);
+      return result;
     });
-    return unlockedItem;
-  };
+  }, []);
 
-  // ADD BLOCK TO ASSEMBLY
-  const addBlockToAssembly = (block) => {
-    const exists = assemblyBlocks.some((b) => b.blockId === block.blockId);
-    if (!exists) {
-      setAssemblyBlocks((prev) => [...prev, block]);
-      return true;
-    }
-    return false;
-  };
+  /** Reset assembly board to the seeded shuffle */
+  const resetAssemblyOrder = useCallback(() => {
+    setAssemblyOrder([...shuffledVaultOrder]);
+  }, [shuffledVaultOrder]);
 
-  // REORDER ASSEMBLY BLOCKS (Drag & Drop or Move)
-  const reorderAssemblyBlocks = (sourceIndex, destinationIndex) => {
-    if (
-      sourceIndex < 0 ||
-      sourceIndex >= assemblyBlocks.length ||
-      destinationIndex < 0 ||
-      destinationIndex >= assemblyBlocks.length
-    ) {
-      return;
-    }
-    const result = Array.from(assemblyBlocks);
-    const [removed] = result.splice(sourceIndex, 1);
-    result.splice(destinationIndex, 0, removed);
-    setAssemblyBlocks(result);
-  };
+  // ─── execution ──────────────────────────────────────────────────
 
-  // REMOVE BLOCK FROM ASSEMBLY
-  const removeAssemblyBlock = (index) => {
-    setAssemblyBlocks((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  // RUN CODE (Backend API with local mock fallback)
-  const executeCode = async (customInput = null) => {
+  const executeCode = useCallback(async (customInput = null) => {
     setIsCompiling(true);
     setCompileOutput(null);
     try {
-      const inputToUse = customInput !== null ? customInput : (currentChallenge.sampleInput || '');
+      const inputToUse = customInput ?? currentChallenge.sampleInput ?? '';
 
-      // Try real backend API first
-      try {
-        const apiRes = await apiRunCode(language, assembledCode, inputToUse);
-        if (apiRes && (apiRes.success || apiRes.status)) {
-          setCompileOutput(apiRes);
-          return apiRes;
+      if (!USE_MOCK_JUDGE) {
+        try {
+          const apiRes = await apiRunCode(language, assembledCode, inputToUse);
+          if (apiRes && (apiRes.success || apiRes.status)) {
+            setCompileOutput(apiRes);
+            return apiRes;
+          }
+        } catch (_) {
+          // fall through to mock
         }
-      } catch (backendErr) {
-        console.warn('Backend run failed, trying local compiler fallback:', backendErr);
       }
 
-      // Fallback to local compiler
       const result = await mockRunCode({
         language,
         sourceCode: assembledCode,
         input: inputToUse,
         challenge: currentChallenge,
-        placedBlocks: assemblyBlocks,
-        targetBlocks: langConfig.blocks,
+        assemblyOrder: assemblyFragments,
+        langFragments: langConfig?.fragments || [],
+        acceptedOrders: langConfig?.acceptedOrders || [],
       });
       setCompileOutput(result);
       return result;
     } catch (err) {
-      const fallbackResult = {
-        success: false,
-        status: 'Error',
-        stdout: '',
-        stderr: 'Unable to execute code. Please try again.',
-        compileOutput: '',
-        message: 'Unable to execute code. Please try again.',
-        executionTime: '0.00s',
-        memory: '0.0 MB',
+      const fallback = {
+        success: false, status: 'Error',
+        stdout: '', stderr: 'Unable to execute. Please try again.',
+        compileOutput: '', executionTime: '0.00s', memory: '0.0 MB',
       };
-      setCompileOutput(fallbackResult);
-      return fallbackResult;
+      setCompileOutput(fallback);
+      return fallback;
     } finally {
       setIsCompiling(false);
     }
-  };
+  }, [language, assembledCode, assemblyFragments, currentChallenge, langConfig]);
 
-  // SUBMIT SOLUTION (Official Backend Judge with local fallback)
-  const submitSolution = async (participant) => {
+  const submitSolution = useCallback(async (participant) => {
+    if (submittingRef.current) return null;
+    submittingRef.current = true;
     setIsValidating(true);
-    setAttempts((prev) => prev + 1);
+    setSubmissionAttempts((prev) => prev + 1);
 
     try {
       let outcome = null;
 
-      // Try official backend judging first
-      try {
-        const apiRes = await apiSubmitSolution(language, assembledCode, currentChallenge.id);
-        if (apiRes && apiRes.status) {
-          outcome = apiRes;
+      if (!USE_MOCK_JUDGE) {
+        try {
+          const apiRes = await apiSubmitSolution(language, assembledCode, currentChallenge.id);
+          if (apiRes && apiRes.status) outcome = apiRes;
+        } catch (_) {
+          // fall through to mock
         }
-      } catch (backendErr) {
-        console.warn('Backend submission failed, falling back to local judge:', backendErr);
       }
 
-      // Fallback to local judge if backend was unreachable
       if (!outcome) {
         outcome = await mockJudgeSubmission({
           language,
           sourceCode: assembledCode,
           challenge: currentChallenge,
-          placedBlocks: assemblyBlocks,
-          targetBlocks: langConfig.blocks,
+          assemblyOrder: assemblyFragments,
+          langFragments: langConfig?.fragments || [],
+          acceptedOrders: langConfig?.acceptedOrders || [],
         });
       }
 
-      const submissionRecord = {
+      const elapsedSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+      const rankingTime = elapsedSeconds + penaltySeconds;
+
+      const record = {
         ...outcome,
         passed: outcome.status === 'ACCEPTED' || outcome.success,
         finalScore: outcome.score || (outcome.status === 'ACCEPTED' ? (currentChallenge.points || 100) : 0),
@@ -462,84 +525,146 @@ export function ChallengeProvider({ children }) {
         challengeTitle: currentChallenge.title,
         language,
         timestamp: new Date().toISOString(),
-        attempts: attempts + 1,
+        attempts: submissionAttempts + 1,
+        penaltySeconds,
+        fragmentCount: langConfig?.fragments?.length || 0,
+        quizAttempts,
+        rankingTime,
       };
 
-      if (submissionRecord.passed) {
-        setFinalResult(submissionRecord);
+      if (record.passed) {
+        setFinalResult(record);
+        setPhase('DONE');
       }
-      return submissionRecord;
+      return record;
     } catch (err) {
-      const fallbackRecord = {
-        success: false,
-        status: 'WRONG_ANSWER',
+      return {
+        success: false, status: 'WRONG_ANSWER',
         title: '⚠️ EVALUATION ERROR',
         message: 'Unable to evaluate submission. Please try again.',
-        passedCount: 0,
-        totalCount: 3,
-        testResults: [],
-        executionTime: '0.00s',
-        memory: '0.0 MB',
-        participantName: participant?.name || 'Participant',
-        participantId: participant?.participantId || 'MC-DEMO',
-        challengeId: currentChallenge.id,
-        challengeTitle: currentChallenge.title,
-        language,
-        timestamp: new Date().toISOString(),
-        attempts: attempts + 1,
+        passedCount: 0, totalCount: 3, testResults: [],
+        executionTime: '0.00s', memory: '0.0 MB',
       };
-      return fallbackRecord;
     } finally {
       setIsValidating(false);
+      submittingRef.current = false;
     }
-  };
+  }, [
+    language, assembledCode, assemblyFragments, currentChallenge, langConfig,
+    startTime, penaltySeconds, quizAttempts, submissionAttempts,
+  ]);
 
-  const handleTimeExpired = () => {
-    setIsTimeExpired(true);
-  };
+  const handleTimeExpired = useCallback(() => setIsTimeExpired(true), []);
 
-  const resetAll = () => {
+  const resetAll = useCallback(() => {
     localStorageService.clearAllChallengeData();
+    setPhase('SETUP');
     setStartTime(null);
-    setScannedQRIds([]);
-    setUnlockedBlocks([]);
-    setAssemblyBlocks([]);
-    setAttempts(0);
+    setLanguageLocked(false);
+    setChestStates(null);
+    setActiveChestId(null);
+    setCollectedFragmentIds([]);
+    setShuffledVaultOrder([]);
+    setAssemblyOrder([]);
+    setPenaltySeconds(0);
+    setQuizAttempts(0);
+    setSubmissionAttempts(0);
     setFinalResult(null);
     setCompileOutput(null);
     setIsTimeExpired(false);
-  };
+  }, []);
+
+  // ── expose active chest's current quiz ──
+  const activeChestQuizId = useMemo(() => {
+    if (!activeChestId || !chestStates || !langConfig) return null;
+    const cs = chestStates[activeChestId];
+    if (!cs || cs.status === 'opened') return null;
+    const chest = langConfig.chests.find((c) => c.id === activeChestId);
+    if (!chest) return null;
+    return pickQuizId(chest, cs);
+  }, [activeChestId, chestStates, langConfig]);
+
+  const activeChestQuiz = useMemo(() => {
+    if (!activeChestQuizId) return null;
+    return currentChallenge.quizzes?.[activeChestQuizId] || null;
+  }, [activeChestQuizId, currentChallenge]);
 
   return (
     <ChallengeContext.Provider
       value={{
+        // challenge
         challenge: currentChallenge,
-        challenges: remoteChallenges.length > 0 ? remoteChallenges : CHALLENGES,
+        challenges: CHALLENGES,
         setChallengeId,
+
+        // language
         language,
         selectLanguage,
+        languageLocked,
         langConfig,
+
+        // timer
         startTime,
         startChallenge,
-        scannedQRIds,
-        unlockedBlocks,
-        assemblyBlocks,
+
+        // phase
+        phase,
+
+        // chest / quiz
+        chestStates,
+        activeChestId,
+        setActiveChestId,
+        activeChestQuiz,
+        activeChestQuizId,
+        submitQuizAnswer,
+        openChest,
+        cooldownRemaining,
+
+        // fragments
+        collectedFragments,
+        collectedFragmentIds,
+        fragmentMap,
+        shuffledVaultOrder,
+
+        // assembly
+        assemblyOrder,
+        assemblyFragments,
         assembledCode,
-        unlockQR,
-        revealNextBlock,
-        addBlockToAssembly,
-        reorderAssemblyBlocks,
-        removeAssemblyBlock,
+        reorderAssembly,
+        resetAssemblyOrder,
+        setAssemblyOrder,
+
+        // scoring
+        penaltySeconds,
+        quizAttempts,
+        submissionAttempts,
+        // compat aliases for timer/result pages
+        attempts: submissionAttempts,
+
+        // execution
         executeCode,
         submitSolution,
         isCompiling,
         isValidating,
         compileOutput,
-        attempts,
+
+        // result
         finalResult,
         isTimeExpired,
         handleTimeExpired,
         resetAll,
+
+        // ── legacy aliases so unmodified components don't break ──
+        unlockedBlocks: collectedFragments,
+        assemblyBlocks: assemblyFragments,
+        reorderAssemblyBlocks: reorderAssembly,
+        removeAssemblyBlock: (idx) => {
+          // no-op in new model (assembly always shows all fragments)
+        },
+        addBlockToAssembly: () => false,
+        revealNextBlock: async () => null,
+        unlockQR: () => null,
+        scannedQRIds: [],
       }}
     >
       {children}
@@ -549,8 +674,6 @@ export function ChallengeProvider({ children }) {
 
 export function useChallengeContext() {
   const context = useContext(ChallengeContext);
-  if (!context) {
-    throw new Error('useChallengeContext must be used within a ChallengeProvider');
-  }
+  if (!context) throw new Error('useChallengeContext must be used within a ChallengeProvider');
   return context;
 }

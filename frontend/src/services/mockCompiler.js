@@ -1,63 +1,53 @@
-import { checkAssemblyAccuracy } from '../utils/assembly';
+import { combineFragments, checkFragmentOrder } from '../utils/assembly';
 
 /**
- * Frontend Mock Compiler
- * Simulates real compilation and execution with realistic 1.2 - 1.8s delay.
+ * Mock Compiler — used when VITE_USE_MOCK_JUDGE=true or backend is unreachable.
+ * Delays simulate realistic compile + run latency (1.4–1.8 s).
+ * Correctness is assessed by fragment-id ordering, NOT real execution.
  */
 export async function runCode({
   language = 'python',
   sourceCode = '',
   input = '',
   challenge = null,
-  placedBlocks = [],
-  targetBlocks = [],
+  assemblyOrder = [],      // array of fragment objects in board order
+  langFragments = [],      // langConfig.fragments (correct order array)
+  acceptedOrders = [],
 }) {
-  // Realistic compilation & execution delay
   await new Promise((resolve) => setTimeout(resolve, 1400));
 
   if (!sourceCode.trim()) {
     return {
       status: 'compilation_error',
       stdout: '',
-      stderr: 'Error: Empty source file. No assembled instructions to execute.',
+      stderr: 'Error: Empty source file. No assembled fragments to execute.',
       compileOutput: 'Fatal: Compiler received zero executable tokens.',
       executionTime: '0.00s',
       memory: '0.0 MB',
     };
   }
 
-  // Evaluate the assembly order
-  const check = checkAssemblyAccuracy(placedBlocks, targetBlocks);
+  const placedIds = assemblyOrder.map((f) => f.id);
+  const canonicalIds = langFragments.map((f) => f.id);
+  const check = checkFragmentOrder(placedIds, canonicalIds, acceptedOrders);
 
   if (!check.isCorrect) {
-    if (check.hasDecoy) {
-      return {
-        status: 'runtime_error',
-        stdout: '',
-        stderr: `Runtime Exception: Traceback (most recent call last):\n  File "solution.${language}", line 4, in <module>\n    ${check.reason}`,
-        compileOutput: 'Execution aborted due to illegal instruction.',
-        executionTime: '0.02s',
-        memory: '8.4 MB',
-      };
-    }
-
     return {
       status: 'compilation_error',
       stdout: '',
-      stderr: `SyntaxError: Logical sequence breakdown.\n  --> ${check.reason}\n  Tip: Ensure variable declarations precede loops and outputs.`,
-      compileOutput: 'Compilation terminated with exit code 1 (Syntax / Sequence Error).',
+      stderr: `SyntaxError / Logic Error: ${check.reason}\n  Tip: Ensure imports come first, declarations before loops, and output last.`,
+      compileOutput: 'Compilation terminated (Logical Sequence Error).',
       executionTime: '0.01s',
       memory: '4.2 MB',
     };
   }
 
-  // Correct assembly -> Return expected sample output!
-  const stdout = challenge ? challenge.sampleOutput : 'Program executed successfully.';
+  const stdout = challenge?.sampleOutput ?? 'Program executed successfully.';
   return {
     status: 'success',
-    stdout: stdout,
+    stdout,
     stderr: '',
-    compileOutput: 'Compilation successful without warnings.\nBinary built target: x86_64-linux-gnu.',
+    compileOutput: `Compilation successful.\nEngine: Mock (set VITE_USE_MOCK_JUDGE=false for real execution).`,
     executionTime: '0.04s',
     memory: '12.4 MB',
   };
