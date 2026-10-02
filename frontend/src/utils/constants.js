@@ -1,7 +1,7 @@
 export const APP_NAME = "MIND CRAFT";
 export const APP_SUBTITLE = "Blind Coding & Code Assembly Platform";
 
-export const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5055/api';
+export const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export const DEFAULT_DURATION_SECONDS = 20 * 60; // 20 minutes
 

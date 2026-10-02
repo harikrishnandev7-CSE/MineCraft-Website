@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       }
       return res;
     } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      const msg = err.response?.data?.message || (err.message?.includes('Network') || !err.response ? 'Unable to reach backend server. Please verify the backend is running.' : 'Login failed. Please check your credentials.');
       setError(msg);
       throw err;
     } finally {
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       }
       return res;
     } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid admin credentials.';
+      const msg = err.response?.data?.message || (err.message?.includes('Network') || !err.response ? 'Unable to reach backend server. Please verify the backend is running.' : 'Invalid admin credentials.');
       setError(msg);
       throw err;
     } finally {
