@@ -42,7 +42,13 @@ export function ChallengeProvider({ children }) {
   });
 
   const [unlockedBlocks, setUnlockedBlocks] = useState(() => {
-    return localStorageService.get(STORAGE_KEYS.UNLOCKED_BLOCKS, []);
+    const raw = localStorageService.get(STORAGE_KEYS.UNLOCKED_BLOCKS, []);
+    const seen = new Set();
+    return (Array.isArray(raw) ? raw : []).filter((b) => {
+      if (!b?.blockId || seen.has(b.blockId)) return false;
+      seen.add(b.blockId);
+      return true;
+    });
   });
 
   const [assemblyBlocks, setAssemblyBlocks] = useState(() => {
@@ -216,7 +222,13 @@ export function ChallengeProvider({ children }) {
   }, [scannedQRIds]);
 
   useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.UNLOCKED_BLOCKS, unlockedBlocks);
+    const seen = new Set();
+    const unique = unlockedBlocks.filter((b) => {
+      if (!b?.blockId || seen.has(b.blockId)) return false;
+      seen.add(b.blockId);
+      return true;
+    });
+    localStorageService.set(STORAGE_KEYS.UNLOCKED_BLOCKS, unique);
   }, [unlockedBlocks]);
 
   useEffect(() => {
@@ -274,11 +286,12 @@ export function ChallengeProvider({ children }) {
     const block = langConfig.blocks.find((b) => b.blockId === qrItem.blockId);
     if (!block) return false;
 
-    setScannedQRIds((prev) => [...prev, qrItem.qrId]);
+    setScannedQRIds((prev) => (prev.includes(qrItem.qrId) ? prev : [...prev, qrItem.qrId]));
 
-    if (!unlockedBlocks.some((b) => b.blockId === block.blockId)) {
-      setUnlockedBlocks((prev) => [...prev, { ...block, isUnlocked: true }]);
-    }
+    setUnlockedBlocks((prev) => {
+      if (prev.some((b) => b.blockId === block.blockId)) return prev;
+      return [...prev, { ...block, isUnlocked: true }];
+    });
     return block;
   };
 
@@ -310,22 +323,25 @@ export function ChallengeProvider({ children }) {
       }
     }
 
-    // Local / static fallback reveal
+    // Local / static fallback reveal (uses functional state to avoid batching race conditions)
     const allBlocks = langConfig.blocks || [];
-    const unlockedIds = new Set(unlockedBlocks.map((b) => b.blockId));
-    let nextLocked = null;
-    if (payload.taskId) {
-      nextLocked = allBlocks.find((b) => b.taskId === payload.taskId && !unlockedIds.has(b.blockId));
-    }
-    if (!nextLocked) {
-      nextLocked = allBlocks.find((b) => !unlockedIds.has(b.blockId));
-    }
-    if (nextLocked) {
-      const unlockedItem = { ...nextLocked, isUnlocked: true };
-      setUnlockedBlocks((prev) => [...prev, unlockedItem]);
-      return unlockedItem;
-    }
-    return null;
+    let unlockedItem = null;
+    setUnlockedBlocks((prev) => {
+      const currentIds = new Set(prev.map((b) => b.blockId));
+      let nextLocked = null;
+      if (payload.taskId) {
+        nextLocked = allBlocks.find((b) => b.taskId === payload.taskId && !currentIds.has(b.blockId));
+      }
+      if (!nextLocked) {
+        nextLocked = allBlocks.find((b) => !currentIds.has(b.blockId));
+      }
+      if (nextLocked && !currentIds.has(nextLocked.blockId)) {
+        unlockedItem = { ...nextLocked, isUnlocked: true };
+        return [...prev, unlockedItem];
+      }
+      return prev;
+    });
+    return unlockedItem;
   };
 
   // ADD BLOCK TO ASSEMBLY

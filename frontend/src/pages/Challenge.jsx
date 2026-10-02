@@ -39,6 +39,7 @@ export default function Challenge() {
     selectLanguage,
     langConfig,
     startTime,
+    startChallenge,
     scannedQRIds,
     unlockedBlocks,
     assemblyBlocks,
@@ -75,16 +76,7 @@ export default function Challenge() {
     }
   }, [participant, startTime, navigate]);
 
-  // Auto-unlock initial blocks if none are unlocked yet
-  useEffect(() => {
-    if (unlockedBlocks.length === 0 && langConfig?.blocks?.length > 0) {
-      // First 3 fragments are initially available
-      const initial = langConfig.blocks.slice(0, 3);
-      initial.forEach(() => {
-        revealNextBlock();
-      });
-    }
-  }, [langConfig, unlockedBlocks.length]);
+  // All fragments start locked - participants must complete assigned tasks to unlock each block
 
   // Navigate to Result page once accepted
   useEffect(() => {
@@ -120,18 +112,21 @@ export default function Challenge() {
     }
   };
 
-  // Task-Based Reveal
-  const handleRevealTask = async (task) => {
+  // Task-Based Reveal (Opens assigned task challenge to unlock block)
+  const handleRevealTask = (task) => {
     if (isTimeExpired) {
       showToast('Challenge time expired! Actions locked.', 'error');
       return;
     }
-    const block = await revealNextBlock({ taskId: task.taskId });
-    if (block) {
-      showToast(`✓ Fragment #${block.blockId} unlocked for ${task.title}! (-${task.penalty || 5} pts penalty)`, 'success');
-    } else {
-      showToast(`All fragments for ${task.title} are already unlocked.`, 'info');
-    }
+    const unlockedIds = new Set(unlockedBlocks.map((b) => b.blockId));
+    const targetBlockId = task.requiredBlockIds?.find((id) => !unlockedIds.has(id)) || task.requiredBlockIds?.[0];
+    const qrItem = langConfig?.qrTokens?.find((t) => t.blockId === targetBlockId) || {
+      qrId: `TASK-${task.taskId}`,
+      blockId: targetBlockId,
+      token: `TASK-TOKEN-${task.taskId}`,
+    };
+    setActiveQR(qrItem);
+    setIsScannerOpen(true);
   };
 
   // Add block to board
@@ -518,16 +513,19 @@ export default function Challenge() {
         </div>
       </div>
 
-      {/* QR SCANNER MODAL (Preserving QR functionality!) */}
+      {/* QR SCANNER & ASSIGNED TASK COMPLETION MODAL */}
       <QRScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         qrItem={activeQR || { qrId: 'QR-MANUAL', token: 'MANUAL-ENTRY' }}
+        challenge={challenge}
+        langConfig={langConfig}
         onUnlockSuccess={(item) => {
           const block = unlockQR(item) || revealNextBlock();
           if (block) {
-            showToast(`✓ QR token verified! Block #${block.blockId} unlocked.`, 'success');
+            showToast(`✓ Task completed! Block #${block.blockId} unlocked.`, 'success');
           }
+          return block;
         }}
         onAddToAssembly={handleAddToAssembly}
       />
