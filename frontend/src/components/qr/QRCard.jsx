@@ -53,7 +53,7 @@ export default function QRCard({ qrItem, isScanned, onClick }) {
           {isScanned ? 'Token Verified' : qrItem.token}
         </span>
         <p className="text-[10px] font-semibold text-cyan-400/90 mt-1 uppercase tracking-wider group-hover:text-cyan-300">
-          {isScanned ? '✓ Block Unlocked' : 'Click to Scan'}
+          {isScanned ? '✓ Block Unlocked' : 'Solve Task to Unlock'}
         </p>
       </div>
     </div>
