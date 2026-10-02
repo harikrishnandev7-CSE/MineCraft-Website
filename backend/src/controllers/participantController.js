@@ -4,23 +4,31 @@ const Event = require('../models/Event');
 const generateToken = require('../utils/generateToken');
 
 exports.registerParticipant = asyncHandler(async (req, res) => {
-  const { teamName, sessionCode } = req.body;
-  const event = await Event.findOne({ sessionCode: sessionCode.toUpperCase() });
+  const { name, email: reqEmail, password, teamName, sessionCode, college } = req.body;
 
-  const email = `${teamName.toLowerCase().replace(/\s+/g, '')}_${Date.now()}@arena.local`;
+  let event = null;
+  if (sessionCode) {
+    event = await Event.findOne({ sessionCode: sessionCode.toUpperCase() });
+  }
+
+  const displayName = name || teamName || 'Contestant';
+  const email = reqEmail || `${displayName.toLowerCase().replace(/\s+/g, '')}_${Date.now()}@arena.local`;
+  const pwd = password || 'guest_participant_pwd';
+
   const user = await User.create({
-    name: teamName,
+    name: displayName,
     email,
-    password: 'guest_participant_pwd',
+    password: pwd,
     role: 'participant',
-    teamName,
+    teamName: teamName || displayName,
+    college: college || 'Engineering Institute',
     eventId: event?._id,
   });
 
   res.status(201).json({
     success: true,
     token: generateToken(user._id, 'participant'),
-    user: { id: user._id, name: user.name, teamName: user.teamName, role: 'participant' },
+    user: { id: user._id, name: user.name, email: user.email, teamName: user.teamName, role: 'participant' },
   });
 });
 

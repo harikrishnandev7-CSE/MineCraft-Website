@@ -5,19 +5,31 @@ import { STORAGE_KEYS } from '../utils/constants';
 import { combineBlocks } from '../utils/assembly';
 import { runCode } from '../services/mockCompiler';
 import { judgeSubmission } from '../services/mockJudge';
+import { challengeApi } from '../services/challengeApi';
+import { submissionApi } from '../services/submissionApi';
 
 const ChallengeContext = createContext(null);
 
 export function ChallengeProvider({ children }) {
-  // Current challenge
+  // Check URL query parameters for dynamic challenge ID
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlChallengeId = searchParams.get('id') || searchParams.get('challengeId');
+
+  // Dynamic remote challenges loaded from backend
+  const [remoteChallenges, setRemoteChallenges] = useState([]);
+  const [activeRemoteChallenge, setActiveRemoteChallenge] = useState(null);
+  const [remoteBlocks, setRemoteBlocks] = useState([]);
+
+  // Current challenge ID
   const [challengeId, setChallengeId] = useState(() => {
+    if (urlChallengeId) return urlChallengeId;
     const session = localStorageService.get(STORAGE_KEYS.CHALLENGE_SESSION, null);
     return session?.challengeId || CHALLENGES[0].id;
   });
 
   const [language, setLanguage] = useState(() => {
     const session = localStorageService.get(STORAGE_KEYS.CHALLENGE_SESSION, null);
-    return session?.language || 'python';
+    return session?.language || 'java';
   });
 
   const [startTime, setStartTime] = useState(() => {
@@ -49,15 +61,144 @@ export function ChallengeProvider({ children }) {
   const [compileOutput, setCompileOutput] = useState(null);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
 
-  // Active challenge definition
+  // Sync challengeId if URL param changes
+  useEffect(() => {
+    if (urlChallengeId && urlChallengeId !== challengeId) {
+      setChallengeId(urlChallengeId);
+    }
+  }, [urlChallengeId]);
+
+  // Load challenges from backend API on mount
+  useEffect(() => {
+    async function loadApiChallenges() {
+      try {
+        const res = await challengeApi.getAll();
+        if (res.success && Array.isArray(res.challenges) && res.challenges.length > 0) {
+          setRemoteChallenges(res.challenges);
+        }
+      } catch (err) {
+        // Backend offline or fallback to static
+      }
+    }
+    loadApiChallenges();
+  }, []);
+
+  // Fetch active challenge details and blocks if it's a backend challenge
+  useEffect(() => {
+    async function fetchChallengeDetails() {
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(challengeId);
+      const isRemote = isMongoId || remoteChallenges.some((c) => c._id === challengeId || c.slug === challengeId);
+
+      if (isRemote || isMongoId) {
+        try {
+          const [chalRes, blocksRes] = await Promise.all([
+            challengeApi.getById(challengeId),
+            challengeApi.getBlocks(challengeId),
+          ]);
+
+          if (chalRes.success && chalRes.challenge) {
+            setActiveRemoteChallenge(chalRes.challenge);
+            if (chalRes.challenge.sourceLanguage) {
+              setLanguage(chalRes.challenge.sourceLanguage);
+            }
+          }
+
+          if (blocksRes.success && Array.isArray(blocksRes.blocks)) {
+            setRemoteBlocks(blocksRes.blocks);
+            // Automatically initialize initially unlocked blocks
+            const unlocked = blocksRes.blocks.filter((b) => b.isUnlocked);
+            setUnlockedBlocks(unlocked);
+          }
+        } catch (err) {
+          console.error('Failed to load challenge from API:', err);
+        }
+      } else {
+        setActiveRemoteChallenge(null);
+        setRemoteBlocks([]);
+      }
+    }
+
+    if (challengeId) {
+      fetchChallengeDetails();
+    }
+  }, [challengeId, remoteChallenges]);
+
+  // Active challenge definition (Merged: Backend Challenge OR Static Challenge)
   const currentChallenge = useMemo(() => {
-    return CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
-  }, [challengeId]);
+    if (activeRemoteChallenge) {
+      return {
+        id: activeRemoteChallenge._id,
+        _id: activeRemoteChallenge._id,
+        title: activeRemoteChallenge.title,
+        subtitle: activeRemoteChallenge.category || 'Blind Coding Task',
+        difficulty: activeRemoteChallenge.difficulty || 'Medium',
+        points: activeRemoteChallenge.points || 100,
+        category: activeRemoteChallenge.category || 'Algorithms',
+        description: activeRemoteChallenge.description,
+        instructions: activeRemoteChallenge.instructions,
+        duration: activeRemoteChallenge.timeLimitSeconds || 1200,
+        sampleInput: activeRemoteChallenge.sampleInput || '',
+        sampleOutput: activeRemoteChallenge.sampleOutput || '',
+        inputFormat: activeRemoteChallenge.inputFormat || '',
+        outputFormat: activeRemoteChallenge.outputFormat || '',
+        constraints: activeRemoteChallenge.constraints || '',
+        tasks: activeRemoteChallenge.tasks || [],
+        isRemote: true,
+      };
+    }
+
+    const foundRemote = remoteChallenges.find((c) => c._id === challengeId || c.slug === challengeId);
+    if (foundRemote) {
+      return {
+        id: foundRemote._id,
+        _id: foundRemote._id,
+        title: foundRemote.title,
+        subtitle: foundRemote.category,
+        difficulty: foundRemote.difficulty,
+        points: foundRemote.points,
+        category: foundRemote.category,
+        description: foundRemote.description,
+        instructions: foundRemote.instructions,
+        duration: foundRemote.timeLimitSeconds || 1200,
+        sampleInput: foundRemote.sampleInput || '',
+        sampleOutput: foundRemote.sampleOutput || '',
+        inputFormat: foundRemote.inputFormat || '',
+        outputFormat: foundRemote.outputFormat || '',
+        constraints: foundRemote.constraints || '',
+        tasks: foundRemote.tasks || [],
+        isRemote: true,
+      };
+    }
+
+    const staticChal = CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
+    return {
+      ...staticChal,
+      tasks: staticChal.tasks || [],
+    };
+  }, [challengeId, activeRemoteChallenge, remoteChallenges]);
 
   // Active language config
   const langConfig = useMemo(() => {
-    return currentChallenge.languages[language] || currentChallenge.languages.python;
-  }, [currentChallenge, language]);
+    if (currentChallenge.isRemote && remoteBlocks.length > 0) {
+      return {
+        name: language.toUpperCase(),
+        blocks: remoteBlocks.map((b) => ({
+          blockId: b.blockId,
+          code: b.code || b.codeSnippet,
+          codeSnippet: b.code || b.codeSnippet,
+          type: b.blockType || 'LOGIC',
+          hint: b.hint || '',
+          taskId: b.taskId,
+          isDecoy: !!b.isDecoy,
+          isUnlocked: b.isUnlocked,
+          qrTokens: [{ qrId: `QR-${b.blockId}`, blockId: b.blockId, token: b.qrHash }],
+        })),
+      };
+    }
+
+    const staticChal = CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
+    return staticChal.languages[language] || staticChal.languages.python || staticChal.languages.java;
+  }, [currentChallenge, remoteBlocks, language, challengeId]);
 
   // Derived assembled source code
   const assembledCode = useMemo(() => {
@@ -110,16 +251,18 @@ export function ChallengeProvider({ children }) {
   // CHANGE LANGUAGE
   const selectLanguage = (newLang) => {
     setLanguage(newLang);
-    // When changing language, rebuild unlocked and assembled blocks in the new language corresponding to existing blockIds
-    const newLangConfig = currentChallenge.languages[newLang];
-    if (newLangConfig) {
-      const blockMap = new Map(newLangConfig.blocks.map((b) => [b.blockId, b]));
-      setUnlockedBlocks((prev) =>
-        prev.map((b) => blockMap.get(b.blockId) || b).filter(Boolean)
-      );
-      setAssemblyBlocks((prev) =>
-        prev.map((b) => blockMap.get(b.blockId) || b).filter(Boolean)
-      );
+    if (!currentChallenge.isRemote) {
+      const staticChal = CHALLENGES.find((c) => c.id === challengeId) || CHALLENGES[0];
+      const newLangConfig = staticChal.languages[newLang];
+      if (newLangConfig) {
+        const blockMap = new Map(newLangConfig.blocks.map((b) => [b.blockId, b]));
+        setUnlockedBlocks((prev) =>
+          prev.map((b) => blockMap.get(b.blockId) || b).filter(Boolean)
+        );
+        setAssemblyBlocks((prev) =>
+          prev.map((b) => blockMap.get(b.blockId) || b).filter(Boolean)
+        );
+      }
     }
   };
 
@@ -127,17 +270,61 @@ export function ChallengeProvider({ children }) {
   const unlockQR = (qrItem) => {
     if (scannedQRIds.includes(qrItem.qrId)) return false;
 
-    // Find corresponding block in active language
     const block = langConfig.blocks.find((b) => b.blockId === qrItem.blockId);
     if (!block) return false;
 
     setScannedQRIds((prev) => [...prev, qrItem.qrId]);
 
-    // Check if block already unlocked
     if (!unlockedBlocks.some((b) => b.blockId === block.blockId)) {
-      setUnlockedBlocks((prev) => [...prev, block]);
+      setUnlockedBlocks((prev) => [...prev, { ...block, isUnlocked: true }]);
     }
     return block;
+  };
+
+  // DIRECT REVEAL NEXT BLOCK (Blind Coding Reveal Mechanic, supports task-based reveal)
+  const revealNextBlock = async (options = {}) => {
+    const payload = typeof options === 'string' ? { taskId: options } : (options || {});
+    // If connected to a backend challenge, call backend API
+    if (currentChallenge.isRemote) {
+      try {
+        const res = await challengeApi.revealBlock(currentChallenge.id, payload);
+        if (res.success && res.revealedBlock) {
+          const revealed = {
+            blockId: res.revealedBlock.blockId,
+            code: res.revealedBlock.code,
+            codeSnippet: res.revealedBlock.code,
+            type: res.revealedBlock.blockType || 'LOGIC',
+            hint: res.revealedBlock.hint || '',
+            taskId: res.revealedBlock.taskId,
+            isUnlocked: true,
+          };
+          setUnlockedBlocks((prev) => {
+            if (prev.some((b) => b.blockId === revealed.blockId)) return prev;
+            return [...prev, revealed];
+          });
+          return revealed;
+        }
+      } catch (err) {
+        console.warn('API reveal failed, checking local remote blocks pool:', err);
+      }
+    }
+
+    // Local / static fallback reveal
+    const allBlocks = langConfig.blocks || [];
+    const unlockedIds = new Set(unlockedBlocks.map((b) => b.blockId));
+    let nextLocked = null;
+    if (payload.taskId) {
+      nextLocked = allBlocks.find((b) => b.taskId === payload.taskId && !unlockedIds.has(b.blockId));
+    }
+    if (!nextLocked) {
+      nextLocked = allBlocks.find((b) => !unlockedIds.has(b.blockId));
+    }
+    if (nextLocked) {
+      const unlockedItem = { ...nextLocked, isUnlocked: true };
+      setUnlockedBlocks((prev) => [...prev, unlockedItem]);
+      return unlockedItem;
+    }
+    return null;
   };
 
   // ADD BLOCK TO ASSEMBLY
@@ -171,11 +358,34 @@ export function ChallengeProvider({ children }) {
     setAssemblyBlocks((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  // RUN CODE (MOCK COMPILER)
+  // RUN CODE (Backend API with local mock fallback)
   const executeCode = async (customInput = null) => {
     setIsCompiling(true);
     setCompileOutput(null);
     try {
+      if (currentChallenge.isRemote) {
+        try {
+          const apiRes = await submissionApi.runCode({
+            code: assembledCode,
+            language,
+            input: customInput !== null ? customInput : currentChallenge.sampleInput,
+            challengeId: currentChallenge.id,
+          });
+
+          const outputResult = {
+            status: apiRes.status === 'ACCEPTED' ? 'success' : 'error',
+            output: apiRes.output || '',
+            compileOutput: apiRes.compileError || '',
+            error: apiRes.runtimeError || apiRes.compileError || null,
+            executionTime: apiRes.time || '0.04s',
+          };
+          setCompileOutput(outputResult);
+          return outputResult;
+        } catch (apiErr) {
+          console.warn('Backend run failed, trying local compiler:', apiErr);
+        }
+      }
+
       const result = await runCode({
         language,
         sourceCode: assembledCode,
@@ -191,12 +401,49 @@ export function ChallengeProvider({ children }) {
     }
   };
 
-  // SUBMIT SOLUTION (MOCK JUDGE)
+  // SUBMIT SOLUTION (Backend API with local mock fallback)
   const submitSolution = async (participant) => {
     setIsValidating(true);
     setAttempts((prev) => prev + 1);
 
     try {
+      if (currentChallenge.isRemote) {
+        try {
+          const apiRes = await submissionApi.submitSolution({
+            code: assembledCode,
+            language,
+            challengeId: currentChallenge.id,
+            assembledBlockIds: assemblyBlocks.map((b) => b.blockId),
+            blocksUsed: assemblyBlocks.map((b) => b.blockId),
+          });
+
+          const submissionRecord = {
+            status: apiRes.status,
+            passed: apiRes.status === 'ACCEPTED',
+            finalScore: apiRes.score || 0,
+            score: apiRes.score || 0,
+            passedTests: apiRes.passedCount || 0,
+            totalTests: apiRes.totalCount || 0,
+            penalties: apiRes.penalties || 0,
+            testResults: apiRes.testResults || [],
+            participantName: participant?.name || 'Participant',
+            participantId: participant?.participantId || 'MC-CONTESTANT',
+            challengeId: currentChallenge.id,
+            challengeTitle: currentChallenge.title,
+            language,
+            timestamp: new Date().toISOString(),
+            attempts: attempts + 1,
+          };
+
+          if (apiRes.status === 'ACCEPTED') {
+            setFinalResult(submissionRecord);
+          }
+          return submissionRecord;
+        } catch (apiErr) {
+          console.warn('Backend submission failed, falling back to local judge:', apiErr);
+        }
+      }
+
       const outcome = await judgeSubmission({
         language,
         sourceCode: assembledCode,
@@ -246,7 +493,7 @@ export function ChallengeProvider({ children }) {
     <ChallengeContext.Provider
       value={{
         challenge: currentChallenge,
-        challenges: CHALLENGES,
+        challenges: remoteChallenges.length > 0 ? remoteChallenges : CHALLENGES,
         setChallengeId,
         language,
         selectLanguage,
@@ -258,6 +505,7 @@ export function ChallengeProvider({ children }) {
         assemblyBlocks,
         assembledCode,
         unlockQR,
+        revealNextBlock,
         addBlockToAssembly,
         reorderAssemblyBlocks,
         removeAssemblyBlock,

@@ -13,4 +13,12 @@ export const challengeApi = {
     const { data } = await api.get('/challenges/active');
     return data;
   },
+  getBlocks: async (id) => {
+    const { data } = await api.get(`/challenges/${id}/blocks`);
+    return data;
+  },
+  revealBlock: async (id, payload = {}) => {
+    const { data } = await api.post(`/challenges/${id}/reveal`, payload);
+    return data;
+  },
 };

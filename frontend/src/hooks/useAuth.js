@@ -1,31 +1,30 @@
-import { useSelector, useDispatch } from 'react-redux';
-import { loginSuccess, logout } from '../store/slices/authSlice';
-import { authApi } from '../services/authApi';
+import { useAuthContext } from '../context/AuthContext';
 
 export function useAuth() {
-  const dispatch = useDispatch();
-  const auth = useSelector((state) => state.auth);
-
-  const handleLogin = async (credentials) => {
-    const res = await authApi.login(credentials);
-    dispatch(loginSuccess(res));
-    return res;
-  };
-
-  const handleAdminLogin = async (credentials) => {
-    const res = await authApi.adminLogin(credentials);
-    dispatch(loginSuccess(res));
-    return res;
-  };
-
-  const handleLogout = () => {
-    dispatch(logout());
-  };
-
-  return {
-    ...auth,
-    login: handleLogin,
-    adminLogin: handleAdminLogin,
-    logout: handleLogout,
-  };
+  const context = useAuthContext();
+  if (!context) {
+    // Fallback if rendered outside AuthProvider
+    const token = localStorage.getItem('mindcraft_token');
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('mindcraft_user'));
+    } catch {
+      user = null;
+    }
+    return {
+      user,
+      token,
+      isAuthenticated: !!token && !!user,
+      role: user?.role || 'participant',
+      loading: false,
+      error: null,
+      login: async () => {},
+      adminLogin: async () => {},
+      logout: () => {
+        localStorage.removeItem('mindcraft_token');
+        localStorage.removeItem('mindcraft_user');
+      },
+    };
+  }
+  return context;
 }

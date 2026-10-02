@@ -4,38 +4,101 @@ import { authApi } from '../services/authApi';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(() => localStorage.getItem('mindcraft_token'));
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('mindcraft_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('mindcraft_token');
-    if (token) {
+    const storedToken = localStorage.getItem('mindcraft_token');
+    if (storedToken) {
       authApi.getCurrentUser()
-        .then((res) => setUser(res.user))
+        .then((res) => {
+          if (res.user) {
+            setUser(res.user);
+            localStorage.setItem('mindcraft_user', JSON.stringify(res.user));
+          }
+        })
         .catch(() => {
           localStorage.removeItem('mindcraft_token');
+          localStorage.removeItem('mindcraft_user');
+          setToken(null);
           setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+        });
     }
   }, []);
 
-  const login = (userData, token) => {
-    localStorage.setItem('mindcraft_token', token);
-    localStorage.setItem('mindcraft_user', JSON.stringify(userData));
-    setUser(userData);
+  const handleLogin = async (credentials) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await authApi.login(credentials);
+      if (res.token && res.user) {
+        localStorage.setItem('mindcraft_token', res.token);
+        localStorage.setItem('mindcraft_user', JSON.stringify(res.user));
+        setToken(res.token);
+        setUser(res.user);
+      }
+      return res;
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      setError(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
+  const handleAdminLogin = async (credentials) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await authApi.adminLogin(credentials);
+      if (res.token && res.user) {
+        localStorage.setItem('mindcraft_token', res.token);
+        localStorage.setItem('mindcraft_user', JSON.stringify(res.user));
+        setToken(res.token);
+        setUser(res.user);
+      }
+      return res;
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid admin credentials.';
+      setError(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
     localStorage.removeItem('mindcraft_token');
     localStorage.removeItem('mindcraft_user');
+    setToken(null);
     setUser(null);
+    setError(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated: !!token && !!user,
+        role: user?.role || 'participant',
+        loading,
+        error,
+        login: handleLogin,
+        adminLogin: handleAdminLogin,
+        logout: handleLogout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

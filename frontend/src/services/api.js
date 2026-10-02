@@ -20,13 +20,29 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Prevent multiple simultaneous 401 redirects
+let isRedirecting = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('mindcraft_token');
       localStorage.removeItem('mindcraft_user');
-      // Optional redirect to login can be handled via event or router
+
+      // Dispatch event so active pollers can stop
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mindcraft_auth_expired'));
+
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin') && currentPath !== '/admin/login' && !isRedirecting) {
+          isRedirecting = true;
+          setTimeout(() => {
+            window.location.href = '/admin/login';
+            isRedirecting = false;
+          }, 300);
+        }
+      }
     }
     return Promise.reject(error);
   }
