@@ -58,8 +58,10 @@ export default function Challenge() {
   useEffect(() => {
     if (!participant) {
       navigate('/register');
+    } else if (!startTime) {
+      startChallenge();
     }
-  }, [participant, navigate]);
+  }, [participant, startTime, navigate]);
 
   // Navigate to Result page once accepted
   useEffect(() => {
@@ -126,10 +128,10 @@ export default function Challenge() {
       return;
     }
     const res = await executeCode();
-    if (res.status === 'success') {
+    if (res.status === 'success' || res.status === 'Accepted' || res.success) {
       showToast('Compilation successful! Program executed.', 'success');
     } else {
-      showToast('Compilation error detected in assembly.', 'error');
+      showToast(res.message || 'Compilation error detected in assembly.', 'error');
     }
   };
 
@@ -281,6 +283,7 @@ export default function Challenge() {
       <TimeExpiredModal
         isOpen={isTimeExpired && (!finalResult || finalResult.status !== 'ACCEPTED')}
         onAcknowledge={() => navigate('/result')}
+        onRestart={() => startChallenge()}
       />
 
       <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />

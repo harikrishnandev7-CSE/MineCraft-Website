@@ -3,6 +3,8 @@ export const APP_SUBTITLE = "QR Hunt & Code Assembly";
 
 export const DEFAULT_DURATION_SECONDS = 20 * 60; // 20 minutes
 
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export const STORAGE_KEYS = {
   PARTICIPANT: 'mc_participant',
   CHALLENGE_SESSION: 'mc_challenge_session',

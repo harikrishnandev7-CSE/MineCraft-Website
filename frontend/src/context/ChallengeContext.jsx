@@ -3,8 +3,7 @@ import { CHALLENGES } from '../data/challenges';
 import { localStorageService } from '../services/localStorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { combineBlocks } from '../utils/assembly';
-import { runCode } from '../services/mockCompiler';
-import { judgeSubmission } from '../services/mockJudge';
+import { runCode, submitSolution as apiSubmitSolution } from '../services/api';
 
 const ChallengeContext = createContext(null);
 
@@ -171,39 +170,40 @@ export function ChallengeProvider({ children }) {
     setAssemblyBlocks((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  // RUN CODE (MOCK COMPILER)
+  // RUN CODE (REAL BACKEND VIA JUDGE0)
   const executeCode = async (customInput = null) => {
     setIsCompiling(true);
     setCompileOutput(null);
     try {
-      const result = await runCode({
-        language,
-        sourceCode: assembledCode,
-        input: customInput !== null ? customInput : currentChallenge.sampleInput,
-        challenge: currentChallenge,
-        placedBlocks: assemblyBlocks,
-        targetBlocks: langConfig.blocks,
-      });
+      const inputToUse = customInput !== null ? customInput : (currentChallenge.sampleInput || '');
+      const result = await runCode(language, assembledCode, inputToUse);
       setCompileOutput(result);
       return result;
+    } catch (err) {
+      const fallbackResult = {
+        success: false,
+        status: 'Error',
+        stdout: '',
+        stderr: 'Unable to execute code. Please try again.',
+        compileOutput: '',
+        message: 'Unable to execute code. Please try again.',
+        executionTime: '0.00s',
+        memory: '0.0 MB',
+      };
+      setCompileOutput(fallbackResult);
+      return fallbackResult;
     } finally {
       setIsCompiling(false);
     }
   };
 
-  // SUBMIT SOLUTION (MOCK JUDGE)
+  // SUBMIT SOLUTION (OFFICIAL JUDGE VIA BACKEND HIDDEN TESTS)
   const submitSolution = async (participant) => {
     setIsValidating(true);
     setAttempts((prev) => prev + 1);
 
     try {
-      const outcome = await judgeSubmission({
-        language,
-        sourceCode: assembledCode,
-        challenge: currentChallenge,
-        placedBlocks: assemblyBlocks,
-        targetBlocks: langConfig.blocks,
-      });
+      const outcome = await apiSubmitSolution(language, assembledCode, currentChallenge.id);
 
       const submissionRecord = {
         ...outcome,
@@ -221,6 +221,26 @@ export function ChallengeProvider({ children }) {
       }
 
       return submissionRecord;
+    } catch (err) {
+      const fallbackRecord = {
+        success: false,
+        status: 'WRONG_ANSWER',
+        title: '⚠️ EVALUATION ERROR',
+        message: 'Unable to evaluate submission. Please try again.',
+        passedCount: 0,
+        totalCount: 3,
+        testResults: [],
+        executionTime: '0.00s',
+        memory: '0.0 MB',
+        participantName: participant?.name || 'Participant',
+        participantId: participant?.participantId || 'MC-DEMO',
+        challengeId: currentChallenge.id,
+        challengeTitle: currentChallenge.title,
+        language,
+        timestamp: new Date().toISOString(),
+        attempts: attempts + 1,
+      };
+      return fallbackRecord;
     } finally {
       setIsValidating(false);
     }

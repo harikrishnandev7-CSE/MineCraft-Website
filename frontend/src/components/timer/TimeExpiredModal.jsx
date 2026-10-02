@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { Hourglass } from 'lucide-react';
 
-export default function TimeExpiredModal({ isOpen, onAcknowledge }) {
+export default function TimeExpiredModal({ isOpen, onAcknowledge, onRestart }) {
   return (
     <Modal isOpen={isOpen} onClose={() => {}} title="TIME EXPIRED // ARENA LOCKED">
       <div className="text-center space-y-4 py-2">
@@ -16,9 +16,16 @@ export default function TimeExpiredModal({ isOpen, onAcknowledge }) {
             The 20-minute countdown has elapsed. QR scanning, code assembly, and submission endpoints are now closed.
           </p>
         </div>
-        <Button variant="danger" onClick={onAcknowledge} className="w-full">
-          View Tournament Standings
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          {onRestart && (
+            <Button variant="primary" onClick={onRestart} className="flex-1">
+              Restart Challenge
+            </Button>
+          )}
+          <Button variant="danger" onClick={onAcknowledge} className={onRestart ? "flex-1" : "w-full"}>
+            View Standings
+          </Button>
+        </div>
       </div>
     </Modal>
   );

@@ -1,13 +1,11 @@
-import api from './api';
+import api, { runCode, submitSolution } from './api';
 
 export const submissionApi = {
-  runCode: async ({ code, language, input, challengeId }) => {
-    const { data } = await api.post('/submissions/run', { code, language, input, challengeId });
-    return data;
+  runCode: async ({ code, sourceCode, language, input, stdin, challengeId }) => {
+    return runCode(language, sourceCode || code, stdin || input || '');
   },
-  submitSolution: async ({ code, language, challengeId, blocksUsed }) => {
-    const { data } = await api.post('/submissions/submit', { code, language, challengeId, blocksUsed });
-    return data;
+  submitSolution: async ({ code, sourceCode, language, challengeId, blocksUsed }) => {
+    return submitSolution(language, sourceCode || code, challengeId);
   },
   getSubmissionStatus: async (submissionId) => {
     const { data } = await api.get(`/submissions/${submissionId}`);
