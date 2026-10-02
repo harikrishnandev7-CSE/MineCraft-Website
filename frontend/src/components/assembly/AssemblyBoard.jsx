@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import SortableCodeBlock from './SortableCodeBlock';
 import { Blocks, RotateCcw } from 'lucide-react';
 
+/**
+ * AssemblyBoard — reorder all fragments on the board.
+ * In the new model all fragments are always present; no add/remove.
+ */
 export default function AssemblyBoard({ blocks = [], onReorder, onRemove, onClear }) {
   const [draggedIdx, setDraggedIdx] = useState(null);
 
@@ -31,7 +35,7 @@ export default function AssemblyBoard({ blocks = [], onReorder, onRemove, onClea
             <Blocks className="w-4 h-4 text-cyan-400" /> ASSEMBLE YOUR PROGRAM
           </h4>
           <span className="text-[11px] font-mono text-cyan-400 font-semibold">
-            Blocks placed: {blocks.length}
+            Fragments: {blocks.length} — drag or use ▲▼ to reorder
           </span>
         </div>
 
@@ -39,32 +43,31 @@ export default function AssemblyBoard({ blocks = [], onReorder, onRemove, onClea
           <button
             onClick={onClear}
             className="text-[11px] font-mono text-rose-400 hover:text-rose-300 flex items-center gap-1 p-1 hover:bg-rose-950/30 rounded"
+            title="Reset to default shuffled order"
           >
-            <RotateCcw className="w-3 h-3" /> Reset Board
+            <RotateCcw className="w-3 h-3" /> Reset
           </button>
         )}
       </div>
 
       {blocks.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-slate-800 rounded-xl text-center space-y-2">
-          <p className="text-xs font-mono text-slate-400 font-semibold">
-            Canvas is empty.
-          </p>
+          <p className="text-xs font-mono text-slate-400 font-semibold">Assembly board is empty.</p>
           <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-            Add unlocked fragments from your collected list and arrange them in the logical execution order.
+            Complete all quizzes and open all chests to populate the board.
           </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
           {blocks.map((block, idx) => (
             <SortableCodeBlock
-              key={block.blockId}
+              key={block.id || block.blockId || idx}
               block={block}
               index={idx}
               total={blocks.length}
               onMoveUp={() => onReorder(idx, idx - 1)}
               onMoveDown={() => onReorder(idx, idx + 1)}
-              onRemove={() => onRemove(idx)}
+              onRemove={() => onRemove?.(idx)}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDrop={handleDrop}

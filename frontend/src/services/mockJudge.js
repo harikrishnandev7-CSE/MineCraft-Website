@@ -1,24 +1,28 @@
-import { checkAssemblyAccuracy } from '../utils/assembly';
+import { checkFragmentOrder } from '../utils/assembly';
 
 /**
- * Frontend Mock Judge
- * Evaluates the assembled solution against 3 hidden test cases.
+ * Mock Judge — used when VITE_USE_MOCK_JUDGE=true or backend is unreachable.
+ * Correctness determined by fragment-id ordering. 1.8 s simulated delay.
+ * NOTE: production must validate server-side via real Judge0 execution.
  */
 export async function judgeSubmission({
   language = 'python',
   sourceCode = '',
   challenge = null,
-  placedBlocks = [],
-  targetBlocks = [],
+  assemblyOrder = [],      // fragment objects in board order
+  langFragments = [],      // langConfig.fragments (correct order)
+  acceptedOrders = [],
 }) {
-  // Realistic validation pipeline delay (1.8s)
   await new Promise((resolve) => setTimeout(resolve, 1800));
 
-  const check = checkAssemblyAccuracy(placedBlocks, targetBlocks);
+  const placedIds = assemblyOrder.map((f) => f.id);
+  const canonicalIds = langFragments.map((f) => f.id);
+  const check = checkFragmentOrder(placedIds, canonicalIds, acceptedOrders);
+
   const hiddenTests = challenge?.hiddenTests || [
     { id: 1, description: 'Sample validation' },
     { id: 2, description: 'Edge case validation' },
-    { id: 3, description: 'High concurrency boundary' },
+    { id: 3, description: 'Upper bound validation' },
   ];
 
   if (check.isCorrect) {
@@ -29,7 +33,6 @@ export async function judgeSubmission({
       time: '0.03s',
       memory: '14.1 MB',
     }));
-
     return {
       status: 'ACCEPTED',
       title: '🎉 ACCEPTED',
@@ -42,11 +45,10 @@ export async function judgeSubmission({
     };
   }
 
-  // Failed assembly -> Generate realistic partial or total test failure
   const testResults = hiddenTests.map((t, idx) => ({
     id: t.id,
     description: t.description || `Test Case #${t.id}`,
-    status: idx === 0 && placedBlocks.length > 2 ? 'FAILED (Output Mismatch)' : 'FAILED (Logical Order Error)',
+    status: idx === 0 && placedIds.length > 2 ? 'FAILED (Output Mismatch)' : 'FAILED (Order Error)',
     time: '0.02s',
     memory: '8.0 MB',
   }));
@@ -54,7 +56,7 @@ export async function judgeSubmission({
   return {
     status: 'WRONG_ANSWER',
     title: '❌ WRONG ANSWER',
-    message: check.reason || 'Some hidden test cases failed. Re-evaluate your block arrangement.',
+    message: check.reason || 'Some hidden test cases failed. Re-evaluate your fragment arrangement.',
     testResults,
     passedCount: 0,
     totalCount: testResults.length,
