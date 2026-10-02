@@ -66,19 +66,25 @@ export default function Challenge() {
   const [toastType, setToastType] = useState('info');
   const [submissionResult, setSubmissionResult] = useState(null);
 
+  // Ensure participant is registered and challenge session is started
+  useEffect(() => {
+    if (!participant) {
+      navigate('/register');
+    } else if (!startTime) {
+      startChallenge();
+    }
+  }, [participant, startTime, navigate]);
+
   // Auto-unlock initial blocks if none are unlocked yet
   useEffect(() => {
     if (unlockedBlocks.length === 0 && langConfig?.blocks?.length > 0) {
       // First 3 fragments are initially available
       const initial = langConfig.blocks.slice(0, 3);
-      initial.forEach((b) => {
-        if (unlockQR) {
-          // or direct reveal
-          revealNextBlock();
-        }
+      initial.forEach(() => {
+        revealNextBlock();
       });
     }
-  }, [langConfig]);
+  }, [langConfig, unlockedBlocks.length]);
 
   // Navigate to Result page once accepted
   useEffect(() => {
@@ -150,10 +156,10 @@ export default function Challenge() {
       return;
     }
     const res = await executeCode();
-    if (res.status === 'success') {
+    if (res.status === 'success' || res.status === 'Accepted' || res.success) {
       showToast('Compilation successful! Program executed against sample input.', 'success');
     } else {
-      showToast('Execution diagnostic returned. Check output console.', 'info');
+      showToast(res.message || 'Execution diagnostic returned. Check output console.', 'info');
     }
   };
 
@@ -530,6 +536,7 @@ export default function Challenge() {
       <TimeExpiredModal
         isOpen={isTimeExpired && (!finalResult || finalResult.status !== 'ACCEPTED')}
         onAcknowledge={() => navigate('/result')}
+        onRestart={() => startChallenge()}
       />
 
       <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />

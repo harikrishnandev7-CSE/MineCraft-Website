@@ -3,10 +3,11 @@ import { CHALLENGES } from '../data/challenges';
 import { localStorageService } from '../services/localStorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { combineBlocks } from '../utils/assembly';
-import { runCode } from '../services/mockCompiler';
-import { judgeSubmission } from '../services/mockJudge';
+import { runCode as mockRunCode } from '../services/mockCompiler';
+import { judgeSubmission as mockJudgeSubmission } from '../services/mockJudge';
 import { challengeApi } from '../services/challengeApi';
 import { submissionApi } from '../services/submissionApi';
+import { runCode as apiRunCode, submitSolution as apiSubmitSolution } from '../services/api';
 
 const ChallengeContext = createContext(null);
 
@@ -363,97 +364,106 @@ export function ChallengeProvider({ children }) {
     setIsCompiling(true);
     setCompileOutput(null);
     try {
-      if (currentChallenge.isRemote) {
-        try {
-          const apiRes = await submissionApi.runCode({
-            code: assembledCode,
-            language,
-            input: customInput !== null ? customInput : currentChallenge.sampleInput,
-            challengeId: currentChallenge.id,
-          });
+      const inputToUse = customInput !== null ? customInput : (currentChallenge.sampleInput || '');
 
-          const outputResult = {
-            status: apiRes.status === 'ACCEPTED' ? 'success' : 'error',
-            output: apiRes.output || '',
-            compileOutput: apiRes.compileError || '',
-            error: apiRes.runtimeError || apiRes.compileError || null,
-            executionTime: apiRes.time || '0.04s',
-          };
-          setCompileOutput(outputResult);
-          return outputResult;
-        } catch (apiErr) {
-          console.warn('Backend run failed, trying local compiler:', apiErr);
+      // Try real backend API first
+      try {
+        const apiRes = await apiRunCode(language, assembledCode, inputToUse);
+        if (apiRes && (apiRes.success || apiRes.status)) {
+          setCompileOutput(apiRes);
+          return apiRes;
         }
+      } catch (backendErr) {
+        console.warn('Backend run failed, trying local compiler fallback:', backendErr);
       }
 
-      const result = await runCode({
+      // Fallback to local compiler
+      const result = await mockRunCode({
         language,
         sourceCode: assembledCode,
-        input: customInput !== null ? customInput : currentChallenge.sampleInput,
+        input: inputToUse,
         challenge: currentChallenge,
         placedBlocks: assemblyBlocks,
         targetBlocks: langConfig.blocks,
       });
       setCompileOutput(result);
       return result;
+    } catch (err) {
+      const fallbackResult = {
+        success: false,
+        status: 'Error',
+        stdout: '',
+        stderr: 'Unable to execute code. Please try again.',
+        compileOutput: '',
+        message: 'Unable to execute code. Please try again.',
+        executionTime: '0.00s',
+        memory: '0.0 MB',
+      };
+      setCompileOutput(fallbackResult);
+      return fallbackResult;
     } finally {
       setIsCompiling(false);
     }
   };
 
-  // SUBMIT SOLUTION (Backend API with local mock fallback)
+  // SUBMIT SOLUTION (Official Backend Judge with local fallback)
   const submitSolution = async (participant) => {
     setIsValidating(true);
     setAttempts((prev) => prev + 1);
 
     try {
-      if (currentChallenge.isRemote) {
-        try {
-          const apiRes = await submissionApi.submitSolution({
-            code: assembledCode,
-            language,
-            challengeId: currentChallenge.id,
-            assembledBlockIds: assemblyBlocks.map((b) => b.blockId),
-            blocksUsed: assemblyBlocks.map((b) => b.blockId),
-          });
+      let outcome = null;
 
-          const submissionRecord = {
-            status: apiRes.status,
-            passed: apiRes.status === 'ACCEPTED',
-            finalScore: apiRes.score || 0,
-            score: apiRes.score || 0,
-            passedTests: apiRes.passedCount || 0,
-            totalTests: apiRes.totalCount || 0,
-            penalties: apiRes.penalties || 0,
-            testResults: apiRes.testResults || [],
-            participantName: participant?.name || 'Participant',
-            participantId: participant?.participantId || 'MC-CONTESTANT',
-            challengeId: currentChallenge.id,
-            challengeTitle: currentChallenge.title,
-            language,
-            timestamp: new Date().toISOString(),
-            attempts: attempts + 1,
-          };
-
-          if (apiRes.status === 'ACCEPTED') {
-            setFinalResult(submissionRecord);
-          }
-          return submissionRecord;
-        } catch (apiErr) {
-          console.warn('Backend submission failed, falling back to local judge:', apiErr);
+      // Try official backend judging first
+      try {
+        const apiRes = await apiSubmitSolution(language, assembledCode, currentChallenge.id);
+        if (apiRes && apiRes.status) {
+          outcome = apiRes;
         }
+      } catch (backendErr) {
+        console.warn('Backend submission failed, falling back to local judge:', backendErr);
       }
 
-      const outcome = await judgeSubmission({
-        language,
-        sourceCode: assembledCode,
-        challenge: currentChallenge,
-        placedBlocks: assemblyBlocks,
-        targetBlocks: langConfig.blocks,
-      });
+      // Fallback to local judge if backend was unreachable
+      if (!outcome) {
+        outcome = await mockJudgeSubmission({
+          language,
+          sourceCode: assembledCode,
+          challenge: currentChallenge,
+          placedBlocks: assemblyBlocks,
+          targetBlocks: langConfig.blocks,
+        });
+      }
 
       const submissionRecord = {
         ...outcome,
+        passed: outcome.status === 'ACCEPTED' || outcome.success,
+        finalScore: outcome.score || (outcome.status === 'ACCEPTED' ? (currentChallenge.points || 100) : 0),
+        score: outcome.score || (outcome.status === 'ACCEPTED' ? (currentChallenge.points || 100) : 0),
+        participantName: participant?.name || 'Participant',
+        participantId: participant?.participantId || 'MC-CONTESTANT',
+        challengeId: currentChallenge.id,
+        challengeTitle: currentChallenge.title,
+        language,
+        timestamp: new Date().toISOString(),
+        attempts: attempts + 1,
+      };
+
+      if (submissionRecord.passed) {
+        setFinalResult(submissionRecord);
+      }
+      return submissionRecord;
+    } catch (err) {
+      const fallbackRecord = {
+        success: false,
+        status: 'WRONG_ANSWER',
+        title: '⚠️ EVALUATION ERROR',
+        message: 'Unable to evaluate submission. Please try again.',
+        passedCount: 0,
+        totalCount: 3,
+        testResults: [],
+        executionTime: '0.00s',
+        memory: '0.0 MB',
         participantName: participant?.name || 'Participant',
         participantId: participant?.participantId || 'MC-DEMO',
         challengeId: currentChallenge.id,
@@ -462,12 +472,7 @@ export function ChallengeProvider({ children }) {
         timestamp: new Date().toISOString(),
         attempts: attempts + 1,
       };
-
-      if (outcome.status === 'ACCEPTED') {
-        setFinalResult(submissionRecord);
-      }
-
-      return submissionRecord;
+      return fallbackRecord;
     } finally {
       setIsValidating(false);
     }

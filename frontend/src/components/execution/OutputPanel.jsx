@@ -61,7 +61,7 @@ export default function OutputPanel({ compileOutput, submissionResult, sampleInp
         <div className="space-y-2 text-xs font-mono">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
             <span>
-              Status: <strong className={compileOutput.status === 'success' ? 'text-emerald-400' : 'text-rose-400'}>{compileOutput.status.toUpperCase()}</strong>
+              Status: <strong className={(compileOutput.status === 'success' || compileOutput.status === 'Accepted' || compileOutput.success) ? 'text-emerald-400' : 'text-rose-400'}>{compileOutput.status.toUpperCase()}</strong>
             </span>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-cyan-400" /> {compileOutput.executionTime}</span>

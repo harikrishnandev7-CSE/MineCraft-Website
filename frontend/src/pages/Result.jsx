@@ -1,13 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import { useChallenge } from '../hooks/useChallenge';
 import Button from '../components/common/Button';
 import { Trophy, Clock, CheckCircle2, RotateCcw, Award } from 'lucide-react';
 
 export default function Result() {
+  const navigate = useNavigate();
   const { participant } = useParticipant();
-  const { challenge, finalResult, isTimeExpired } = useChallenge();
+  const { challenge, finalResult, isTimeExpired, startChallenge } = useChallenge();
 
   const isAccepted = finalResult?.status === 'ACCEPTED';
 
@@ -59,14 +60,19 @@ export default function Result() {
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={() => {
+            startChallenge();
+            navigate('/challenge');
+          }}
+        >
+          RESTART CHALLENGE
+        </Button>
         <Link to="/leaderboard">
-          <Button variant="primary" size="lg">
+          <Button variant="secondary" size="lg">
             VIEW LEADERBOARD →
-          </Button>
-        </Link>
-        <Link to="/challenge">
-          <Button variant="secondary" size="lg" icon={RotateCcw}>
-            Review Workbench
           </Button>
         </Link>
       </div>

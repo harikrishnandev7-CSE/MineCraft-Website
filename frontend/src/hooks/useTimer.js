@@ -15,12 +15,17 @@ export function useTimer(startTime, totalDurationSeconds = 1200, onExpire, isLoc
   useEffect(() => {
     if (!startTime || isLocked) return;
 
+    let interval = null;
+
     const tick = () => {
       const remaining = getRemainingTime(startTime, totalDurationSeconds);
       setSecondsRemaining(remaining);
 
       if (remaining <= 0) {
-        clearInterval(interval);
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
         if (onExpireRef.current) {
           onExpireRef.current();
         }
@@ -28,8 +33,12 @@ export function useTimer(startTime, totalDurationSeconds = 1200, onExpire, isLoc
     };
 
     tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
+    interval = setInterval(tick, 1000);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [startTime, totalDurationSeconds, isLocked]);
 
   const elapsedSeconds = Math.max(0, totalDurationSeconds - secondsRemaining);
@@ -44,6 +53,7 @@ export function useTimer(startTime, totalDurationSeconds = 1200, onExpire, isLoc
       : 'normal';
 
   return {
+    seconds: secondsRemaining,
     secondsRemaining,
     elapsedSeconds,
     timerState,
