@@ -4,7 +4,6 @@ import { useChallenge } from '../hooks/useChallenge';
 import { useParticipant } from '../context/ParticipantContext';
 import { challengeApi } from '../services/challengeApi';
 import {
-  Search,
   Trophy,
   Clock,
   ArrowRight,
@@ -14,10 +13,8 @@ import {
   Flame,
   CheckCircle2,
   Code2,
-  Filter,
   UserCheck,
   Shield,
-  RotateCcw,
 } from 'lucide-react';
 
 const LANGUAGE_LABELS = {
@@ -35,9 +32,6 @@ export default function Challenges() {
 
   const [loading, setLoading] = useState(true);
   const [challenges, setChallenges] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [difficultyFilter, setDifficultyFilter] = useState('ALL');
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [needRegisterAlert, setNeedRegisterAlert] = useState(false);
 
   // ── Load challenges purely from API ──
@@ -97,33 +91,6 @@ export default function Challenges() {
     };
   }, []);
 
-  // ── Available Categories ──
-  const categories = useMemo(() => {
-    const set = new Set();
-    challenges.forEach((c) => {
-      if (c.category) set.add(c.category);
-    });
-    return ['ALL', ...Array.from(set)];
-  }, [challenges]);
-
-  // ── Filtered Challenges ──
-  const filteredChallenges = useMemo(() => {
-    return challenges.filter((c) => {
-      const matchesSearch =
-        c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.category.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesDiff =
-        difficultyFilter === 'ALL' ||
-        c.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
-
-      const matchesCat =
-        categoryFilter === 'ALL' || c.category === categoryFilter;
-
-      return matchesSearch && matchesDiff && matchesCat;
-    });
-  }, [challenges, searchTerm, difficultyFilter, categoryFilter]);
 
   // ── Stats ──
   const totalPoints = useMemo(() => {
@@ -219,62 +186,6 @@ export default function Challenges() {
           </div>
         )}
 
-        {/* ── SEARCH & FILTER CONTROLS ── */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          {/* Search bar */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search challenges by title, topic, or category..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-300"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Difficulty Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-            {['ALL', 'Easy', 'Medium', 'Hard'].map((diff) => (
-              <button
-                key={diff}
-                onClick={() => setDifficultyFilter(diff)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  difficultyFilter === diff
-                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                    : 'bg-slate-950 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800'
-                }`}
-              >
-                {diff}
-              </button>
-            ))}
-          </div>
-
-          {/* Category Dropdown */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat === 'ALL' ? 'All Categories' : cat}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         {/* ── CHALLENGE CARDS GRID ── */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -293,27 +204,17 @@ export default function Challenges() {
               </div>
             ))}
           </div>
-        ) : filteredChallenges.length === 0 ? (
+        ) : challenges.length === 0 ? (
           <div className="p-12 rounded-3xl bg-slate-900/30 border border-slate-800 text-center space-y-4">
             <Cpu className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-300">No Challenges Found</h3>
+            <h3 className="text-lg font-bold text-slate-300">No Challenges Available</h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              No challenge matches your current search or filters. Try searching for a different keyword or reset filters.
+              There are currently no active challenges published. Please check back later.
             </p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setDifficultyFilter('ALL');
-                setCategoryFilter('ALL');
-              }}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition"
-            >
-              Reset Filters
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredChallenges.map((c) => {
+            {challenges.map((c) => {
               const isCurrent = activeChallenge && (activeChallenge.id === c.id || activeChallenge.slug === c.slug);
               const durationMin = Math.round(c.duration / 60);
 

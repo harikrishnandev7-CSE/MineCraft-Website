@@ -178,7 +178,8 @@ export function ChallengeProvider({ children }) {
           if (sess.status === 'COMPLETED') {
             setPhase('DONE');
           } else if (sess.assemblyOrder?.length > 0 || sess.status === 'ACTIVE') {
-            const isAllCollected = sess.scannedBlocks?.length >= (activeChallengeInfo?.totalBlocks || 3);
+            const expectedTotal = activeChallengeInfo?.blockConfig?.totalBlocks || activeChallengeInfo?.totalBlocks || activeChallengeInfo?.tasks?.length || 4;
+            const isAllCollected = sess.scannedBlocks?.length >= expectedTotal;
             setPhase(isAllCollected ? 'ASSEMBLE' : 'HUNT');
           }
         }
@@ -189,7 +190,7 @@ export function ChallengeProvider({ children }) {
 
     recoverServerSession();
     return () => { cancelled = true; };
-  }, [challengeId, activeChallengeInfo?.totalBlocks]);
+  }, [challengeId, activeChallengeInfo?.totalBlocks, activeChallengeInfo?.blockConfig?.totalBlocks, activeChallengeInfo?.tasks?.length]);
 
   // ── Derived active challenge metadata ──
   const challenge = useMemo(() => {
@@ -236,7 +237,13 @@ export function ChallengeProvider({ children }) {
   const assembledCode = useMemo(() => combineFragments(assemblyFragments), [assemblyFragments]);
 
   const totalFragments = useMemo(() => {
-    return activeChallengeInfo?.totalBlocks || (collectedFragments.length > 0 ? collectedFragments.length : 3);
+    return (
+      activeChallengeInfo?.blockConfig?.totalBlocks ||
+      activeChallengeInfo?.totalBlocks ||
+      (Array.isArray(activeChallengeInfo?.tasks) && activeChallengeInfo.tasks.length > 0 ? activeChallengeInfo.tasks.length : 0) ||
+      activeChallengeInfo?.languageConfigs?.[0]?.blockCount ||
+      (collectedFragments.length > 0 ? collectedFragments.length : 4)
+    );
   }, [activeChallengeInfo, collectedFragments.length]);
 
   // ── Shuffle vault when entering ASSEMBLE phase ──
