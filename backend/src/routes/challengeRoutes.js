@@ -13,10 +13,10 @@ router.get('/:id/blocks', optionalAuth, challengeController.getParticipantBlocks
 router.post('/:id/reveal', optionalAuth, challengeController.revealBlock);
 
 // ── Server-authoritative gameplay ──
-router.post('/:id/start-session', optionalAuth, gameplayController.startSession);
-router.get('/:id/current-task', optionalAuth, gameplayController.getCurrentTask);
-router.post('/:id/submit-task', optionalAuth, gameplayController.submitTaskAnswer);
-router.get('/:id/progress', optionalAuth, gameplayController.getProgress);
+router.post('/:id/start-session', protect, gameplayController.startSession);
+router.get('/:id/current-task', protect, gameplayController.getCurrentTask);
+router.post('/:id/submit-task', protect, gameplayController.submitTaskAnswer);
+router.get('/:id/progress', protect, gameplayController.getProgress);
 
 module.exports = router;
 

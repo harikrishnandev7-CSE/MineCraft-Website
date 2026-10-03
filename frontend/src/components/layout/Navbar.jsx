@@ -1,17 +1,20 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useParticipant } from '../../context/ParticipantContext';
+import { useAuthContext } from '../../context/AuthContext';
 import { Cpu, Trophy, BookOpen, User, Shield } from 'lucide-react';
 
 export default function Navbar() {
   const { participant } = useParticipant();
+  const { role, user } = useAuthContext() || {};
+  const isAdmin = role === 'admin' || user?.role === 'admin';
   const location = useLocation();
 
   const navLinks = [
     { label: 'Challenges', to: '/challenges', icon: Cpu, activePaths: ['/challenges', '/challenge'] },
     { label: 'Rules', to: '/rules', icon: BookOpen },
     { label: 'Leaderboard', to: '/leaderboard', icon: Trophy },
-    { label: 'Admin', to: '/admin', icon: Shield },
+    ...(isAdmin ? [{ label: 'Admin', to: '/admin', icon: Shield }] : []),
   ];
 
   return (

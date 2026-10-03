@@ -1,16 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import { useChallenge } from '../hooks/useChallenge';
 import Button from '../components/common/Button';
-import { Trophy, Clock, CheckCircle2, RotateCcw, Award } from 'lucide-react';
+import { Trophy, Award } from 'lucide-react';
 
 export default function Result() {
   const navigate = useNavigate();
   const { participant } = useParticipant();
   const { challenge, finalResult, isTimeExpired, startChallenge } = useChallenge();
 
+  useEffect(() => {
+    if (!participant) {
+      navigate('/register', { replace: true });
+    }
+  }, [participant, navigate]);
+
+  if (!participant) {
+    return null;
+  }
+
   const isAccepted = finalResult?.status === 'ACCEPTED';
+  const passedTests = finalResult?.passedCount ?? (isAccepted ? (finalResult?.totalCount || 3) : 0);
+  const totalTests = finalResult?.totalCount ?? 3;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16 text-center space-y-8 font-mono">
@@ -39,22 +51,23 @@ export default function Result() {
       <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Participant</span>
-          <p className="text-sm font-bold text-slate-200 truncate mt-1">{participant?.name || 'Anthony'}</p>
+          <p className="text-sm font-bold text-slate-200 truncate mt-1">{participant.name}</p>
+          <span className="text-[10px] text-cyan-400 block">{participant.participantId}</span>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Challenge</span>
-          <p className="text-sm font-bold text-cyan-400 truncate mt-1">{challenge?.title || 'Find the Sum'}</p>
+          <p className="text-sm font-bold text-cyan-400 truncate mt-1">{challenge?.title || 'Active Challenge'}</p>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Status</span>
           <p className={`text-sm font-bold mt-1 ${isAccepted ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {isAccepted ? 'ACCEPTED' : 'UNFINISHED'}
+            {isAccepted ? 'ACCEPTED' : (isTimeExpired ? 'TIME EXPIRED' : 'UNFINISHED')}
           </p>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Tests Passed</span>
           <p className="text-sm font-bold text-white mt-1">
-            {isAccepted ? '3 / 3' : '0 / 3'}
+            {passedTests} / {totalTests}
           </p>
         </div>
       </div>
@@ -64,7 +77,7 @@ export default function Result() {
           variant="primary"
           size="lg"
           onClick={() => {
-            startChallenge();
+            if (startChallenge) startChallenge();
             navigate('/challenge');
           }}
         >

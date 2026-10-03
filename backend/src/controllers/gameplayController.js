@@ -107,37 +107,21 @@ function getTasksForLanguage(challenge, language) {
 }
 
 /**
- * Resolve authenticated user or create/find guest participant user
+/**
+ * Resolve authenticated user
  */
 async function getOrCreateSessionUser(req) {
-  if (req.user) return req.user;
-
-  const clientSessionId = req.headers['x-session-id'] || req.body?.sessionId || req.query?.sessionId;
-  const participantId = req.headers['x-participant-id'] || req.body?.participantId || req.query?.participantId;
-  const rawId = participantId || clientSessionId || (req.ip ? String(req.ip).replace(/[^a-zA-Z0-9]/g, '') : null) || 'anonymous';
-  const cleanId = String(rawId).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'guest';
-  const guestEmail = `guest_${cleanId}@arena.local`;
-
-  let user = await User.findOne({ email: guestEmail });
-  if (!user) {
-    try {
-      user = await User.create({
-        name: participantId ? `Participant (${participantId})` : 'Guest Participant',
-        email: guestEmail,
-        password: 'guest_arena_pwd_123',
-        role: 'participant',
-        teamName: participantId || 'Guest Team',
-      });
-    } catch (err) {
-      user = await User.findOne({ email: guestEmail });
-    }
-  }
-  return user;
+  return req.user || null;
 }
 
 // ── START SESSION ──────────────────────────────────────────────────────────
 
 exports.startSession = asyncHandler(async (req, res) => {
+  const user = await getOrCreateSessionUser(req);
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'Authentication required. Please register first.' });
+  }
+
   const challengeId = req.params.id;
   let { language } = req.body || {};
 
@@ -172,7 +156,6 @@ exports.startSession = asyncHandler(async (req, res) => {
   const sortedTasks = getTasksForLanguage(challenge, language);
 
   // Check for existing session
-  const user = await getOrCreateSessionUser(req);
   let session = null;
   if (user) {
     session = await ParticipantSession.findOne({
@@ -180,6 +163,7 @@ exports.startSession = asyncHandler(async (req, res) => {
       challengeId: challenge._id,
     });
   }
+
 
   if (session && session.status === 'COMPLETED') {
     // Participant is restarting or retrying the challenge

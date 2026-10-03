@@ -1,45 +1,42 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParticipant } from '../context/ParticipantContext';
-import { useChallenge } from '../hooks/useChallenge';
-import { INITIAL_LEADERBOARD } from '../data/leaderboard';
+import { leaderboardApi } from '../services/leaderboardApi';
 import LeaderboardTable from '../components/leaderboard/LeaderboardTable';
 import Podium from '../components/leaderboard/Podium';
-import { Trophy, Users } from 'lucide-react';
+import { Trophy, Users, RefreshCw } from 'lucide-react';
 
 export default function Leaderboard() {
   const { participant } = useParticipant();
-  const { finalResult, challenge } = useChallenge();
+  const [rankings, setRankings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
-  const fullLeaderboard = useMemo(() => {
-    let board = [...INITIAL_LEADERBOARD];
-
-    // If current participant has an accepted submission, insert into board
-    if (finalResult && finalResult.status === 'ACCEPTED' && participant) {
-      const alreadyIn = board.some((b) => b.participantId === participant.participantId);
-      if (!alreadyIn) {
-        board.push({
-          id: 'lead-me',
-          name: participant.name,
-          participantId: participant.participantId,
-          college: participant.college,
-          challengeTitle: challenge.title,
-          status: 'Accepted',
-          timeSeconds: 522, // 08:42
-          timeFormatted: "08:42",
-          score: challenge.points || 100,
-          testsPassed: "3 / 3",
-        });
+  const fetchLeaderboard = async () => {
+    try {
+      const res = await leaderboardApi.getLiveLeaderboard();
+      if (res.success && Array.isArray(res.rankings)) {
+        setRankings(res.rankings);
       }
+    } catch (err) {
+      console.error('Failed to load leaderboard data:', err);
+    } finally {
+      setLoading(false);
+      setLastRefreshed(new Date());
     }
+  };
 
-    // Sort by time
-    board.sort((a, b) => a.timeSeconds - b.timeSeconds);
+  useEffect(() => {
+    fetchLeaderboard();
+    const interval = setInterval(fetchLeaderboard, 10000);
+    const stopPolling = () => clearInterval(interval);
+    window.addEventListener('mindcraft_auth_expired', stopPolling);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('mindcraft_auth_expired', stopPolling);
+    };
+  }, []);
 
-    // Reassign ranks
-    return board.map((item, idx) => ({ ...item, rank: idx + 1 }));
-  }, [finalResult, participant, challenge]);
-
-  const topThree = fullLeaderboard.slice(0, 3);
+  const topThree = rankings.slice(0, 3);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 space-y-10 font-mono">
@@ -52,21 +49,31 @@ export default function Leaderboard() {
         <p className="text-xs text-slate-400">
           Rankings computed dynamically based on accepted tests and elapsed time
         </p>
+        <div className="text-[11px] text-slate-500 flex items-center justify-center gap-2 pt-1">
+          <span>Auto-sync: {lastRefreshed.toLocaleTimeString()}</span>
+          <button
+            onClick={fetchLeaderboard}
+            className="text-cyan-400 hover:text-cyan-300 transition"
+            title="Refresh leaderboard"
+          >
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* TOP 3 PODIUM */}
-      <Podium topThree={topThree} />
+      {topThree.length >= 3 && <Podium topThree={topThree} />}
 
       {/* FULL LEADERBOARD TABLE */}
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs text-slate-400 px-1">
           <span className="flex items-center gap-1.5 font-bold">
-            <Users className="w-4 h-4 text-cyan-400" /> Total Ranked Participants: {fullLeaderboard.length}
+            <Users className="w-4 h-4 text-cyan-400" /> Total Ranked Participants: {rankings.length}
           </span>
-          <span>Rank formula: Correctness → Earliest Timestamp</span>
+          <span>Rank formula: Score desc → Total Time asc → Earliest Acceptance</span>
         </div>
         <LeaderboardTable
-          rankings={fullLeaderboard}
+          rankings={rankings}
           currentParticipantId={participant?.participantId}
         />
       </div>

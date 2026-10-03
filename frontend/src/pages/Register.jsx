@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import Button from '../components/common/Button';
-import { UserCheck, ShieldCheck } from 'lucide-react';
-import api from '../services/api';
+import { UserCheck, AlertCircle } from 'lucide-react';
 
 export default function Register() {
   const { registerParticipant, participant } = useParticipant();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const redirectUrl = searchParams.get('redirect');
 
   const [form, setForm] = useState({
     name: participant?.name || '',
@@ -20,14 +17,16 @@ export default function Register() {
   });
 
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = 'Participant Name is required';
+    if (!form.name.trim()) errs.name = 'Full name is required';
     if (!form.participantId.trim()) errs.participantId = 'Participant ID is required';
     if (!form.email.trim()) {
       errs.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       errs.email = 'Invalid email format';
     }
     if (!form.college.trim()) errs.college = 'College/Institution name is required';
@@ -38,22 +37,25 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setServerError(null);
     if (!validate()) return;
-    registerParticipant(form);
+
     try {
-      const res = await api.post('/participant/register', {
-        name: form.name,
-        email: form.email,
-        teamName: form.participantId,
-        college: form.college,
+      setSubmitting(true);
+      await registerParticipant({
+        name: form.name.trim(),
+        participantId: form.participantId.trim().toUpperCase(),
+        email: form.email.trim().toLowerCase(),
+        college: form.college.trim(),
+        department: form.department.trim(),
       });
-      if (res.data?.token) {
-        localStorage.setItem('mindcraft_token', res.data.token);
-      }
-    } catch (_) {
-      // Continue even if backend call fails
+      navigate('/rules');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Registration failed. Please check your credentials.';
+      setServerError(msg);
+    } finally {
+      setSubmitting(false);
     }
-    navigate(redirectUrl || '/challenges');
   };
 
   return (
@@ -67,9 +69,16 @@ export default function Register() {
             Participant Registration
           </h2>
           <p className="text-xs font-mono text-slate-400">
-            Enter your competition credentials to unlock the challenge portal
+            Enter your official competition credentials to unlock the challenge portal
           </p>
         </div>
+
+        {serverError && (
+          <div className="p-3.5 bg-rose-950/60 border border-rose-500/50 rounded-xl text-rose-300 text-xs font-mono flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <span>{serverError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-mono">
           <div>
@@ -78,7 +87,7 @@ export default function Register() {
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Anthony Davis"
+              placeholder="Full name"
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400"
             />
             {errors.name && <p className="text-rose-400 text-[10px] mt-1">{errors.name}</p>}
@@ -90,7 +99,7 @@ export default function Register() {
               type="text"
               value={form.participantId}
               onChange={(e) => setForm({ ...form, participantId: e.target.value.toUpperCase() })}
-              placeholder="e.g. MC-2026-042"
+              placeholder="e.g. MC-101"
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 uppercase font-bold tracking-wider"
             />
             {errors.participantId && <p className="text-rose-400 text-[10px] mt-1">{errors.participantId}</p>}
@@ -102,7 +111,7 @@ export default function Register() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="anthony@college.edu"
+              placeholder="you@college.edu"
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400"
             />
             {errors.email && <p className="text-rose-400 text-[10px] mt-1">{errors.email}</p>}
@@ -115,7 +124,7 @@ export default function Register() {
                 type="text"
                 value={form.college}
                 onChange={(e) => setForm({ ...form, college: e.target.value })}
-                placeholder="e.g. MIT"
+                placeholder="e.g. University Name"
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400"
               />
               {errors.college && <p className="text-rose-400 text-[10px] mt-1">{errors.college}</p>}
@@ -135,8 +144,8 @@ export default function Register() {
           </div>
 
           <div className="pt-2">
-            <Button type="submit" variant="primary" className="w-full font-bold">
-              CONTINUE TO RULES →
+            <Button type="submit" variant="primary" className="w-full font-bold" disabled={submitting}>
+              {submitting ? 'REGISTERING...' : 'CONTINUE TO RULES →'}
             </Button>
           </div>
         </form>

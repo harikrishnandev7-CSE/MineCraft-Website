@@ -108,8 +108,10 @@ export default function Challenge() {
 
   // redirect if not registered
   useEffect(() => {
-    if (!participant) navigate('/register');
+    if (!participant) navigate('/register', { replace: true });
   }, [participant, navigate]);
+
+  if (!participant) return null;
 
   // redirect to result on ACCEPTED
   useEffect(() => {
@@ -249,9 +251,7 @@ export default function Challenge() {
             <p className="text-[11px] text-slate-400 mt-0.5">
               Category: <span className="text-cyan-400">{challenge.category}</span>
               {' '}// Reward: <span className="text-emerald-400">{challenge.points} PTS</span>
-              {' '}// Engine: <span className={USE_MOCK_JUDGE ? 'text-amber-400' : 'text-emerald-400'}>
-                {USE_MOCK_JUDGE ? 'Mock' : 'Judge0'}
-              </span>
+              {' '}// Engine: <span className="text-emerald-400">Judge0</span>
             </p>
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function Challenge() {
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
             <User className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-slate-400">Contestant:</span>
-            <span className="text-slate-100 font-bold">{participant?.name || 'Registered Participant'}</span>
+            <span className="text-slate-100 font-bold">{participant.name} ({participant.participantId})</span>
           </div>
 
           <Timer secondsRemaining={secondsRemaining} timerState={timerState} />

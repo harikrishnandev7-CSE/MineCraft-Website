@@ -15,6 +15,8 @@ const mongoose = require('mongoose');
 const env = require('../config/env');
 const Challenge = require('../models/Challenge');
 const TestCase = require('../models/TestCase');
+const QRBlock = require('../models/QRBlock');
+const { generateQRToken } = require('../services/qr/qrValidation');
 
 // ── Static challenge data (mirrored from frontend) ─────────────────────────
 
@@ -784,15 +786,58 @@ async function seed() {
       console.log(`  → Seeded ${testDocs.length} test cases`);
     }
 
+    // Upsert QR Blocks across all language configs
+    await QRBlock.deleteMany({
+      $or: [{ challengeId: challenge._id }, { challengeId: challenge.slug }],
+    });
+
+    const qrBlockDocs = [];
+    if (Array.isArray(cd.languageConfigs)) {
+      for (const lc of cd.languageConfigs) {
+        if (Array.isArray(lc.blocks)) {
+          lc.blocks.forEach((block, idx) => {
+            const token = generateQRToken(challenge._id, block.blockId, lc.language);
+            qrBlockDocs.push({
+              challengeId: challenge._id,
+              blockId: block.blockId,
+              title: `${challenge.title} - ${lc.language.toUpperCase()} Block ${block.order || idx + 1}`,
+              language: lc.language,
+              code: block.code,
+              codeSnippet: block.code,
+              type: block.role || 'LOGIC',
+              blockType: block.role || 'LOGIC',
+              isDecoy: !!block.isDecoy,
+              correctOrder: block.order || idx + 1,
+              originalOrder: block.order || idx + 1,
+              displayOrder: lc.revealOrder ? lc.revealOrder.indexOf(block.blockId) + 1 : idx + 1,
+              qrToken: token,
+              qrHash: token,
+            });
+          });
+        }
+      }
+    }
+
+    if (qrBlockDocs.length > 0) {
+      await QRBlock.insertMany(qrBlockDocs);
+      console.log(`  → Seeded ${qrBlockDocs.length} QR blocks for ${cd.languageConfigs.length} languages`);
+    }
+
     console.log(`  ✓ Done: ${challenge.title}`);
   }
 
   console.log('\n[Seed] All challenges seeded successfully!');
-  await mongoose.disconnect();
-  process.exit(0);
+  if (require.main === module) {
+    await mongoose.disconnect();
+    process.exit(0);
+  }
 }
 
-seed().catch((err) => {
-  console.error('[Seed] Error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seed().catch((err) => {
+    console.error('[Seed] Error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = seed;

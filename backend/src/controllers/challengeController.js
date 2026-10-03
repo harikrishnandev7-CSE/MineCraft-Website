@@ -126,19 +126,24 @@ exports.getParticipantBlocks = asyncHandler(async (req, res) => {
     const isInitiallyVisible = block.displayOrder <= initialCount || block.isInitiallyVisible;
     const isUnlocked = isInitiallyVisible || revealedIds.includes(block.blockId);
 
+    const cleanSnippet = block.codeSnippet
+      ? block.codeSnippet.replace(/#\s*DECOY[^\n]*/gi, '').replace(/\/\/\s*DECOY[^\n]*/gi, '')
+      : null;
+
     return {
       blockId: block.blockId,
-      code: isUnlocked ? block.codeSnippet : null, // Hide code if locked
-      codeSnippet: isUnlocked ? block.codeSnippet : null,
-      blockType: isUnlocked ? block.blockType : 'LOCKED',
+      code: isUnlocked ? cleanSnippet : null, // Hide code if locked
+      codeSnippet: isUnlocked ? cleanSnippet : null,
+      blockType: isUnlocked ? (block.type || block.blockType || 'LOGIC') : 'LOCKED',
+      type: isUnlocked ? (block.type || block.blockType || 'LOGIC') : 'LOCKED',
       language: block.language,
-      qrHash: block.qrHash,
+      qrToken: block.qrToken || block.qrHash,
+      qrHash: block.qrHash || block.qrToken,
       displayOrder: block.displayOrder,
       taskId: block.taskId,
       isUnlocked,
-      isDecoy: isUnlocked ? block.isDecoy : false,
-      hint: isUnlocked ? block.hint : 'Hidden Code Fragment - Complete task or click reveal to unlock',
-      // DO NOT INCLUDE originalOrder
+      hint: isUnlocked ? block.hint : 'Hidden Code Fragment',
+      // DO NOT INCLUDE originalOrder, correctOrder, or isDecoy
     };
   });
 

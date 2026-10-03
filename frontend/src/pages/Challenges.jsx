@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useChallenge } from '../hooks/useChallenge';
 import { useParticipant } from '../context/ParticipantContext';
 import { challengeApi } from '../services/challengeApi';
-import { CHALLENGES as STATIC_CHALLENGES } from '../data/challenges';
 import {
   Search,
   Trophy,
@@ -41,7 +40,7 @@ export default function Challenges() {
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [needRegisterAlert, setNeedRegisterAlert] = useState(false);
 
-  // ── Load challenges from API + static fallback ──
+  // ── Load challenges purely from API ──
   useEffect(() => {
     let cancelled = false;
 
@@ -56,35 +55,26 @@ export default function Challenges() {
           serverList = res.challenges;
         }
 
-        // Map server challenges into a uniform structure
         const mappedServer = serverList.map((sc) => {
-          const matchingStatic = STATIC_CHALLENGES.find(
-            (st) => st.id === sc.slug || st.slug === sc.slug || st.title === sc.title
-          );
-
-          const langs = sc.languageConfigs && sc.languageConfigs.length > 0
+          const langs = sc.supportedLanguages && sc.supportedLanguages.length > 0
+            ? sc.supportedLanguages
+            : sc.languageConfigs && sc.languageConfigs.length > 0
             ? sc.languageConfigs.map((lc) => lc.language)
-            : matchingStatic?.languages
-            ? Object.keys(matchingStatic.languages)
             : ['python', 'java', 'cpp', 'c'];
 
-          const tasksCount = Array.isArray(sc.tasks) && sc.tasks.length > 0
-            ? sc.tasks.length
-            : matchingStatic?.languages?.python?.chests?.length || 4;
-
-          const blocksCount = sc.languageConfigs?.[0]?.blockCount
-            || matchingStatic?.languages?.python?.fragments?.length
-            || tasksCount;
+          const tasksCount = Array.isArray(sc.tasks) ? sc.tasks.length : 4;
+          const blocksCount = sc.languageConfigs?.[0]?.blockCount || tasksCount;
 
           return {
             id: sc.slug || sc._id,
             slug: sc.slug || sc._id,
+            _id: sc._id,
             title: sc.title,
-            description: sc.description || matchingStatic?.description || '',
-            category: sc.category || matchingStatic?.category || 'Algorithms',
-            difficulty: sc.difficulty || matchingStatic?.difficulty || 'Medium',
-            points: sc.points ?? matchingStatic?.points ?? 100,
-            duration: sc.timeLimitSeconds || matchingStatic?.duration || 1200,
+            description: sc.description || '',
+            category: sc.category || 'Algorithms',
+            difficulty: sc.difficulty || 'Medium',
+            points: sc.points ?? 100,
+            duration: sc.timeLimitSeconds || 1200,
             tasksCount,
             blocksCount,
             supportedLanguages: langs,
@@ -92,50 +82,10 @@ export default function Challenges() {
           };
         });
 
-        // Also add any static challenges not present in backend
-        const remainingStatic = STATIC_CHALLENGES.filter(
-          (st) => !mappedServer.some((ms) => ms.slug === st.id || ms.id === st.id)
-        ).map((st) => {
-          const langs = st.languages ? Object.keys(st.languages) : ['python', 'java', 'cpp', 'c'];
-          const tasksCount = st.languages?.python?.chests?.length || 4;
-          const blocksCount = st.languages?.python?.fragments?.length || tasksCount;
-
-          return {
-            id: st.id,
-            slug: st.id,
-            title: st.title,
-            description: st.description || '',
-            category: st.category || 'Algorithms',
-            difficulty: st.difficulty || 'Medium',
-            points: st.points || 100,
-            duration: st.duration || 1200,
-            tasksCount,
-            blocksCount,
-            supportedLanguages: langs,
-            isBackend: false,
-          };
-        });
-
-        const combined = [...mappedServer, ...remainingStatic];
-        setChallenges(combined);
+        setChallenges(mappedServer);
       } catch (err) {
-        console.warn('Failed to load challenges from API, falling back to static:', err);
-        // Fallback to static challenges
-        const fallback = STATIC_CHALLENGES.map((st) => ({
-          id: st.id,
-          slug: st.id,
-          title: st.title,
-          description: st.description || '',
-          category: st.category || 'Algorithms',
-          difficulty: st.difficulty || 'Medium',
-          points: st.points || 100,
-          duration: st.duration || 1200,
-          tasksCount: st.languages?.python?.chests?.length || 4,
-          blocksCount: st.languages?.python?.fragments?.length || 4,
-          supportedLanguages: st.languages ? Object.keys(st.languages) : ['python', 'java', 'cpp', 'c'],
-          isBackend: false,
-        }));
-        if (!cancelled) setChallenges(fallback);
+        console.error('Failed to load challenges from backend API:', err);
+        if (!cancelled) setChallenges([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
