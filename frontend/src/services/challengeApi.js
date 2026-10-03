@@ -21,4 +21,31 @@ export const challengeApi = {
     const { data } = await api.post(`/challenges/${id}/reveal`, payload);
     return data;
   },
+
+  // ── Server-authoritative gameplay API ──────────────────────────────
+
+  /** Start or resume a session; picks language. Returns first task + session state */
+  startSession: async (challengeId, language) => {
+    const { data } = await api.post(`/challenges/${challengeId}/start-session`, { language });
+    return data;
+  },
+
+  /** Get current task for the active session */
+  getCurrentTask: async (challengeId) => {
+    const { data } = await api.get(`/challenges/${challengeId}/current-task`);
+    return data;
+  },
+
+  /** Submit an answer for the current task */
+  submitTaskAnswer: async (challengeId, answer) => {
+    const { data } = await api.post(`/challenges/${challengeId}/submit-task`, { answer });
+    return data;
+  },
+
+  /** Get full session progress (for recovery / reload) */
+  getProgress: async (challengeId) => {
+    const { data } = await api.get(`/challenges/${challengeId}/progress`);
+    return data;
+  },
 };
+

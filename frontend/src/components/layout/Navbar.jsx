@@ -8,7 +8,7 @@ export default function Navbar() {
   const location = useLocation();
 
   const navLinks = [
-    { label: 'Arena', to: '/challenge', icon: Cpu },
+    { label: 'Challenges', to: '/challenges', icon: Cpu, activePaths: ['/challenges', '/challenge'] },
     { label: 'Rules', to: '/rules', icon: BookOpen },
     { label: 'Leaderboard', to: '/leaderboard', icon: Trophy },
     { label: 'Admin', to: '/admin', icon: Shield },
@@ -37,7 +37,9 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-1 font-mono text-xs">
             {navLinks.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.to;
+              const isActive = item.activePaths
+                ? item.activePaths.some((p) => location.pathname.startsWith(p))
+                : location.pathname === item.to;
               return (
                 <Link
                   key={item.to}

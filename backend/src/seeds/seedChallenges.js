@@ -1,1080 +1,798 @@
+/**
+ * seedChallenges.js
+ *
+ * Populates the MongoDB database with challenges, tasks, and per-language block
+ * configurations using the same data previously stored in frontend/src/data/challenges.js.
+ *
+ * Usage:
+ *   cd backend
+ *   node src/seeds/seedChallenges.js
+ *
+ * This is idempotent: it upserts by slug, so re-running is safe.
+ */
+
 const mongoose = require('mongoose');
-const Challenge = require('../models/Challenge');
-const QRBlock = require('../models/QRBlock');
-const TestCase = require('../models/TestCase');
-const User = require('../models/User');
-const Submission = require('../models/Submission');
-const ParticipantSession = require('../models/ParticipantSession');
-const Settings = require('../models/Settings');
 const env = require('../config/env');
-
-const seedChallenges = async () => {
-  try {
-    console.log(`Connecting to MongoDB for seeding: ${env.MONGO_URI.replace(/:[^:@]+@/, ':***@')}`);
-    await mongoose.connect(env.MONGO_URI);
-    console.log('[Seed] Connected to MongoDB successfully.');
-
-    // Seed Global Settings if not present
-    let settings = await Settings.findOne();
-    if (!settings) {
-      await Settings.create({
-        competitionName: 'MindCraft National Blind Coding Championship 2026',
-        duration: 60,
-        maxParticipants: 100,
-        defaultChallengeTime: 20,
-        revealPenalty: 5,
-        wrongSubmissionPenalty: 2,
-        leaderboardVisibility: 'Public',
-      });
-      console.log('[Seed] Settings initialized');
-    }
-
-    // ==========================================
-    // CHALLENGE 1: Smart Expense Analyzer
-    // ==========================================
-    let expenseChal = await Challenge.findOne({ slug: 'smart-expense-analyzer' });
-    const expenseSource = `import java.util.*;
-
-public class Main {
-
-    static double calculateTotal(double[] expenses) {
-        double total = 0;
-
-        for (double expense : expenses) {
-            total += expense;
-        }
-
-        return total;
-    }
-
-    static double findHighest(double[] expenses) {
-        double highest = expenses[0];
-
-        for (double expense : expenses) {
-            if (expense > highest) {
-                highest = expense;
-            }
-        }
-
-        return highest;
-    }
-
-    static double findLowest(double[] expenses) {
-        double lowest = expenses[0];
-
-        for (double expense : expenses) {
-            if (expense < lowest) {
-                lowest = expense;
-            }
-        }
-
-        return lowest;
-    }
-
-    static int countAboveAverage(double[] expenses, double average) {
-        int count = 0;
-
-        for (double expense : expenses) {
-            if (expense > average) {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    public static void main(String[] args) {
-
-        Scanner sc = new Scanner(System.in);
-
-        int n = sc.nextInt();
-
-        if (n <= 0) {
-            System.out.println("Invalid Input");
-            return;
-        }
-
-        double[] expenses = new double[n];
-
-        for (int i = 0; i < n; i++) {
-            expenses[i] = sc.nextDouble();
-        }
-
-        double total = calculateTotal(expenses);
-        double average = total / n;
-
-        double highest = findHighest(expenses);
-        double lowest = findLowest(expenses);
-
-        int aboveAverage = countAboveAverage(expenses, average);
-
-        System.out.printf("Total: %.2f%n", total);
-        System.out.printf("Average: %.2f%n", average);
-        System.out.printf("Highest: %.2f%n", highest);
-        System.out.printf("Lowest: %.2f%n", lowest);
-        System.out.println("Above Average: " + aboveAverage);
-
-        sc.close();
-    }
-}`;
-
-    const expenseTasks = [
-      {
-        taskId: 'task-1',
-        title: 'Task 1: Input Setup',
-        description: 'Prepare the program to read the expense count and expense values.',
-        requiredBlockIds: ['B01', 'B06'],
-        penalty: 5,
-        order: 1,
-      },
-      {
-        taskId: 'task-2',
-        title: 'Task 2: Total Calculation',
-        description: 'Build the calculation responsible for finding total spending.',
-        requiredBlockIds: ['B02', 'B07'],
-        penalty: 5,
-        order: 2,
-      },
-      {
-        taskId: 'task-3',
-        title: 'Task 3: Min / Max Analysis',
-        description: 'Create the logic that identifies the highest and lowest expense.',
-        requiredBlockIds: ['B03', 'B04', 'B08'],
-        penalty: 5,
-        order: 3,
-      },
-      {
-        taskId: 'task-4',
-        title: 'Task 4: Average & Outliers',
-        description: 'Calculate the average and identify expenses above the average.',
-        requiredBlockIds: ['B05'],
-        penalty: 5,
-        order: 4,
-      },
-      {
-        taskId: 'task-5',
-        title: 'Task 5: Final Summary',
-        description: 'Complete the final summary output.',
-        requiredBlockIds: ['B09'],
-        penalty: 5,
-        order: 5,
-      },
-    ];
-
-    if (!expenseChal) {
-      expenseChal = await Challenge.create({
-        title: 'Smart Expense Analyzer',
-        slug: 'smart-expense-analyzer',
-        category: 'Finance & Analytics',
-        difficulty: 'Medium',
-        points: 100,
-        description: `Build a Java program that reads a list of expenses and analyzes the spending pattern.\n\nThe program should:\n1. Read the number of expenses.\n2. Read each expense amount.\n3. Calculate total spending.\n4. Calculate average spending.\n5. Find the highest expense.\n6. Find the lowest expense.\n7. Count how many expenses are above the average.\n8. Print a final spending summary.`,
-        instructions: 'Complete each task by revealing required code blocks, arrange them on the assembly canvas, and execute test cases.',
-        inputFormat: 'N followed by N expense amounts',
-        outputFormat: 'Total, Average, Highest, Lowest, Above Average count formatted summary',
-        constraints: '1 <= N <= 10^4, expense > 0',
-        timeLimitSeconds: 1200,
-        maxAttempts: 5,
-        supportedLanguages: ['java', 'python', 'cpp', 'c'],
-        sourceLanguage: 'java',
-        sourceCode: expenseSource,
-        splitStrategy: 'statement',
-        status: 'Published',
-        isActive: true,
-        sampleInput: '5 100 200 50 300 150',
-        sampleOutput: 'Total: 800.00\nAverage: 160.00\nHighest: 300.00\nLowest: 50.00\nAbove Average: 2',
-        tasks: expenseTasks,
-        blockConfig: {
-          totalBlocks: 9,
-          initialVisibleCount: 3,
-          revealMode: 'task',
-          revealPenalty: 5,
-          wrongSubmissionPenalty: 2,
-          maxReveals: 10,
-          randomizeOrder: true,
-          partialScoring: true,
-        },
-      });
-
-      const expenseBlocks = [
-        {
-          blockId: 'B01',
-          codeSnippet: `import java.util.*;\n\npublic class Main {`,
-          originalOrder: 1,
-          displayOrder: 4,
-          taskId: 'task-1',
-          blockType: 'WRAPPER',
-          hint: 'Import statements and class declaration',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B02',
-          codeSnippet: `    static double calculateTotal(double[] expenses) {\n        double total = 0;\n\n        for (double expense : expenses) {\n            total += expense;\n        }\n\n        return total;\n    }`,
-          originalOrder: 2,
-          displayOrder: 7,
-          taskId: 'task-2',
-          blockType: 'FUNCTION',
-          hint: 'Helper function to calculate total sum of expenses',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B03',
-          codeSnippet: `    static double findHighest(double[] expenses) {\n        double highest = expenses[0];\n\n        for (double expense : expenses) {\n            if (expense > highest) {\n                highest = expense;\n            }\n        }\n\n        return highest;\n    }`,
-          originalOrder: 3,
-          displayOrder: 2,
-          taskId: 'task-3',
-          blockType: 'FUNCTION',
-          hint: 'Helper function to find maximum expense',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B04',
-          codeSnippet: `    static double findLowest(double[] expenses) {\n        double lowest = expenses[0];\n\n        for (double expense : expenses) {\n            if (expense < lowest) {\n                lowest = expense;\n            }\n        }\n\n        return lowest;\n    }`,
-          originalOrder: 4,
-          displayOrder: 8,
-          taskId: 'task-3',
-          blockType: 'FUNCTION',
-          hint: 'Helper function to find minimum expense',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B05',
-          codeSnippet: `    static int countAboveAverage(double[] expenses, double average) {\n        int count = 0;\n\n        for (double expense : expenses) {\n            if (expense > average) {\n                count++;\n            }\n        }\n\n        return count;\n    }`,
-          originalOrder: 5,
-          displayOrder: 6,
-          taskId: 'task-4',
-          blockType: 'FUNCTION',
-          hint: 'Helper function counting expenses above average',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B06',
-          codeSnippet: `    public static void main(String[] args) {\n\n        Scanner sc = new Scanner(System.in);\n\n        int n = sc.nextInt();\n\n        if (n <= 0) {\n            System.out.println("Invalid Input");\n            return;\n        }\n\n        double[] expenses = new double[n];\n\n        for (int i = 0; i < n; i++) {\n            expenses[i] = sc.nextDouble();\n        }`,
-          originalOrder: 6,
-          displayOrder: 1,
-          taskId: 'task-1',
-          blockType: 'INIT',
-          hint: 'Main method entry and array input loop',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B07',
-          codeSnippet: `        double total = calculateTotal(expenses);\n        double average = total / n;`,
-          originalOrder: 7,
-          displayOrder: 9,
-          taskId: 'task-2',
-          blockType: 'LOGIC',
-          hint: 'Compute total and average values',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B08',
-          codeSnippet: `        double highest = findHighest(expenses);\n        double lowest = findLowest(expenses);\n\n        int aboveAverage = countAboveAverage(expenses, average);`,
-          originalOrder: 8,
-          displayOrder: 3,
-          taskId: 'task-3',
-          blockType: 'LOGIC',
-          hint: 'Execute min/max and above-average analysis',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B09',
-          codeSnippet: `        System.out.printf("Total: %.2f%n", total);\n        System.out.printf("Average: %.2f%n", average);\n        System.out.printf("Highest: %.2f%n", highest);\n        System.out.printf("Lowest: %.2f%n", lowest);\n        System.out.println("Above Average: " + aboveAverage);\n\n        sc.close();\n    }\n}`,
-          originalOrder: 9,
-          displayOrder: 5,
-          taskId: 'task-5',
-          blockType: 'OUTPUT',
-          hint: 'Formatted summary print statements and program closure',
-          isInitiallyVisible: false,
-        },
-      ];
-
-      await QRBlock.insertMany(
-        expenseBlocks.map((b) => ({
-          ...b,
-          challengeId: expenseChal._id,
-          language: 'java',
-          qrHash: `MC-EXPENSE-${b.blockId}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-          points: 10,
-        }))
-      );
-
-      await TestCase.create([
-        {
-          challengeId: expenseChal._id,
-          input: '5 100 200 50 300 150',
-          expectedOutput: 'Total: 800.00\nAverage: 160.00\nHighest: 300.00\nLowest: 50.00\nAbove Average: 2',
-          isHidden: false,
-          weight: 20,
-          description: 'Standard 5 expenses sample',
-        },
-        {
-          challengeId: expenseChal._id,
-          input: '3 50.5 49.5 100',
-          expectedOutput: 'Total: 200.00\nAverage: 66.67\nHighest: 100.00\nLowest: 49.50\nAbove Average: 1',
-          isHidden: false,
-          weight: 20,
-          description: 'Decimal expenses',
-        },
-        {
-          challengeId: expenseChal._id,
-          input: '0',
-          expectedOutput: 'Invalid Input',
-          isHidden: false,
-          weight: 20,
-          description: 'Edge case: zero expenses',
-        },
-        {
-          challengeId: expenseChal._id,
-          input: '4 10 10 10 10',
-          expectedOutput: 'Total: 40.00\nAverage: 10.00\nHighest: 10.00\nLowest: 10.00\nAbove Average: 0',
-          isHidden: true,
-          weight: 20,
-          description: 'Uniform expenses (no above average)',
-        },
-        {
-          challengeId: expenseChal._id,
-          input: '6 12.5 88.0 45.5 120.0 5.0 99.0',
-          expectedOutput: 'Total: 370.00\nAverage: 61.67\nHighest: 120.00\nLowest: 5.00\nAbove Average: 3',
-          isHidden: true,
-          weight: 20,
-          description: '6 varied values',
-        },
-      ]);
-
-      console.log('[Seed] Challenge 1: Smart Expense Analyzer seeded successfully');
-    }
-
-    // ==========================================
-    // CHALLENGE 2: Movie Recommendation Engine
-    // ==========================================
-    let movieChal = await Challenge.findOne({ slug: 'movie-recommendation-engine' });
-    const movieSource = `import java.util.*;
-
-class Movie {
-
-    String name;
-    String genre;
-    double rating;
-
-    Movie(String name, String genre, double rating) {
-        this.name = name;
-        this.genre = genre;
-        this.rating = rating;
-    }
-}
-
-public class Main {
-
-    static ArrayList<Movie> createMovies() {
-
-        ArrayList<Movie> movies = new ArrayList<>();
-
-        movies.add(new Movie("Interstellar", "SciFi", 8.7));
-        movies.add(new Movie("Inception", "SciFi", 8.8));
-        movies.add(new Movie("The Dark Knight", "Action", 9.0));
-        movies.add(new Movie("Whiplash", "Drama", 8.5));
-        movies.add(new Movie("The Martian", "SciFi", 8.0));
-        movies.add(new Movie("Avengers Endgame", "Action", 8.4));
-        movies.add(new Movie("Parasite", "Drama", 8.5));
-        movies.add(new Movie("Blade Runner 2049", "SciFi", 8.0));
-
-        return movies;
-    }
-
-    static ArrayList<Movie> recommend(
-            ArrayList<Movie> movies,
-            String preferredGenre,
-            double minimumRating) {
-
-        ArrayList<Movie> recommendations = new ArrayList<>();
-
-        for (Movie movie : movies) {
-
-            if (movie.genre.equalsIgnoreCase(preferredGenre)
-                    && movie.rating >= minimumRating) {
-
-                recommendations.add(movie);
-            }
-        }
-
-        recommendations.sort(
-                (a, b) -> Double.compare(b.rating, a.rating)
-        );
-
-        return recommendations;
-    }
-
-    static void printRecommendations(
-            ArrayList<Movie> recommendations) {
-
-        if (recommendations.isEmpty()) {
-            System.out.println("No recommendations found.");
-            return;
-        }
-
-        System.out.println("Recommended Movies:");
-
-        for (Movie movie : recommendations) {
-
-            System.out.printf(
-                    "%s - %.1f%n",
-                    movie.name,
-                    movie.rating
-            );
-        }
-    }
-
-    public static void main(String[] args) {
-
-        Scanner sc = new Scanner(System.in);
-
-        ArrayList<Movie> movies = createMovies();
-
-        String genre = sc.nextLine();
-
-        double minimumRating = sc.nextDouble();
-
-        ArrayList<Movie> recommendations =
-                recommend(
-                        movies,
-                        genre,
-                        minimumRating
-                );
-
-        printRecommendations(recommendations);
-
-        sc.close();
-    }
-}`;
-
-    const movieTasks = [
-      {
-        taskId: 'task-1',
-        title: 'Task 1: Movie Data Model',
-        description: 'Create the Movie data structure.',
-        requiredBlockIds: ['B01'],
-        penalty: 5,
-        order: 1,
-      },
-      {
-        taskId: 'task-2',
-        title: 'Task 2: Seed Movie Catalog',
-        description: 'Prepare the movie database.',
-        requiredBlockIds: ['B02'],
-        penalty: 5,
-        order: 2,
-      },
-      {
-        taskId: 'task-3',
-        title: 'Task 3: Filter By Genre & Rating',
-        description: 'Filter movies using genre and minimum rating.',
-        requiredBlockIds: ['B03'],
-        penalty: 5,
-        order: 3,
-      },
-      {
-        taskId: 'task-4',
-        title: 'Task 4: Sort Descending By Rating',
-        description: 'Sort recommendations from highest rating to lowest.',
-        requiredBlockIds: ['B04'],
-        penalty: 5,
-        order: 4,
-      },
-      {
-        taskId: 'task-5',
-        title: 'Task 5: Present Results',
-        description: 'Display the final recommendations.',
-        requiredBlockIds: ['B05', 'B06'],
-        penalty: 5,
-        order: 5,
-      },
-    ];
-
-    if (!movieChal) {
-      movieChal = await Challenge.create({
-        title: 'Movie Recommendation Engine',
-        slug: 'movie-recommendation-engine',
-        category: 'OOP & Collections',
-        difficulty: 'Medium',
-        points: 120,
-        description: `Create a simple movie recommendation engine.\n\nThe program receives movie information and a user's preferred genre and minimum rating.\nIt should:\n- Store movie names, genres, and ratings\n- Filter movies by genre and minimum rating\n- Sort matching movies by rating descending\n- Display recommendations or a not-found message`,
-        instructions: 'Unlock the OOP blocks, arrange the recommendation filter and sorter, and execute.',
-        inputFormat: 'Preferred Genre\\nMinimum Rating',
-        outputFormat: 'List of matching movies sorted by rating',
-        constraints: 'Case-insensitive genre comparison',
-        timeLimitSeconds: 1200,
-        maxAttempts: 5,
-        supportedLanguages: ['java', 'python', 'cpp', 'c'],
-        sourceLanguage: 'java',
-        sourceCode: movieSource,
-        splitStrategy: 'statement',
-        status: 'Published',
-        isActive: true,
-        sampleInput: 'SciFi\n8.5',
-        sampleOutput: 'Recommended Movies:\nInception - 8.8\nInterstellar - 8.7',
-        tasks: movieTasks,
-        blockConfig: {
-          totalBlocks: 6,
-          initialVisibleCount: 2,
-          revealMode: 'task',
-          revealPenalty: 5,
-          wrongSubmissionPenalty: 2,
-          maxReveals: 8,
-          randomizeOrder: true,
-          partialScoring: true,
-        },
-      });
-
-      const movieBlocks = [
-        {
-          blockId: 'B01',
-          codeSnippet: `import java.util.*;\n\nclass Movie {\n\n    String name;\n    String genre;\n    double rating;\n\n    Movie(String name, String genre, double rating) {\n        this.name = name;\n        this.genre = genre;\n        this.rating = rating;\n    }\n}`,
-          originalOrder: 1,
-          displayOrder: 3,
-          taskId: 'task-1',
-          blockType: 'WRAPPER',
-          hint: 'Movie model class definition',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B02',
-          codeSnippet: `public class Main {\n\n    static ArrayList<Movie> createMovies() {\n\n        ArrayList<Movie> movies = new ArrayList<>();\n\n        movies.add(new Movie("Interstellar", "SciFi", 8.7));\n        movies.add(new Movie("Inception", "SciFi", 8.8));\n        movies.add(new Movie("The Dark Knight", "Action", 9.0));\n        movies.add(new Movie("Whiplash", "Drama", 8.5));\n        movies.add(new Movie("The Martian", "SciFi", 8.0));\n        movies.add(new Movie("Avengers Endgame", "Action", 8.4));\n        movies.add(new Movie("Parasite", "Drama", 8.5));\n        movies.add(new Movie("Blade Runner 2049", "SciFi", 8.0));\n\n        return movies;\n    }`,
-          originalOrder: 2,
-          displayOrder: 6,
-          taskId: 'task-2',
-          blockType: 'FUNCTION',
-          hint: 'Main class header and catalog database generator',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B03',
-          codeSnippet: `    static ArrayList<Movie> recommend(\n            ArrayList<Movie> movies,\n            String preferredGenre,\n            double minimumRating) {\n\n        ArrayList<Movie> recommendations = new ArrayList<>();\n\n        for (Movie movie : movies) {\n\n            if (movie.genre.equalsIgnoreCase(preferredGenre)\n                    && movie.rating >= minimumRating) {\n\n                recommendations.add(movie);\n            }\n        }`,
-          originalOrder: 3,
-          displayOrder: 1,
-          taskId: 'task-3',
-          blockType: 'FUNCTION',
-          hint: 'Filter loop matching genre and threshold rating',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B04',
-          codeSnippet: `        recommendations.sort(\n                (a, b) -> Double.compare(b.rating, a.rating)\n        );\n\n        return recommendations;\n    }`,
-          originalOrder: 4,
-          displayOrder: 5,
-          taskId: 'task-4',
-          blockType: 'LOGIC',
-          hint: 'Sort recommendations descending by rating',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B05',
-          codeSnippet: `    static void printRecommendations(\n            ArrayList<Movie> recommendations) {\n\n        if (recommendations.isEmpty()) {\n            System.out.println("No recommendations found.");\n            return;\n        }\n\n        System.out.println("Recommended Movies:");\n\n        for (Movie movie : recommendations) {\n\n            System.out.printf(\n                    "%s - %.1f%n",\n                    movie.name,\n                    movie.rating\n            );\n        }\n    }`,
-          originalOrder: 5,
-          displayOrder: 4,
-          taskId: 'task-5',
-          blockType: 'OUTPUT',
-          hint: 'Formatted recommendations print logic',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B06',
-          codeSnippet: `    public static void main(String[] args) {\n\n        Scanner sc = new Scanner(System.in);\n\n        ArrayList<Movie> movies = createMovies();\n\n        String genre = sc.nextLine();\n\n        double minimumRating = sc.nextDouble();\n\n        ArrayList<Movie> recommendations =\n                recommend(\n                        movies,\n                        genre,\n                        minimumRating\n                );\n\n        printRecommendations(recommendations);\n\n        sc.close();\n    }\n}`,
-          originalOrder: 6,
-          displayOrder: 2,
-          taskId: 'task-5',
-          blockType: 'INIT',
-          hint: 'Main execution flow: parse input, run recommendation, display',
-          isInitiallyVisible: false,
-        },
-      ];
-
-      await QRBlock.insertMany(
-        movieBlocks.map((b) => ({
-          ...b,
-          challengeId: movieChal._id,
-          language: 'java',
-          qrHash: `MC-MOVIE-${b.blockId}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-          points: 20,
-        }))
-      );
-
-      await TestCase.create([
-        {
-          challengeId: movieChal._id,
-          input: 'SciFi\n8.5',
-          expectedOutput: 'Recommended Movies:\nInception - 8.8\nInterstellar - 8.7',
-          isHidden: false,
-          weight: 30,
-          description: 'SciFi with 8.5 threshold',
-        },
-        {
-          challengeId: movieChal._id,
-          input: 'Action\n8.0',
-          expectedOutput: 'Recommended Movies:\nThe Dark Knight - 9.0\nAvengers Endgame - 8.4',
-          isHidden: false,
-          weight: 30,
-          description: 'Action movies >= 8.0',
-        },
-        {
-          challengeId: movieChal._id,
-          input: 'Animation\n7.0',
-          expectedOutput: 'No recommendations found.',
-          isHidden: false,
-          weight: 30,
-          description: 'Genre not in database',
-        },
-        {
-          challengeId: movieChal._id,
-          input: 'Drama\n8.5',
-          expectedOutput: 'Recommended Movies:\nWhiplash - 8.5\nParasite - 8.5',
-          isHidden: true,
-          weight: 30,
-          description: 'Drama movies matching exact threshold',
-        },
-      ]);
-
-      console.log('[Seed] Challenge 2: Movie Recommendation Engine seeded successfully');
-    }
-
-    // ==========================================
-    // CHALLENGE 3: Campus Event Seat Manager
-    // ==========================================
-    let seatChal = await Challenge.findOne({ slug: 'campus-event-seat-manager' });
-    const seatSource = `import java.util.*;
-
-class Reservation {
-
-    String studentId;
-    String studentName;
-    int seatNumber;
-
-    Reservation(
-            String studentId,
-            String studentName,
-            int seatNumber) {
-
-        this.studentId = studentId;
-        this.studentName = studentName;
-        this.seatNumber = seatNumber;
-    }
-}
-
-public class Main {
-
-    static final int TOTAL_SEATS = 50;
-
-    static HashMap<Integer, Reservation> reservations =
-            new HashMap<>();
-
-    static HashSet<String> registeredStudents =
-            new HashSet<>();
-
-    static boolean reserveSeat(
-            String studentId,
-            String studentName,
-            int seatNumber) {
-
-        if (seatNumber < 1 || seatNumber > TOTAL_SEATS) {
-            return false;
-        }
-
-        if (reservations.containsKey(seatNumber)) {
-            return false;
-        }
-
-        if (registeredStudents.contains(studentId)) {
-            return false;
-        }
-
-        Reservation reservation =
-                new Reservation(
-                        studentId,
-                        studentName,
-                        seatNumber
-                );
-
-        reservations.put(seatNumber, reservation);
-        registeredStudents.add(studentId);
-
-        return true;
-    }
-
-    static boolean cancelReservation(int seatNumber) {
-
-        if (!reservations.containsKey(seatNumber)) {
-            return false;
-        }
-
-        Reservation reservation =
-                reservations.remove(seatNumber);
-
-        registeredStudents.remove(
-                reservation.studentId
-        );
-
-        return true;
-    }
-
-    static void printAvailableSeats() {
-
-        System.out.println("Available Seats:");
-
-        for (int i = 1; i <= TOTAL_SEATS; i++) {
-
-            if (!reservations.containsKey(i)) {
-                System.out.print(i + " ");
-            }
-        }
-
-        System.out.println();
-    }
-
-    static double calculateOccupancy() {
-
-        return
-                ((double) reservations.size()
-                        / TOTAL_SEATS) * 100;
-    }
-
-    static void printSummary() {
-
-        System.out.println();
-        System.out.println("===== EVENT SUMMARY =====");
-
-        System.out.println(
-                "Reserved Seats: "
-                        + reservations.size()
-        );
-
-        System.out.println(
-                "Available Seats: "
-                        + (TOTAL_SEATS
-                        - reservations.size())
-        );
-
-        System.out.printf(
-                "Occupancy: %.2f%%%n",
-                calculateOccupancy()
-        );
-
-        System.out.println(
-                "Registered Students: "
-                        + registeredStudents.size()
-        );
-    }
-
-    public static void main(String[] args) {
-
-        Scanner sc = new Scanner(System.in);
-
-        int operations = sc.nextInt();
-
-        for (int i = 0; i < operations; i++) {
-
-            int operation = sc.nextInt();
-
-            if (operation == 1) {
-
-                String studentId = sc.next();
-                String studentName = sc.next();
-                int seatNumber = sc.nextInt();
-
-                boolean success =
-                        reserveSeat(
-                                studentId,
-                                studentName,
-                                seatNumber
-                        );
-
-                System.out.println(
-                        success
-                                ? "Reservation Successful"
-                                : "Reservation Failed"
-                );
-
-            } else if (operation == 2) {
-
-                int seatNumber = sc.nextInt();
-
-                boolean success =
-                        cancelReservation(seatNumber);
-
-                System.out.println(
-                        success
-                                ? "Cancellation Successful"
-                                : "Cancellation Failed"
-                );
-
-            } else if (operation == 3) {
-
-                printAvailableSeats();
-
-            } else {
-
-                System.out.println("Invalid Operation");
-            }
-        }
-
-        printSummary();
-
-        sc.close();
-    }
-}`;
-
-    const seatTasks = [
-      {
-        taskId: 'task-1',
-        title: 'Task 1: Reservation Model & Storage',
-        description: 'Create the reservation data model and storage.',
-        requiredBlockIds: ['B01', 'B02'],
-        penalty: 5,
-        order: 1,
-      },
-      {
-        taskId: 'task-2',
-        title: 'Task 2: Seat Reservation Logic',
-        description: 'Implement seat reservation with duplicate protection.',
-        requiredBlockIds: ['B03'],
-        penalty: 5,
-        order: 2,
-      },
-      {
-        taskId: 'task-3',
-        title: 'Task 3: Cancellation Routine',
-        description: 'Implement reservation cancellation.',
-        requiredBlockIds: ['B04'],
-        penalty: 5,
-        order: 3,
-      },
-      {
-        taskId: 'task-4',
-        title: 'Task 4: Availability & Occupancy',
-        description: 'Display available seats and calculate occupancy.',
-        requiredBlockIds: ['B05'],
-        penalty: 5,
-        order: 4,
-      },
-      {
-        taskId: 'task-5',
-        title: 'Task 5: Main Driver Loop',
-        description: 'Connect all operations to the main program.',
-        requiredBlockIds: ['B07'],
-        penalty: 5,
-        order: 5,
-      },
-      {
-        taskId: 'task-6',
-        title: 'Task 6: Event Summary',
-        description: 'Generate the final event summary.',
-        requiredBlockIds: ['B06'],
-        penalty: 5,
-        order: 6,
-      },
-    ];
-
-    if (!seatChal) {
-      seatChal = await Challenge.create({
-        title: 'Campus Event Seat Manager',
-        slug: 'campus-event-seat-manager',
-        category: 'Data Structures',
-        difficulty: 'Hard',
-        points: 150,
-        description: `Build a campus event seat reservation system.\n\nThe system should:\n- Maintain available seats (50 total)\n- Reserve seats and prevent duplicate student/seat reservations\n- Cancel reservations and release seats\n- Show available seats\n- Calculate occupancy percentage\n- Display final reservation summary`,
-        instructions: 'Assemble the reservation data structures, collision checks, and command processor.',
-        inputFormat: 'Operations count followed by operation commands (1=Reserve, 2=Cancel, 3=Print)',
-        outputFormat: 'Operation success/failure confirmations and final summary banner',
-        constraints: '1 <= seat <= 50, unique studentId',
-        timeLimitSeconds: 1500,
-        maxAttempts: 5,
-        supportedLanguages: ['java', 'python', 'cpp', 'c'],
-        sourceLanguage: 'java',
-        sourceCode: seatSource,
-        splitStrategy: 'statement',
-        status: 'Published',
-        isActive: true,
-        sampleInput: '3\n1 S101 Alice 5\n1 S102 Bob 5\n1 S103 Charlie 12',
-        sampleOutput: 'Reservation Successful\nReservation Failed\nReservation Successful\n\n===== EVENT SUMMARY =====\nReserved Seats: 2\nAvailable Seats: 48\nOccupancy: 4.00%\nRegistered Students: 2',
-        tasks: seatTasks,
-        blockConfig: {
-          totalBlocks: 7,
-          initialVisibleCount: 2,
-          revealMode: 'task',
-          revealPenalty: 5,
-          wrongSubmissionPenalty: 2,
-          maxReveals: 10,
-          randomizeOrder: true,
-          partialScoring: true,
-        },
-      });
-
-      const seatBlocks = [
-        {
-          blockId: 'B01',
-          codeSnippet: `import java.util.*;\n\nclass Reservation {\n\n    String studentId;\n    String studentName;\n    int seatNumber;\n\n    Reservation(\n            String studentId,\n            String studentName,\n            int seatNumber) {\n\n        this.studentId = studentId;\n        this.studentName = studentName;\n        this.seatNumber = seatNumber;\n    }\n}`,
-          originalOrder: 1,
-          displayOrder: 4,
-          taskId: 'task-1',
-          blockType: 'WRAPPER',
-          hint: 'Reservation record structure',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B02',
-          codeSnippet: `public class Main {\n\n    static final int TOTAL_SEATS = 50;\n\n    static HashMap<Integer, Reservation> reservations =\n            new HashMap<>();\n\n    static HashSet<String> registeredStudents =\n            new HashSet<>();`,
-          originalOrder: 2,
-          displayOrder: 2,
-          taskId: 'task-1',
-          blockType: 'INIT',
-          hint: 'Main class and static reservation storage HashMaps',
-          isInitiallyVisible: true,
-        },
-        {
-          blockId: 'B03',
-          codeSnippet: `    static boolean reserveSeat(\n            String studentId,\n            String studentName,\n            int seatNumber) {\n\n        if (seatNumber < 1 || seatNumber > TOTAL_SEATS) {\n            return false;\n        }\n\n        if (reservations.containsKey(seatNumber)) {\n            return false;\n        }\n\n        if (registeredStudents.contains(studentId)) {\n            return false;\n        }\n\n        Reservation reservation =\n                new Reservation(\n                        studentId,\n                        studentName,\n                        seatNumber\n                );\n\n        reservations.put(seatNumber, reservation);\n        registeredStudents.add(studentId);\n\n        return true;\n    }`,
-          originalOrder: 3,
-          displayOrder: 7,
-          taskId: 'task-2',
-          blockType: 'FUNCTION',
-          hint: 'Seat reservation method with range and duplicate protection',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B04',
-          codeSnippet: `    static boolean cancelReservation(int seatNumber) {\n\n        if (!reservations.containsKey(seatNumber)) {\n            return false;\n        }\n\n        Reservation reservation =\n                reservations.remove(seatNumber);\n\n        registeredStudents.remove(\n                reservation.studentId\n        );\n\n        return true;\n    }`,
-          originalOrder: 4,
-          displayOrder: 5,
-          taskId: 'task-3',
-          blockType: 'FUNCTION',
-          hint: 'Seat cancellation logic and state cleanup',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B05',
-          codeSnippet: `    static void printAvailableSeats() {\n\n        System.out.println("Available Seats:");\n\n        for (int i = 1; i <= TOTAL_SEATS; i++) {\n\n            if (!reservations.containsKey(i)) {\n                System.out.print(i + " ");\n            }\n        }\n\n        System.out.println();\n    }\n\n    static double calculateOccupancy() {\n\n        return\n                ((double) reservations.size()\n                        / TOTAL_SEATS) * 100;\n    }`,
-          originalOrder: 5,
-          displayOrder: 1,
-          taskId: 'task-4',
-          blockType: 'FUNCTION',
-          hint: 'Seat display loop and occupancy percentage calculator',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B06',
-          codeSnippet: `    static void printSummary() {\n\n        System.out.println();\n        System.out.println("===== EVENT SUMMARY =====");\n\n        System.out.println(\n                "Reserved Seats: "\n                        + reservations.size()\n        );\n\n        System.out.println(\n                "Available Seats: "\n                        + (TOTAL_SEATS\n                        - reservations.size())\n        );\n\n        System.out.printf(\n                "Occupancy: %.2f%%%n",\n                calculateOccupancy()\n        );\n\n        System.out.println(\n                "Registered Students: "\n                        + registeredStudents.size()\n        );\n    }`,
-          originalOrder: 6,
-          displayOrder: 6,
-          taskId: 'task-6',
-          blockType: 'OUTPUT',
-          hint: 'Event summary generation method',
-          isInitiallyVisible: false,
-        },
-        {
-          blockId: 'B07',
-          codeSnippet: `    public static void main(String[] args) {\n\n        Scanner sc = new Scanner(System.in);\n\n        int operations = sc.nextInt();\n\n        for (int i = 0; i < operations; i++) {\n\n            int operation = sc.nextInt();\n\n            if (operation == 1) {\n\n                String studentId = sc.next();\n                String studentName = sc.next();\n                int seatNumber = sc.nextInt();\n\n                boolean success =\n                        reserveSeat(\n                                studentId,\n                                studentName,\n                                seatNumber\n                        );\n\n                System.out.println(\n                        success\n                                ? "Reservation Successful"\n                                : "Reservation Failed"\n                );\n\n            } else if (operation == 2) {\n\n                int seatNumber = sc.nextInt();\n\n                boolean success =\n                        cancelReservation(seatNumber);\n\n                System.out.println(\n                        success\n                                ? "Cancellation Successful"\n                                : "Cancellation Failed"\n                );\n\n            } else if (operation == 3) {\n\n                printAvailableSeats();\n\n            } else {\n\n                System.out.println("Invalid Operation");\n            }\n        }\n\n        printSummary();\n\n        sc.close();\n    }\n}`,
-          originalOrder: 7,
-          displayOrder: 3,
-          taskId: 'task-5',
-          blockType: 'INIT',
-          hint: 'Operation dispatcher loop reading commands and running actions',
-          isInitiallyVisible: false,
-        },
-      ];
-
-      await QRBlock.insertMany(
-        seatBlocks.map((b) => ({
-          ...b,
-          challengeId: seatChal._id,
-          language: 'java',
-          qrHash: `MC-SEAT-${b.blockId}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-          points: 25,
-        }))
-      );
-
-      await TestCase.create([
-        {
-          challengeId: seatChal._id,
-          input: '3\n1 S101 Alice 5\n1 S102 Bob 5\n1 S103 Charlie 12',
-          expectedOutput: 'Reservation Successful\nReservation Failed\nReservation Successful\n\n===== EVENT SUMMARY =====\nReserved Seats: 2\nAvailable Seats: 48\nOccupancy: 4.00%\nRegistered Students: 2',
-          isHidden: false,
-          weight: 50,
-          description: 'Duplicate seat rejection test',
-        },
-        {
-          challengeId: seatChal._id,
-          input: '2\n1 S201 Dave 10\n2 10',
-          expectedOutput: 'Reservation Successful\nCancellation Successful\n\n===== EVENT SUMMARY =====\nReserved Seats: 0\nAvailable Seats: 50\nOccupancy: 0.00%\nRegistered Students: 0',
-          isHidden: false,
-          weight: 50,
-          description: 'Reserve then cancel test',
-        },
-        {
-          challengeId: seatChal._id,
-          input: '3\n1 S301 Emma 1\n1 S301 Emma 2\n3',
-          expectedOutput: 'Reservation Successful\nReservation Failed\nAvailable Seats:\n2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 \n\n===== EVENT SUMMARY =====\nReserved Seats: 1\nAvailable Seats: 49\nOccupancy: 2.00%\nRegistered Students: 1',
-          isHidden: true,
-          weight: 50,
-          description: 'Duplicate student registration prevention',
-        },
-      ]);
-
-      console.log('[Seed] Challenge 3: Campus Event Seat Manager seeded successfully');
-    }
-
-    // Seed realistic participant users if none exist
-    const participantCount = await User.countDocuments({ role: 'participant' });
-    if (participantCount === 0) {
-      const sampleContestants = [
-        { name: 'Arun Kumar', email: 'arun@college.edu', teamName: 'BinaryBeasts', college: 'MIT Campus' },
-        { name: 'Priya Sundaram', email: 'priya@tech.edu', teamName: 'CodeValkyries', college: 'Anna University' },
-        { name: 'Rohit Verma', email: 'rohit@iit.ac.in', teamName: 'NullPointers', college: 'IIT Madras' },
-        { name: 'Deepa Krishnan', email: 'deepa@ceg.edu', teamName: 'ByteForce', college: 'College of Eng Guindy' },
-        { name: 'Siddharth Nair', email: 'sid@nit.edu', teamName: 'GlitchHunters', college: 'NIT Trichy' },
-      ];
-
-      for (const c of sampleContestants) {
-        const u = await User.create({
-          ...c,
-          password: 'Password123!',
-          role: 'participant',
-        });
-
-        // Add a session and submission for activity
-        await ParticipantSession.create({
-          userId: u._id,
-          challengeId: expenseChal._id,
-          startTime: new Date(Date.now() - Math.floor(Math.random() * 800) * 1000),
-          durationSeconds: 1200,
-          revealsCount: Math.floor(Math.random() * 3),
-          scoreAwarded: 95,
-          status: 'ACTIVE',
-        });
-
-        await Submission.create({
-          userId: u._id,
-          challengeId: expenseChal._id,
-          code: expenseChal.sourceCode,
-          language: 'java',
-          status: 'ACCEPTED',
-          testCasesPassed: 5,
-          totalTestCases: 5,
-          score: 95,
-          executionTimeMs: 124,
-        });
-      }
-      console.log('[Seed] Sample contestants and active sessions seeded');
-    }
-
-    await mongoose.disconnect();
-    console.log('[Seed] Database initialization completed successfully.');
-  } catch (err) {
-    console.error('[Seed Error]:', err);
-    process.exit(1);
-  }
+const Challenge = require('../models/Challenge');
+const TestCase = require('../models/TestCase');
+
+// ── Static challenge data (mirrored from frontend) ─────────────────────────
+
+const QUIZ_TYPE_MAP = {
+  mcq: 'MCQ',
+  output: 'OUTPUT_PREDICTION',
+  fill: 'FILL_BLANK',
 };
 
-if (require.main === module) {
-  seedChallenges();
+const CHALLENGES_DATA = [
+  // ─── CHALLENGE 1 – FIND THE SUM ─────────────────────────────────────────
+  {
+    slug: 'ch-01',
+    title: 'Challenge 1 – Find the Sum',
+    category: 'Math & Accumulation',
+    difficulty: 'Medium',
+    points: 100,
+    description:
+      'Given a positive integer N from standard input, calculate and display the total sum of all natural numbers from 1 up to N (inclusive).\n\nFormula: Sum = 1 + 2 + 3 + ... + N',
+    sampleInput: '5',
+    sampleOutput: '15',
+    timeLimitSeconds: 1200,
+    supportedLanguages: ['python', 'cpp', 'c', 'java'],
+    hiddenTests: [
+      { input: '5', expectedOutput: '15', description: 'Base sample test' },
+      { input: '10', expectedOutput: '55', description: 'Mid-range accumulation' },
+      { input: '20', expectedOutput: '210', description: 'Upper bound validation' },
+    ],
+    languageConfigs: [
+      {
+        language: 'python',
+        languageName: 'Python 3',
+        blocks: [
+          { blockId: 'py1-f1', code: 'n = int(input().strip())', role: 'INPUT', order: 1 },
+          { blockId: 'py1-f2', code: 'total = 0\nfor i in range(1, n + 1):\n    total += i', role: 'LOGIC', order: 2 },
+          { blockId: 'py1-f3', code: 'print(total)', role: 'OUTPUT', order: 3 },
+        ],
+        revealOrder: ['py1-f3', 'py1-f1', 'py1-f2'],
+        acceptedOrders: [],
+      },
+      {
+        language: 'cpp',
+        languageName: 'C++ 17',
+        blocks: [
+          { blockId: 'cpp1-f1', code: '#include <iostream>\nusing namespace std;', role: 'IMPORT', order: 1 },
+          { blockId: 'cpp1-f2', code: 'int main() {\n    int n, total = 0;\n    cin >> n;', role: 'INPUT', order: 2 },
+          { blockId: 'cpp1-f3', code: '    for (int i = 1; i <= n; i++) {\n        total += i;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'cpp1-f4', code: '    cout << total << endl;', role: 'OUTPUT', order: 4 },
+          { blockId: 'cpp1-f5', code: '    return 0;\n}', role: 'CLOSE', order: 5 },
+        ],
+        revealOrder: ['cpp1-f4', 'cpp1-f1', 'cpp1-f3', 'cpp1-f5', 'cpp1-f2'],
+        acceptedOrders: [],
+      },
+      {
+        language: 'c',
+        languageName: 'C (GCC)',
+        blocks: [
+          { blockId: 'c1-f1', code: '#include <stdio.h>', role: 'IMPORT', order: 1 },
+          { blockId: 'c1-f2', code: 'int main() {\n    int n, total = 0;\n    scanf("%d", &n);', role: 'INPUT', order: 2 },
+          { blockId: 'c1-f3', code: '    for (int i = 1; i <= n; i++) {\n        total += i;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'c1-f4', code: '    printf("%d\\n", total);', role: 'OUTPUT', order: 4 },
+          { blockId: 'c1-f5', code: '    return 0;\n}', role: 'CLOSE', order: 5 },
+        ],
+        revealOrder: ['c1-f3', 'c1-f5', 'c1-f1', 'c1-f4', 'c1-f2'],
+        acceptedOrders: [],
+      },
+      {
+        language: 'java',
+        languageName: 'Java 11',
+        blocks: [
+          { blockId: 'java1-f1', code: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {', role: 'WRAPPER', order: 1 },
+          { blockId: 'java1-f2', code: '        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int total = 0;', role: 'INPUT', order: 2 },
+          { blockId: 'java1-f3', code: '        for (int i = 1; i <= n; i++) {\n            total += i;\n        }', role: 'LOGIC', order: 3 },
+          { blockId: 'java1-f4', code: '        System.out.println(total);', role: 'OUTPUT', order: 4 },
+          { blockId: 'java1-f5', code: '    }\n}', role: 'CLOSE', order: 5 },
+        ],
+        revealOrder: ['java1-f4', 'java1-f2', 'java1-f5', 'java1-f1', 'java1-f3'],
+        acceptedOrders: [],
+      },
+    ],
+    quizzes: {
+      'q1-sum-1': { type: 'mcq', concept: 'loops', prompt: 'How many times does `for i in range(1, n + 1)` iterate when n = 5?', options: ['4', '5', '6', 'n + 1'], answer: 1, explain: 'range(1, 6) yields 1, 2, 3, 4, 5 → 5 iterations.' },
+      'q1-sum-2': { type: 'output', concept: 'accumulation', prompt: 'What does this print?\n\ntotal = 0\nfor i in range(1, 4):\n    total += i\nprint(total)', answer: '6', explain: '1 + 2 + 3 = 6.' },
+      'q1-sum-3': { type: 'fill', concept: 'syntax', prompt: 'Complete the line: `total ___ i`  (adds i to total each iteration)', answer: ['+=', '+= i'], explain: '+= is the addition-assignment operator.' },
+      'q1-sum-4': { type: 'mcq', concept: 'accumulation', prompt: 'Which variable holds the running sum in the Python solution?', options: ['n', 'i', 'total', 'result'], answer: 2, explain: '`total` is initialised to 0 and accumulated with each i.' },
+      'q1-sum-5': { type: 'mcq', concept: 'input', prompt: 'Which function reads N as an integer from stdin in Python?', options: ['input()', 'int(input())', 'read()', 'scan()'], answer: 1, explain: 'int(input()) reads the string and converts it.' },
+      'q1-sum-6': { type: 'output', concept: 'loops', prompt: 'What is printed?\n\ntotal = 0\nfor i in range(1, 6):\n    total += i\nprint(total)', answer: '15', explain: '1+2+3+4+5 = 15.' },
+      'q1-sum-7': { type: 'mcq', concept: 'cpp-syntax', prompt: 'In C++, which statement reads an integer from stdin?', options: ['scanf("%d",&n)', 'cin >> n', 'gets(n)', 'readline(n)'], answer: 1, explain: '`cin >> n` extracts an integer from standard input in C++.' },
+      'q1-sum-8': { type: 'fill', concept: 'loops', prompt: 'Fill in the blank: `for (int i = 1; i ___ n; i++)` to iterate from 1 to N inclusive.', answer: ['<=', '< n + 1'], explain: 'Using <= n ensures i reaches n on the last iteration.' },
+      'q1-sum-9': { type: 'mcq', concept: 'java-syntax', prompt: 'In Java, which class is used to read integers from stdin?', options: ['System.in', 'BufferedReader', 'Scanner', 'InputStreamReader'], answer: 2, explain: '`Scanner sc = new Scanner(System.in)` is the idiomatic Java approach.' },
+    },
+    // chest-to-quiz mapping per language (from original static data)
+    chestMap: {
+      python: [
+        { quizPool: ['q1-sum-1', 'q1-sum-2'], rewardBlock: 'py1-f3' },
+        { quizPool: ['q1-sum-3', 'q1-sum-4'], rewardBlock: 'py1-f1' },
+        { quizPool: ['q1-sum-5', 'q1-sum-6'], rewardBlock: 'py1-f2' },
+      ],
+      cpp: [
+        { quizPool: ['q1-sum-7', 'q1-sum-8'], rewardBlock: 'cpp1-f4' },
+        { quizPool: ['q1-sum-1', 'q1-sum-3'], rewardBlock: 'cpp1-f1' },
+        { quizPool: ['q1-sum-5', 'q1-sum-9'], rewardBlock: 'cpp1-f3' },
+        { quizPool: ['q1-sum-2', 'q1-sum-6'], rewardBlock: 'cpp1-f5' },
+        { quizPool: ['q1-sum-4', 'q1-sum-7'], rewardBlock: 'cpp1-f2' },
+      ],
+      c: [
+        { quizPool: ['q1-sum-1', 'q1-sum-8'], rewardBlock: 'c1-f3' },
+        { quizPool: ['q1-sum-7', 'q1-sum-3'], rewardBlock: 'c1-f5' },
+        { quizPool: ['q1-sum-5', 'q1-sum-2'], rewardBlock: 'c1-f1' },
+        { quizPool: ['q1-sum-6', 'q1-sum-9'], rewardBlock: 'c1-f4' },
+        { quizPool: ['q1-sum-4', 'q1-sum-1'], rewardBlock: 'c1-f2' },
+      ],
+      java: [
+        { quizPool: ['q1-sum-9', 'q1-sum-1'], rewardBlock: 'java1-f4' },
+        { quizPool: ['q1-sum-7', 'q1-sum-4'], rewardBlock: 'java1-f2' },
+        { quizPool: ['q1-sum-3', 'q1-sum-8'], rewardBlock: 'java1-f5' },
+        { quizPool: ['q1-sum-2', 'q1-sum-5'], rewardBlock: 'java1-f1' },
+        { quizPool: ['q1-sum-6', 'q1-sum-9'], rewardBlock: 'java1-f3' },
+      ],
+    },
+  },
+
+  // ─── CHALLENGE 2 – REVERSE A STRING ──────────────────────────────────────
+  {
+    slug: 'ch-02',
+    title: 'Challenge 2 – Reverse a String',
+    category: 'Strings & Pointers',
+    difficulty: 'Easy',
+    points: 100,
+    description:
+      "Read an input word or sequence of characters from standard input and print the exact reversed string.\n\nExample: 'hello' becomes 'olleh'.",
+    sampleInput: 'hello',
+    sampleOutput: 'olleh',
+    timeLimitSeconds: 1200,
+    supportedLanguages: ['python', 'cpp', 'c', 'java'],
+    hiddenTests: [
+      { input: 'mindcraft', expectedOutput: 'tfardcnim', description: 'Platform name reversal' },
+      { input: 'racecar', expectedOutput: 'racecar', description: 'Palindrome preservation' },
+      { input: 'algorithm', expectedOutput: 'mihtirogla', description: 'General vocabulary' },
+    ],
+    languageConfigs: [
+      {
+        language: 'python', languageName: 'Python 3',
+        blocks: [
+          { blockId: 'py2-f1', code: 's = input().strip()', role: 'INPUT', order: 1 },
+          { blockId: 'py2-f2', code: 'rev = s[::-1]', role: 'LOGIC', order: 2 },
+          { blockId: 'py2-f3', code: 'print(rev)', role: 'OUTPUT', order: 3 },
+        ],
+        revealOrder: ['py2-f2', 'py2-f3', 'py2-f1'], acceptedOrders: [],
+      },
+      {
+        language: 'cpp', languageName: 'C++ 17',
+        blocks: [
+          { blockId: 'cpp2-f1', code: '#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;', role: 'IMPORT', order: 1 },
+          { blockId: 'cpp2-f2', code: 'int main() {\n    string s;\n    cin >> s;', role: 'INPUT', order: 2 },
+          { blockId: 'cpp2-f3', code: '    reverse(s.begin(), s.end());', role: 'LOGIC', order: 3 },
+          { blockId: 'cpp2-f4', code: '    cout << s << endl;\n    return 0;\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['cpp2-f3', 'cpp2-f1', 'cpp2-f4', 'cpp2-f2'], acceptedOrders: [],
+      },
+      {
+        language: 'c', languageName: 'C (GCC)',
+        blocks: [
+          { blockId: 'c2-f1', code: '#include <stdio.h>\n#include <string.h>', role: 'IMPORT', order: 1 },
+          { blockId: 'c2-f2', code: 'int main() {\n    char s[1000];\n    scanf("%s", s);', role: 'INPUT', order: 2 },
+          { blockId: 'c2-f3', code: '    int len = strlen(s);\n    for (int i = 0; i < len / 2; i++) {\n        char tmp = s[i];\n        s[i] = s[len - 1 - i];\n        s[len - 1 - i] = tmp;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'c2-f4', code: '    printf("%s\\n", s);\n    return 0;\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['c2-f4', 'c2-f2', 'c2-f1', 'c2-f3'], acceptedOrders: [],
+      },
+      {
+        language: 'java', languageName: 'Java 11',
+        blocks: [
+          { blockId: 'java2-f1', code: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {', role: 'WRAPPER', order: 1 },
+          { blockId: 'java2-f2', code: '        Scanner sc = new Scanner(System.in);\n        String s = sc.next();', role: 'INPUT', order: 2 },
+          { blockId: 'java2-f3', code: '        StringBuilder sb = new StringBuilder(s);\n        String rev = sb.reverse().toString();', role: 'LOGIC', order: 3 },
+          { blockId: 'java2-f4', code: '        System.out.println(rev);\n    }\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['java2-f3', 'java2-f4', 'java2-f1', 'java2-f2'], acceptedOrders: [],
+      },
+    ],
+    quizzes: {
+      'q2-rev-1': { type: 'mcq', concept: 'slicing', prompt: 'In Python, `s[::-1]` on a string "hello" returns:', options: ['"hello"', '"olleh"', '"hell"', 'Error'], answer: 1, explain: 'Slice step -1 traverses characters from end to start.' },
+      'q2-rev-2': { type: 'output', concept: 'slicing', prompt: 'What does this print?\n\ns = "abc"\nprint(s[::-1])', answer: 'cba', explain: 'Reversed slice: c, b, a.' },
+      'q2-rev-3': { type: 'fill', concept: 'syntax', prompt: 'Complete: `rev = s[___]`  to reverse string s in Python', answer: ['::-1', ':: -1'], explain: 's[::-1] uses extended slice with step -1.' },
+      'q2-rev-4': { type: 'mcq', concept: 'string-ops', prompt: 'Which C++ function reverses a string in-place?', options: ['str.flip()', 'reverse(s.begin(), s.end())', 'strrev(s)', 's.invert()'], answer: 1, explain: 'std::reverse from <algorithm> reverses iterators in-place.' },
+      'q2-rev-5': { type: 'mcq', concept: 'java-ops', prompt: 'Which Java class has a `.reverse()` method for strings?', options: ['String', 'StringBuffer', 'StringBuilder', 'Both B and C'], answer: 3, explain: 'Both StringBuffer and StringBuilder have .reverse().' },
+      'q2-rev-6': { type: 'output', concept: 'string-ops', prompt: 'What does this Java code print?\n\nString s = "hi";\nStringBuilder sb = new StringBuilder(s);\nSystem.out.println(sb.reverse().toString());', answer: 'ih', explain: 'StringBuilder.reverse() reverses the character sequence.' },
+      'q2-rev-7': { type: 'mcq', concept: 'c-ops', prompt: 'Which C function returns the length of a C-string?', options: ['len(s)', 'sizeof(s)', 'strlen(s)', 'length(s)'], answer: 2, explain: 'strlen() from <string.h> counts characters up to null terminator.' },
+      'q2-rev-8': { type: 'fill', concept: 'loops', prompt: 'In the C swap-based reversal loop, the loop runs while `i < ___`.', answer: ['len / 2', 'len/2'], explain: 'Only need to swap up to the midpoint; beyond that the string is mirrored.' },
+    },
+    chestMap: {
+      python: [
+        { quizPool: ['q2-rev-1', 'q2-rev-2'], rewardBlock: 'py2-f2' },
+        { quizPool: ['q2-rev-3', 'q2-rev-4'], rewardBlock: 'py2-f3' },
+        { quizPool: ['q2-rev-5', 'q2-rev-6'], rewardBlock: 'py2-f1' },
+      ],
+      cpp: [
+        { quizPool: ['q2-rev-7', 'q2-rev-1'], rewardBlock: 'cpp2-f3' },
+        { quizPool: ['q2-rev-2', 'q2-rev-8'], rewardBlock: 'cpp2-f1' },
+        { quizPool: ['q2-rev-3', 'q2-rev-5'], rewardBlock: 'cpp2-f4' },
+        { quizPool: ['q2-rev-6', 'q2-rev-4'], rewardBlock: 'cpp2-f2' },
+      ],
+      c: [
+        { quizPool: ['q2-rev-1', 'q2-rev-7'], rewardBlock: 'c2-f4' },
+        { quizPool: ['q2-rev-8', 'q2-rev-4'], rewardBlock: 'c2-f2' },
+        { quizPool: ['q2-rev-3', 'q2-rev-6'], rewardBlock: 'c2-f1' },
+        { quizPool: ['q2-rev-2', 'q2-rev-5'], rewardBlock: 'c2-f3' },
+      ],
+      java: [
+        { quizPool: ['q2-rev-5', 'q2-rev-2'], rewardBlock: 'java2-f3' },
+        { quizPool: ['q2-rev-8', 'q2-rev-1'], rewardBlock: 'java2-f4' },
+        { quizPool: ['q2-rev-6', 'q2-rev-3'], rewardBlock: 'java2-f1' },
+        { quizPool: ['q2-rev-4', 'q2-rev-7'], rewardBlock: 'java2-f2' },
+      ],
+    },
+  },
+
+  // ─── CHALLENGE 3 – FIND THE LARGEST NUMBER ───────────────────────────────
+  {
+    slug: 'ch-03',
+    title: 'Challenge 3 – Find the Largest Number',
+    category: 'Array Traversal',
+    difficulty: 'Hard',
+    points: 120,
+    description: 'Given space-separated integers on standard input, determine and print the maximum (largest) integer in the sequence.',
+    sampleInput: '3 8 2 15 6',
+    sampleOutput: '15',
+    timeLimitSeconds: 1200,
+    supportedLanguages: ['python', 'cpp', 'c', 'java'],
+    hiddenTests: [
+      { input: '10 45 2 99 31', expectedOutput: '99', description: 'Multi-element sequence' },
+      { input: '-5 -1 -20 -3', expectedOutput: '-1', description: 'Negative integers handling' },
+      { input: '100 200 50 400 150', expectedOutput: '400', description: 'Triple digit values' },
+    ],
+    languageConfigs: [
+      {
+        language: 'python', languageName: 'Python 3',
+        blocks: [
+          { blockId: 'py3-f1', code: 'nums = list(map(int, input().split()))', role: 'INPUT', order: 1 },
+          { blockId: 'py3-f2', code: 'max_val = nums[0]', role: 'INIT', order: 2 },
+          { blockId: 'py3-f3', code: 'for x in nums[1:]:\n    if x > max_val:\n        max_val = x', role: 'LOGIC', order: 3 },
+          { blockId: 'py3-f4', code: 'print(max_val)', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['py3-f3', 'py3-f1', 'py3-f4', 'py3-f2'], acceptedOrders: [],
+      },
+      {
+        language: 'cpp', languageName: 'C++ 17',
+        blocks: [
+          { blockId: 'cpp3-f1', code: '#include <iostream>\nusing namespace std;', role: 'IMPORT', order: 1 },
+          { blockId: 'cpp3-f2', code: 'int main() {\n    int x, max_val;\n    cin >> max_val;', role: 'INIT', order: 2 },
+          { blockId: 'cpp3-f3', code: '    while (cin >> x) {\n        if (x > max_val) max_val = x;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'cpp3-f4', code: '    cout << max_val << endl;\n    return 0;\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['cpp3-f3', 'cpp3-f4', 'cpp3-f1', 'cpp3-f2'], acceptedOrders: [],
+      },
+      {
+        language: 'c', languageName: 'C (GCC)',
+        blocks: [
+          { blockId: 'c3-f1', code: '#include <stdio.h>', role: 'IMPORT', order: 1 },
+          { blockId: 'c3-f2', code: 'int main() {\n    int x, max_val;\n    scanf("%d", &max_val);', role: 'INIT', order: 2 },
+          { blockId: 'c3-f3', code: '    while (scanf("%d", &x) == 1) {\n        if (x > max_val) max_val = x;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'c3-f4', code: '    printf("%d\\n", max_val);\n    return 0;\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['c3-f2', 'c3-f4', 'c3-f3', 'c3-f1'], acceptedOrders: [],
+      },
+      {
+        language: 'java', languageName: 'Java 11',
+        blocks: [
+          { blockId: 'java3-f1', code: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {', role: 'WRAPPER', order: 1 },
+          { blockId: 'java3-f2', code: '        Scanner sc = new Scanner(System.in);\n        int maxVal = sc.nextInt();', role: 'INIT', order: 2 },
+          { blockId: 'java3-f3', code: '        while (sc.hasNextInt()) {\n            int x = sc.nextInt();\n            if (x > maxVal) maxVal = x;\n        }', role: 'LOGIC', order: 3 },
+          { blockId: 'java3-f4', code: '        System.out.println(maxVal);\n    }\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['java3-f4', 'java3-f3', 'java3-f1', 'java3-f2'], acceptedOrders: [],
+      },
+    ],
+    quizzes: {
+      'q3-max-1': { type: 'mcq', concept: 'comparison', prompt: 'Which Python expression correctly checks if x is greater than max_val?', options: ['x == max_val', 'x > max_val', 'x >= max_val', 'max_val > x'], answer: 1, explain: 'x > max_val is true when x is strictly greater.' },
+      'q3-max-2': { type: 'output', concept: 'traversal', prompt: 'What does this print?\n\nnums = [3, 8, 2, 15, 6]\nmax_val = nums[0]\nfor x in nums[1:]:\n    if x > max_val:\n        max_val = x\nprint(max_val)', answer: '15', explain: '15 is the largest element.' },
+      'q3-max-3': { type: 'fill', concept: 'init', prompt: 'To start the max search in Python, we initialise max_val with `nums[___]` to avoid assuming the range.', answer: ['0', '[0]'], explain: 'nums[0] safely seeds max_val with the first element.' },
+      'q3-max-4': { type: 'mcq', concept: 'loops', prompt: 'In `for x in nums[1:]:` why do we start at index 1?', options: ['To skip the last element', 'Because index 0 is already used as the initial max', 'Python lists start at 1', 'To avoid an off-by-one error in the output'], answer: 1, explain: 'Index 0 is used to seed max_val, so we compare from index 1 onward.' },
+      'q3-max-5': { type: 'mcq', concept: 'cpp-input', prompt: 'In C++, `while (cin >> x)` reads integers until:', options: ['x == 0', 'EOF or invalid input', 'x > 1000', 'The loop runs 10 times'], answer: 1, explain: 'cin >> x returns false on EOF or read failure.' },
+      'q3-max-6': { type: 'output', concept: 'negative-nums', prompt: 'What does this print?\n\nnums = [-5, -1, -20, -3]\nmax_val = nums[0]\nfor x in nums[1:]:\n    if x > max_val:\n        max_val = x\nprint(max_val)', answer: '-1', explain: '-1 is the largest among all negative values.' },
+      'q3-max-7': { type: 'fill', concept: 'c-scanf', prompt: 'In C, `while (scanf("%d", &x) ___ 1)` reads integers until EOF.', answer: ['== 1', '==1'], explain: 'scanf returns the number of items read; == 1 means one integer was read successfully.' },
+      'q3-max-8': { type: 'mcq', concept: 'java-scanner', prompt: 'In Java, `sc.hasNextInt()` returns:', options: ['The next integer', 'True if the next token is an integer, false otherwise', 'The count of remaining integers', 'True only if the Scanner is at EOF'], answer: 1, explain: 'hasNextInt() peeks ahead without consuming, returns boolean.' },
+    },
+    chestMap: {
+      python: [
+        { quizPool: ['q3-max-1', 'q3-max-2'], rewardBlock: 'py3-f3' },
+        { quizPool: ['q3-max-3', 'q3-max-4'], rewardBlock: 'py3-f1' },
+        { quizPool: ['q3-max-5', 'q3-max-6'], rewardBlock: 'py3-f4' },
+        { quizPool: ['q3-max-7', 'q3-max-1'], rewardBlock: 'py3-f2' },
+      ],
+      cpp: [
+        { quizPool: ['q3-max-7', 'q3-max-3'], rewardBlock: 'cpp3-f3' },
+        { quizPool: ['q3-max-1', 'q3-max-5'], rewardBlock: 'cpp3-f4' },
+        { quizPool: ['q3-max-6', 'q3-max-2'], rewardBlock: 'cpp3-f1' },
+        { quizPool: ['q3-max-4', 'q3-max-8'], rewardBlock: 'cpp3-f2' },
+      ],
+      c: [
+        { quizPool: ['q3-max-2', 'q3-max-8'], rewardBlock: 'c3-f2' },
+        { quizPool: ['q3-max-6', 'q3-max-1'], rewardBlock: 'c3-f4' },
+        { quizPool: ['q3-max-3', 'q3-max-5'], rewardBlock: 'c3-f3' },
+        { quizPool: ['q3-max-7', 'q3-max-4'], rewardBlock: 'c3-f1' },
+      ],
+      java: [
+        { quizPool: ['q3-max-5', 'q3-max-7'], rewardBlock: 'java3-f4' },
+        { quizPool: ['q3-max-3', 'q3-max-8'], rewardBlock: 'java3-f3' },
+        { quizPool: ['q3-max-1', 'q3-max-2'], rewardBlock: 'java3-f1' },
+        { quizPool: ['q3-max-6', 'q3-max-4'], rewardBlock: 'java3-f2' },
+      ],
+    },
+  },
+
+  // ─── CHALLENGE 4 – STAR PYRAMID ──────────────────────────────────────────
+  {
+    slug: 'ch-04',
+    title: 'Challenge 4 – Star Pyramid',
+    category: 'Nested Loops & Patterns',
+    difficulty: 'Hard',
+    points: 150,
+    description: 'Given a positive integer N from standard input, print a left-aligned star pyramid of N rows.\n\nRow i (1-indexed) contains exactly i stars.\n\nExample for N=4:\n*\n**\n***\n****',
+    sampleInput: '4',
+    sampleOutput: '*\n**\n***\n****',
+    timeLimitSeconds: 1200,
+    supportedLanguages: ['python', 'cpp', 'c', 'java'],
+    hiddenTests: [
+      { input: '4', expectedOutput: '*\n**\n***\n****', description: 'Basic pyramid 4 rows' },
+      { input: '1', expectedOutput: '*', description: 'Single row edge case' },
+      { input: '6', expectedOutput: '*\n**\n***\n****\n*****\n******', description: 'Six-row pyramid' },
+    ],
+    languageConfigs: [
+      {
+        language: 'python', languageName: 'Python 3',
+        blocks: [
+          { blockId: 'py4-f1', code: 'n = int(input().strip())', role: 'INPUT', order: 1 },
+          { blockId: 'py4-f2', code: 'for i in range(1, n + 1):', role: 'OUTER_LOOP', order: 2 },
+          { blockId: 'py4-f3', code: "    print('*' * i)", role: 'OUTPUT', order: 3 },
+        ],
+        revealOrder: ['py4-f3', 'py4-f1', 'py4-f2'], acceptedOrders: [],
+      },
+      {
+        language: 'cpp', languageName: 'C++ 17',
+        blocks: [
+          { blockId: 'cpp4-f1', code: '#include <iostream>\nusing namespace std;', role: 'IMPORT', order: 1 },
+          { blockId: 'cpp4-f2', code: 'int main() {\n    int n;\n    cin >> n;', role: 'INPUT', order: 2 },
+          { blockId: 'cpp4-f3', code: '    for (int i = 1; i <= n; i++) {', role: 'OUTER_LOOP', order: 3 },
+          { blockId: 'cpp4-f4', code: '        for (int j = 0; j < i; j++) {\n            cout << "*";\n        }', role: 'INNER_LOOP', order: 4 },
+          { blockId: 'cpp4-f5', code: '        cout << endl;\n    }', role: 'ROW_END', order: 5 },
+          { blockId: 'cpp4-f6', code: '    return 0;\n}', role: 'CLOSE', order: 6 },
+        ],
+        revealOrder: ['cpp4-f4', 'cpp4-f1', 'cpp4-f6', 'cpp4-f3', 'cpp4-f2', 'cpp4-f5'], acceptedOrders: [],
+      },
+      {
+        language: 'c', languageName: 'C (GCC)',
+        blocks: [
+          { blockId: 'c4-f1', code: '#include <stdio.h>', role: 'IMPORT', order: 1 },
+          { blockId: 'c4-f2', code: 'int main() {\n    int n;\n    scanf("%d", &n);', role: 'INPUT', order: 2 },
+          { blockId: 'c4-f3', code: '    for (int i = 1; i <= n; i++) {', role: 'OUTER_LOOP', order: 3 },
+          { blockId: 'c4-f4', code: '        for (int j = 0; j < i; j++) {\n            printf("*");\n        }', role: 'INNER_LOOP', order: 4 },
+          { blockId: 'c4-f5', code: '        printf("\\n");\n    }', role: 'ROW_END', order: 5 },
+          { blockId: 'c4-f6', code: '    return 0;\n}', role: 'CLOSE', order: 6 },
+        ],
+        revealOrder: ['c4-f5', 'c4-f3', 'c4-f1', 'c4-f4', 'c4-f6', 'c4-f2'], acceptedOrders: [],
+      },
+      {
+        language: 'java', languageName: 'Java 11',
+        blocks: [
+          { blockId: 'java4-f1', code: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {', role: 'WRAPPER', order: 1 },
+          { blockId: 'java4-f2', code: '        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();', role: 'INPUT', order: 2 },
+          { blockId: 'java4-f3', code: '        for (int i = 1; i <= n; i++) {', role: 'OUTER_LOOP', order: 3 },
+          { blockId: 'java4-f4', code: '            for (int j = 0; j < i; j++) {\n                System.out.print("*");\n            }', role: 'INNER_LOOP', order: 4 },
+          { blockId: 'java4-f5', code: '            System.out.println();', role: 'ROW_END', order: 5 },
+          { blockId: 'java4-f6', code: '        }\n    }\n}', role: 'CLOSE', order: 6 },
+        ],
+        revealOrder: ['java4-f4', 'java4-f6', 'java4-f2', 'java4-f1', 'java4-f5', 'java4-f3'], acceptedOrders: [],
+      },
+    ],
+    quizzes: {
+      'q4-pyr-1': { type: 'mcq', concept: 'nested-loops', prompt: 'In a star pyramid, how many stars appear on row i (1-indexed)?', options: ['i - 1', 'i', 'i + 1', 'n - i'], answer: 1, explain: 'Row 1 has 1 star, row 2 has 2 stars, ..., row i has i stars.' },
+      'q4-pyr-2': { type: 'output', concept: 'pattern', prompt: "What does `print('*' * 3)` output in Python?", answer: '***', explain: "String multiplication repeats '*' three times." },
+      'q4-pyr-3': { type: 'mcq', concept: 'outer-loop', prompt: 'The outer loop in a star pyramid iterates over:', options: ['Number of stars per row', 'Row number (1 to N)', 'Column count', 'Diagonal index'], answer: 1, explain: 'The outer loop runs from row 1 to N, one iteration per row.' },
+      'q4-pyr-4': { type: 'fill', concept: 'inner-loop', prompt: 'Fill the blank: `for (int j = 0; j < ___; j++)` to print i stars on row i in C++.', answer: ['i', 'i;'], explain: 'j < i means j takes values 0, 1, ..., i-1 → i iterations.' },
+      'q4-pyr-5': { type: 'output', concept: 'nested-loops', prompt: 'How many total stars are printed for N = 3?', answer: '6', explain: 'Row 1: 1 star, row 2: 2 stars, row 3: 3 stars → 1+2+3 = 6.' },
+      'q4-pyr-6': { type: 'mcq', concept: 'newline', prompt: 'After printing stars on a row in C++, you call:', options: ['cout << "\\n"', 'cout << endl', 'printf("\\n")', 'Both A and B'], answer: 3, explain: 'Both cout << "\\n" and cout << endl advance to the next line in C++.' },
+      'q4-pyr-7': { type: 'mcq', concept: 'java-output', prompt: 'In Java, `System.out.print("*")` vs `System.out.println("*")`:', options: ['Both add a newline after *', 'print does NOT add a newline; println does', 'println does NOT add a newline; print does', 'Both are identical'], answer: 1, explain: 'print appends nothing; println appends the platform newline.' },
+      'q4-pyr-8': { type: 'fill', concept: 'outer-loop-bound', prompt: 'Fill: `for i in range(1, ___ + 1):` to loop row numbers 1 through N in Python.', answer: ['n', 'N'], explain: 'range(1, n + 1) generates 1, 2, ..., n.' },
+    },
+    chestMap: {
+      python: [
+        { quizPool: ['q4-pyr-1', 'q4-pyr-2'], rewardBlock: 'py4-f3' },
+        { quizPool: ['q4-pyr-3', 'q4-pyr-4'], rewardBlock: 'py4-f1' },
+        { quizPool: ['q4-pyr-5', 'q4-pyr-6'], rewardBlock: 'py4-f2' },
+      ],
+      cpp: [
+        { quizPool: ['q4-pyr-7', 'q4-pyr-2'], rewardBlock: 'cpp4-f4' },
+        { quizPool: ['q4-pyr-1', 'q4-pyr-8'], rewardBlock: 'cpp4-f1' },
+        { quizPool: ['q4-pyr-3', 'q4-pyr-6'], rewardBlock: 'cpp4-f6' },
+        { quizPool: ['q4-pyr-5', 'q4-pyr-4'], rewardBlock: 'cpp4-f3' },
+        { quizPool: ['q4-pyr-8', 'q4-pyr-7'], rewardBlock: 'cpp4-f2' },
+        { quizPool: ['q4-pyr-4', 'q4-pyr-1'], rewardBlock: 'cpp4-f5' },
+      ],
+      c: [
+        { quizPool: ['q4-pyr-2', 'q4-pyr-7'], rewardBlock: 'c4-f5' },
+        { quizPool: ['q4-pyr-8', 'q4-pyr-3'], rewardBlock: 'c4-f3' },
+        { quizPool: ['q4-pyr-1', 'q4-pyr-5'], rewardBlock: 'c4-f1' },
+        { quizPool: ['q4-pyr-4', 'q4-pyr-6'], rewardBlock: 'c4-f4' },
+        { quizPool: ['q4-pyr-7', 'q4-pyr-2'], rewardBlock: 'c4-f6' },
+        { quizPool: ['q4-pyr-6', 'q4-pyr-8'], rewardBlock: 'c4-f2' },
+      ],
+      java: [
+        { quizPool: ['q4-pyr-3', 'q4-pyr-8'], rewardBlock: 'java4-f4' },
+        { quizPool: ['q4-pyr-7', 'q4-pyr-5'], rewardBlock: 'java4-f6' },
+        { quizPool: ['q4-pyr-1', 'q4-pyr-4'], rewardBlock: 'java4-f2' },
+        { quizPool: ['q4-pyr-6', 'q4-pyr-2'], rewardBlock: 'java4-f1' },
+        { quizPool: ['q4-pyr-8', 'q4-pyr-3'], rewardBlock: 'java4-f5' },
+        { quizPool: ['q4-pyr-2', 'q4-pyr-7'], rewardBlock: 'java4-f3' },
+      ],
+    },
+  },
+
+  // ─── CHALLENGE 5 – GREATEST AMONG THREE NUMBERS ──────────────────────────
+  {
+    slug: 'ch-05',
+    title: 'Challenge 5 – Greatest Among Three Numbers',
+    category: 'Conditionals & Logic',
+    difficulty: 'Easy',
+    points: 100,
+    description:
+      'Given three integers A, B, and C from standard input, determine and display the greatest (maximum) number among them.\n\nInput: Three integers separated by whitespace.\nOutput: A single integer representing the greatest value.',
+    sampleInput: '10 25 15',
+    sampleOutput: '25',
+    timeLimitSeconds: 1200,
+    supportedLanguages: ['python', 'java', 'cpp', 'c'],
+    hiddenTests: [
+      { input: '10 25 15', expectedOutput: '25', description: 'Middle operand maximum' },
+      { input: '50 12 3', expectedOutput: '50', description: 'First operand maximum' },
+      { input: '7 9 99', expectedOutput: '99', description: 'Third operand maximum' },
+      { input: '-15 -5 -30', expectedOutput: '-5', description: 'All negative operands' },
+      { input: '42 42 42', expectedOutput: '42', description: 'All three operands equal' },
+      { input: '100 100 50', expectedOutput: '100', description: 'Two identical maximum operands' },
+      { input: '15 200 200', expectedOutput: '200', description: 'Last two identical maximum operands' },
+      { input: '0 0 -1', expectedOutput: '0', description: 'Zero boundary test' },
+    ],
+    languageConfigs: [
+      {
+        language: 'python',
+        languageName: 'Python 3',
+        blocks: [
+          { blockId: 'py5-f1', code: 'import sys', role: 'MAIN_WRAPPER', order: 1 },
+          { blockId: 'py5-f2', code: 'tokens = sys.stdin.read().split()\na, b, c = int(tokens[0]), int(tokens[1]), int(tokens[2])', role: 'INPUT', order: 2 },
+          { blockId: 'py5-f3', code: 'if a >= b and a >= c:\n    ans = a\nelif b >= a and b >= c:\n    ans = b\nelse:\n    ans = c', role: 'LOGIC', order: 3 },
+          { blockId: 'py5-f4', code: 'print(ans)', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['py5-f1', 'py5-f2', 'py5-f3', 'py5-f4'],
+        acceptedOrders: [],
+      },
+      {
+        language: 'java',
+        languageName: 'Java 17',
+        blocks: [
+          { blockId: 'java5-f1', code: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {', role: 'MAIN_WRAPPER', order: 1 },
+          { blockId: 'java5-f2', code: '        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt();\n        int b = sc.nextInt();\n        int c = sc.nextInt();', role: 'INPUT', order: 2 },
+          { blockId: 'java5-f3', code: '        int maxVal;\n        if (a >= b && a >= c) {\n            maxVal = a;\n        } else if (b >= a && b >= c) {\n            maxVal = b;\n        } else {\n            maxVal = c;\n        }', role: 'LOGIC', order: 3 },
+          { blockId: 'java5-f4', code: '        System.out.println(maxVal);\n    }\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['java5-f1', 'java5-f2', 'java5-f3', 'java5-f4'],
+        acceptedOrders: [],
+      },
+      {
+        language: 'cpp',
+        languageName: 'C++ 17',
+        blocks: [
+          { blockId: 'cpp5-f1', code: '#include <iostream>\nusing namespace std;\n\nint main() {', role: 'MAIN_WRAPPER', order: 1 },
+          { blockId: 'cpp5-f2', code: '    int a, b, c;\n    cin >> a >> b >> c;', role: 'INPUT', order: 2 },
+          { blockId: 'cpp5-f3', code: '    int maxVal;\n    if (a >= b && a >= c) {\n        maxVal = a;\n    } else if (b >= a && b >= c) {\n        maxVal = b;\n    } else {\n        maxVal = c;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'cpp5-f4', code: '    cout << maxVal << endl;\n    return 0;\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['cpp5-f1', 'cpp5-f2', 'cpp5-f3', 'cpp5-f4'],
+        acceptedOrders: [],
+      },
+      {
+        language: 'c',
+        languageName: 'C (GCC)',
+        blocks: [
+          { blockId: 'c5-f1', code: '#include <stdio.h>\n\nint main() {', role: 'MAIN_WRAPPER', order: 1 },
+          { blockId: 'c5-f2', code: '    int a, b, c;\n    scanf("%d %d %d", &a, &b, &c);', role: 'INPUT', order: 2 },
+          { blockId: 'c5-f3', code: '    int maxVal;\n    if (a >= b && a >= c) {\n        maxVal = a;\n    } else if (b >= a && b >= c) {\n        maxVal = b;\n    } else {\n        maxVal = c;\n    }', role: 'LOGIC', order: 3 },
+          { blockId: 'c5-f4', code: '    printf("%d\\n", maxVal);\n    return 0;\n}', role: 'OUTPUT', order: 4 },
+        ],
+        revealOrder: ['c5-f1', 'c5-f2', 'c5-f3', 'c5-f4'],
+        acceptedOrders: [],
+      },
+    ],
+    tasks: [
+      {
+        taskId: 'task-1',
+        title: 'Task 1: Program Entry & Boilerplate Setup',
+        description: 'Complete this task to unlock the program skeleton and header imports.',
+        order: 1,
+        penalty: 20,
+        cooldownSeconds: 3,
+        rewards: {
+          python: 'py5-f1',
+          java: 'java5-f1',
+          cpp: 'cpp5-f1',
+          c: 'c5-f1',
+        },
+        quizPool: [
+          {
+            quizId: 'q5-entry-1',
+            type: 'MCQ',
+            prompt: 'In C and C++, which header file provides standard input/output functions?',
+            options: ['<stdio.h> / <iostream>', '<stdlib.h>', '<math.h>', '<string.h>'],
+            answer: 0,
+            explain: '<stdio.h> provides printf/scanf in C, and <iostream> provides cin/cout in C++.',
+            concept: 'imports',
+          },
+          {
+            quizId: 'q5-entry-2',
+            type: 'MCQ',
+            prompt: 'What is the signature of the entry point method in standard Java applications?',
+            options: ['public static void main(String[] args)', 'public void start()', 'static main()', 'void run(int args)'],
+            answer: 0,
+            explain: 'The JVM requires public static void main(String[] args) as the application entry point.',
+            concept: 'java-entry',
+          },
+        ],
+      },
+      {
+        taskId: 'task-2',
+        title: 'Task 2: Read Three Input Values',
+        description: 'Complete this task to unlock the standard input extraction block.',
+        order: 2,
+        penalty: 20,
+        cooldownSeconds: 3,
+        rewards: {
+          python: 'py5-f2',
+          java: 'java5-f2',
+          cpp: 'cpp5-f2',
+          c: 'c5-f2',
+        },
+        quizPool: [
+          {
+            quizId: 'q5-input-1',
+            type: 'MCQ',
+            prompt: 'In C, which scanf statement correctly reads three integer variables a, b, and c?',
+            options: ['scanf("%d %d %d", &a, &b, &c);', 'scanf("%d", a, b, c);', 'cin >> a >> b >> c;', 'input(a, b, c);'],
+            answer: 0,
+            explain: 'scanf requires the "%d" format specifier and the address-of operator (&) for each variable.',
+            concept: 'c-input',
+          },
+          {
+            quizId: 'q5-input-2',
+            type: 'MCQ',
+            prompt: 'In Java, which method of the Scanner class reads the next integer token from input?',
+            options: ['nextInt()', 'readInt()', 'next()', 'parseInteger()'],
+            answer: 0,
+            explain: '`Scanner.nextInt()` extracts the next integer token separated by whitespace.',
+            concept: 'java-input',
+          },
+        ],
+      },
+      {
+        taskId: 'task-3',
+        title: 'Task 3: Compare Numbers & Determine Maximum',
+        description: 'Complete this task to unlock the conditional logic block.',
+        order: 3,
+        penalty: 20,
+        cooldownSeconds: 3,
+        rewards: {
+          python: 'py5-f3',
+          java: 'java5-f3',
+          cpp: 'cpp5-f3',
+          c: 'c5-f3',
+        },
+        quizPool: [
+          {
+            quizId: 'q5-logic-1',
+            type: 'MCQ',
+            prompt: 'Which logical operator is used to verify that A is greater than or equal to BOTH B and C?',
+            options: ['&& (Logical AND)', '|| (Logical OR)', '! (Logical NOT)', '^ (Bitwise XOR)'],
+            answer: 0,
+            explain: 'The logical AND operator (&& in C/C++/Java, `and` in Python) requires both conditions to evaluate to true.',
+            concept: 'operators',
+          },
+          {
+            quizId: 'q5-logic-2',
+            type: 'OUTPUT_PREDICTION',
+            prompt: 'What is the greatest value among A = -15, B = -5, and C = -30?',
+            options: [],
+            answer: '-5',
+            explain: '-5 is closest to zero on the number line, making it the greatest negative value.',
+            concept: 'negative-numbers',
+          },
+        ],
+      },
+      {
+        taskId: 'task-4',
+        title: 'Task 4: Output the Result',
+        description: 'Complete this task to unlock the output printing and termination block.',
+        order: 4,
+        penalty: 20,
+        cooldownSeconds: 3,
+        rewards: {
+          python: 'py5-f4',
+          java: 'java5-f4',
+          cpp: 'cpp5-f4',
+          c: 'c5-f4',
+        },
+        quizPool: [
+          {
+            quizId: 'q5-out-1',
+            type: 'MCQ',
+            prompt: 'In C++, which stream manipulator advances the cursor to the next line and flushes the stream?',
+            options: ['endl', 'flush', 'newline', 'break'],
+            answer: 0,
+            explain: '`endl` inserts a newline character into the output stream and flushes the buffer.',
+            concept: 'cpp-output',
+          },
+          {
+            quizId: 'q5-out-2',
+            type: 'MCQ',
+            prompt: 'In Python, what is the default behavior of `print()` after displaying arguments?',
+            options: ['Appends a newline character (\\n)', 'Does not add any character', 'Appends a space', 'Terminates the program'],
+            answer: 0,
+            explain: 'Python `print()` ends with a newline character by default unless overridden with `end=...`.',
+            concept: 'python-output',
+          },
+        ],
+      },
+    ],
+  },
+];
+
+// ─── MAIN SEED FUNCTION ────────────────────────────────────────────────────
+
+/**
+ * Convert chest map + quizzes into server-side tasks.
+ * Uses the largest language's chest count (they may differ) to determine total tasks.
+ * Each task has a quizPool with proper quizzes from all languages' chest quizPools merged.
+ */
+function buildTasks(challengeData) {
+  if (challengeData.tasks && challengeData.tasks.length > 0) {
+    return challengeData.tasks;
+  }
+  const { chestMap, quizzes } = challengeData;
+  if (!chestMap || !quizzes) return [];
+
+  // Determine the maximum number of tasks across all languages
+  const maxTasks = Math.max(...Object.values(chestMap).map((chests) => chests.length));
+  const tasks = [];
+
+  for (let i = 0; i < maxTasks; i++) {
+    const taskId = `task-${i + 1}`;
+
+    // Build rewards map: language -> blockId
+    const rewards = {};
+    Object.entries(chestMap).forEach(([lang, chests]) => {
+      if (chests[i]) {
+        rewards[lang] = chests[i].rewardBlock;
+      }
+    });
+
+    // Collect unique quiz IDs from all languages for this task slot
+    const quizIdSet = new Set();
+    Object.values(chestMap).forEach((chests) => {
+      if (chests[i]) {
+        chests[i].quizPool.forEach((qid) => quizIdSet.add(qid));
+      }
+    });
+
+    // Build quizPool with full quiz data
+    const quizPool = [];
+    quizIdSet.forEach((qid) => {
+      const q = quizzes[qid];
+      if (!q) return;
+      quizPool.push({
+        quizId: qid,
+        type: QUIZ_TYPE_MAP[q.type] || 'MCQ',
+        prompt: q.prompt,
+        options: q.options || [],
+        answer: q.answer,
+        explain: q.explain || '',
+        concept: q.concept || '',
+      });
+    });
+
+    tasks.push({
+      taskId,
+      title: `Task ${i + 1}`,
+      description: `Complete this task to unlock code block ${i + 1}`,
+      order: i + 1,
+      quizPool,
+      rewards,
+      penalty: 20,
+      cooldownSeconds: 3,
+    });
+  }
+
+  return tasks;
 }
 
-module.exports = seedChallenges;
+async function seed() {
+  console.log('[Seed] Connecting to MongoDB...');
+  await mongoose.connect(env.MONGO_URI, {
+    serverSelectionTimeoutMS: 15000,
+    connectTimeoutMS: 15000,
+  });
+  console.log('[Seed] Connected.');
+
+  for (const cd of CHALLENGES_DATA) {
+    console.log(`\n[Seed] Processing: ${cd.title}`);
+
+    const tasks = buildTasks(cd);
+    console.log(`  → Generated ${tasks.length} tasks`);
+
+    // Build challenge document
+    const challengeDoc = {
+      title: cd.title,
+      slug: cd.slug,
+      category: cd.category,
+      difficulty: cd.difficulty,
+      points: cd.points,
+      description: cd.description,
+      sampleInput: cd.sampleInput,
+      sampleOutput: cd.sampleOutput,
+      timeLimitSeconds: cd.timeLimitSeconds,
+      supportedLanguages: cd.supportedLanguages,
+      status: 'Published',
+      isActive: true,
+      tasks,
+      languageConfigs: cd.languageConfigs,
+      blockConfig: {
+        totalBlocks: Math.max(...cd.languageConfigs.map((lc) => lc.blocks.length)),
+        revealMode: 'task',
+        randomizeOrder: true,
+      },
+    };
+
+    // Upsert by slug
+    const existing = await Challenge.findOne({ slug: cd.slug });
+    let challenge;
+    if (existing) {
+      challenge = await Challenge.findByIdAndUpdate(existing._id, challengeDoc, { new: true });
+      console.log(`  → Updated existing challenge (${existing._id})`);
+    } else {
+      challenge = await Challenge.create(challengeDoc);
+      console.log(`  → Created new challenge (${challenge._id})`);
+    }
+
+    // Upsert test cases
+    await TestCase.deleteMany({ challengeId: challenge._id });
+    if (cd.hiddenTests && cd.hiddenTests.length > 0) {
+      const testDocs = cd.hiddenTests.map((t, idx) => ({
+        challengeId: challenge._id,
+        input: t.input,
+        expectedOutput: t.expectedOutput,
+        isHidden: true,
+        weight: 20,
+        isEnabled: true,
+        orderIndex: idx,
+        description: t.description || '',
+      }));
+      await TestCase.insertMany(testDocs);
+      console.log(`  → Seeded ${testDocs.length} test cases`);
+    }
+
+    console.log(`  ✓ Done: ${challenge.title}`);
+  }
+
+  console.log('\n[Seed] All challenges seeded successfully!');
+  await mongoose.disconnect();
+  process.exit(0);
+}
+
+seed().catch((err) => {
+  console.error('[Seed] Error:', err);
+  process.exit(1);
+});

@@ -37,6 +37,7 @@ app.use('/api/submissions', submissionRoutes);
 // Optional mock & admin management routes
 app.use('/api/auth', authRoutes);
 app.use('/api/participants', participantRoutes);
+app.use('/api/participant', participantRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/qr', qrRoutes);

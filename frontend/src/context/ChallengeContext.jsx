@@ -3,8 +3,6 @@ import { CHALLENGES } from '../data/challenges';
 import { localStorageService } from '../services/localStorageService';
 import {
   STORAGE_KEYS,
-  WRONG_ANSWER_PENALTY_SECONDS,
-  WRONG_ANSWER_COOLDOWN_SECONDS,
   USE_MOCK_JUDGE,
 } from '../utils/constants';
 import { combineFragments, seededShuffle } from '../utils/assembly';
@@ -18,31 +16,7 @@ const ChallengeContext = createContext(null);
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 function getStaticChallenge(id) {
-  return CHALLENGES.find((c) => c.id === id) || CHALLENGES[0];
-}
-
-/** Build initial chestStates for a given language config */
-function buildInitialChestStates(langConfig) {
-  if (!langConfig?.chests) return {};
-  const states = {};
-  langConfig.chests.forEach((chest, idx) => {
-    states[chest.id] = {
-      status: idx === 0 ? 'active' : 'locked', // first chest starts active
-      currentQuizIdx: 0,
-      attempts: 0,
-      cooldownUntil: null,
-      keyEarned: false,
-    };
-  });
-  return states;
-}
-
-/** Pick the next quiz id for a chest, cycling through the pool */
-function pickQuizId(chest, chestState) {
-  const pool = chest.quizPool || [];
-  if (pool.length === 0) return null;
-  const idx = (chestState.currentQuizIdx || 0) % pool.length;
-  return pool[idx];
+  return CHALLENGES.find((c) => c.id === id || c.slug === id) || CHALLENGES[0];
 }
 
 // ─── Provider ──────────────────────────────────────────────────────────────
@@ -58,13 +32,37 @@ export function ChallengeProvider({ children }) {
     return session?.challengeId || CHALLENGES[0].id;
   });
 
+  const [activeChallengeInfo, setActiveChallengeInfo] = useState(null);
+
+  // Sync challenge info if not found or custom
+  useEffect(() => {
+    let cancelled = false;
+    const fetchChallengeInfo = async () => {
+      try {
+        const res = await challengeApi.getById(challengeId);
+        if (cancelled) return;
+        if (res.success && res.challenge) {
+          setActiveChallengeInfo(res.challenge);
+        }
+      } catch (e) {
+        // Fallback to static
+      }
+    };
+    if (challengeId) {
+      fetchChallengeInfo();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [challengeId]);
+
   // ── phase machine ──
   // "SETUP" | "HUNT" | "ASSEMBLE" | "DONE"
   const [phase, setPhase] = useState(() =>
     localStorageService.get(STORAGE_KEYS.PHASE, 'SETUP')
   );
 
-  // ── language (locked after first chest opens) ──
+  // ── language ──
   const [language, setLanguage] = useState(() => {
     const session = localStorageService.get(STORAGE_KEYS.CHALLENGE_SESSION, null);
     return session?.language || 'python';
@@ -78,17 +76,24 @@ export function ChallengeProvider({ children }) {
     localStorageService.get(STORAGE_KEYS.START_TIME, null)
   );
 
-  // ── chest states ──
-  const [chestStates, setChestStates] = useState(() =>
-    localStorageService.get(STORAGE_KEYS.CHEST_STATES, null)
+  // ── SERVER-DRIVEN TASK STATE ──
+  const [serverSession, setServerSession] = useState(null);
+  const [currentTask, setCurrentTask] = useState(null);
+  const [allTasksCompleted, setAllTasksCompleted] = useState(false);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [completedTaskIds, setCompletedTaskIds] = useState(() =>
+    localStorageService.get('mc_completed_task_ids', [])
   );
-  const [activeChestId, setActiveChestId] = useState(() =>
-    localStorageService.get(STORAGE_KEYS.ACTIVE_CHEST_ID, null)
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(() =>
+    localStorageService.get('mc_current_task_index', 0)
   );
 
-  // ── fragments ──
-  const [collectedFragmentIds, setCollectedFragmentIds] = useState(() =>
+  // ── collected blocks (from server) ──
+  const [collectedFragments, setCollectedFragments] = useState(() =>
     localStorageService.get(STORAGE_KEYS.COLLECTED_FRAGMENTS, [])
+  );
+  const [collectedFragmentIds, setCollectedFragmentIds] = useState(() =>
+    localStorageService.get('mc_collected_fragment_ids', [])
   );
 
   // ── assembly (ASSEMBLE phase) ──
@@ -121,37 +126,55 @@ export function ChallengeProvider({ children }) {
   const [compileOutput, setCompileOutput] = useState(null);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
 
-  // ── cooldown ticker ──
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
-  const cooldownRef = useRef(null);
+  // ── task quiz state ──
+  const [taskCooldownRemaining, setTaskCooldownRemaining] = useState(0);
+  const [lastQuizExplain, setLastQuizExplain] = useState('');
+  const [lastQuizCorrect, setLastQuizCorrect] = useState(null);
+  const [taskSubmitting, setTaskSubmitting] = useState(false);
 
-  // double-submit guard
+  // ── refs ──
   const submittingRef = useRef(false);
-  const openingChestRef = useRef(false);
+  const cooldownTimerRef = useRef(null);
 
-  // ── derived: current challenge definition ──
+  // ── derived: current static challenge definition (for sampleInput/Output, title, etc.) ──
   const currentChallenge = useMemo(() => getStaticChallenge(challengeId), [challengeId]);
 
-  // ── derived: language config (fragments, chests, quizzes) ──
-  const langConfig = useMemo(() => {
-    const langs = currentChallenge.languages || {};
-    return langs[language] || langs.python || langs.java || Object.values(langs)[0];
-  }, [currentChallenge, language]);
+  // ── derived: challenge info (merged static + server) ──
+  const challenge = useMemo(() => {
+    const base = currentChallenge;
+    const server = serverSession?.challenge || activeChallengeInfo;
+    const supportedLangs = server?.supportedLanguages?.length
+      ? server.supportedLanguages
+      : server?.languageConfigs?.map((lc) => lc.language) || Object.keys(base?.languages || {});
+    return {
+      ...base,
+      id: challengeId,
+      slug: server?.slug || base?.id || challengeId,
+      title: server?.title || base?.title || 'Coding Challenge',
+      description: server?.description || base?.description || '',
+      difficulty: server?.difficulty || base?.difficulty || 'Medium',
+      points: server?.points ?? base?.points ?? 100,
+      category: server?.category || base?.category || 'Algorithms',
+      sampleInput: server?.sampleInput || base?.sampleInput || '',
+      sampleOutput: server?.sampleOutput || base?.sampleOutput || '',
+      duration: serverSession?.session?.durationSeconds || server?.timeLimitSeconds || base?.duration || 1200,
+      supportedLanguages: supportedLangs,
+      tasks: server?.tasks || [],
+    };
+  }, [currentChallenge, serverSession, activeChallengeInfo, challengeId]);
 
-  // ── derived: all fragments for this lang, as a map id→fragment ──
+  // ── derived: fragment map from collected blocks ──
   const fragmentMap = useMemo(() => {
     const map = {};
-    (langConfig?.fragments || []).forEach((f) => (map[f.id] = f));
+    collectedFragments.forEach((f) => {
+      if (f && f.blockId) {
+        map[f.blockId] = { id: f.blockId, code: f.code, role: f.role };
+      }
+    });
     return map;
-  }, [langConfig]);
+  }, [collectedFragments]);
 
-  // ── derived: collected fragments as objects (in collection order) ──
-  const collectedFragments = useMemo(
-    () => collectedFragmentIds.map((id) => fragmentMap[id]).filter(Boolean),
-    [collectedFragmentIds, fragmentMap]
-  );
-
-  // ── derived: assembled fragments as objects (board order) ──
+  // ── derived: assembled fragments ──
   const assemblyFragments = useMemo(
     () => assemblyOrder.map((id) => fragmentMap[id]).filter(Boolean),
     [assemblyOrder, fragmentMap]
@@ -160,264 +183,254 @@ export function ChallengeProvider({ children }) {
   // ── derived: assembled source code ──
   const assembledCode = useMemo(() => combineFragments(assemblyFragments), [assemblyFragments]);
 
-  // ── init chest states when langConfig changes & no saved state ──
-  useEffect(() => {
-    if (!langConfig?.chests || phase === 'SETUP') return;
-    if (chestStates && Object.keys(chestStates).length > 0) {
-      // verify keys match current language (language switch clears)
-      const firstKey = Object.keys(chestStates)[0];
-      if (langConfig.chests.some((c) => c.id === firstKey)) return; // still valid
+  // ── derived: total fragment count ──
+  const totalFragments = useMemo(() => {
+    if (serverSession?.challenge?.supportedLanguages) {
+      const langInfo = serverSession.challenge.supportedLanguages.find(
+        (l) => l.id === language
+      );
+      return langInfo?.blockCount || totalTasks;
     }
-    const initial = buildInitialChestStates(langConfig);
-    setChestStates(initial);
-    setActiveChestId(langConfig.chests[0]?.id || null);
-  }, [langConfig, phase]);
+    return totalTasks;
+  }, [serverSession, language, totalTasks]);
 
-  // ── init shuffledVault when entering ASSEMBLE ──
+  // ── init shuffled vault when entering ASSEMBLE ──
   useEffect(() => {
     if (phase !== 'ASSEMBLE') return;
-    if (shuffledVaultOrder.length > 0) return; // already seeded
-    const canonicalIds = (langConfig?.fragments || []).map((f) => f.id);
+    const canonicalIds = collectedFragmentIds;
+    if (canonicalIds.length === 0) return;
+    if (shuffledVaultOrder.length === canonicalIds.length && assemblyOrder.length === canonicalIds.length) {
+      return; // already matching
+    }
     const seed = startTime ? Number(startTime) % 99991 : 12345;
-    const shuffled = seededShuffle(canonicalIds, seed);
+    const shuffled = seededShuffle([...canonicalIds], seed);
     setShuffledVaultOrder(shuffled);
-    setAssemblyOrder(shuffled); // start board = shuffled vault
-  }, [phase, langConfig, startTime, shuffledVaultOrder.length]);
+    setAssemblyOrder(shuffled);
+  }, [phase, collectedFragmentIds, startTime, shuffledVaultOrder.length, assemblyOrder.length]);
 
-  // ─── persist all state ──────────────────────────────────────────
+  // ─── persist state ──────────────────────────────────────────────────
 
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.PHASE, phase); }, [phase]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.CHALLENGE_SESSION, { challengeId, language }); }, [challengeId, language]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.LANGUAGE_LOCKED, languageLocked); }, [languageLocked]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.COLLECTED_FRAGMENTS, collectedFragments); }, [collectedFragments]);
+  useEffect(() => { localStorageService.set('mc_collected_fragment_ids', collectedFragmentIds); }, [collectedFragmentIds]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.SHUFFLED_VAULT, shuffledVaultOrder); }, [shuffledVaultOrder]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.ASSEMBLY_ORDER, assemblyOrder); }, [assemblyOrder]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.PENALTY_SECONDS, penaltySeconds); }, [penaltySeconds]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.QUIZ_ATTEMPTS, quizAttempts); }, [quizAttempts]);
+  useEffect(() => { localStorageService.set(STORAGE_KEYS.SUBMISSION_ATTEMPTS, submissionAttempts); }, [submissionAttempts]);
+  useEffect(() => { if (finalResult) localStorageService.set(STORAGE_KEYS.FINAL_RESULT, finalResult); }, [finalResult]);
+  useEffect(() => { localStorageService.set('mc_completed_task_ids', completedTaskIds); }, [completedTaskIds]);
+  useEffect(() => { localStorageService.set('mc_current_task_index', currentTaskIndex); }, [currentTaskIndex]);
+
+  // ── cooldown ticker ──
   useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.PHASE, phase);
-  }, [phase]);
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    if (taskCooldownRemaining <= 0) return;
+    cooldownTimerRef.current = setInterval(() => {
+      setTaskCooldownRemaining((prev) => {
+        const next = prev - 1;
+        if (next <= 0) {
+          clearInterval(cooldownTimerRef.current);
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(cooldownTimerRef.current);
+  }, [taskCooldownRemaining]);
 
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.CHALLENGE_SESSION, { challengeId, language });
-  }, [challengeId, language]);
+  // ─── actions ────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.LANGUAGE_LOCKED, languageLocked);
-  }, [languageLocked]);
-
-  useEffect(() => {
-    if (chestStates) localStorageService.set(STORAGE_KEYS.CHEST_STATES, chestStates);
-  }, [chestStates]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.ACTIVE_CHEST_ID, activeChestId);
-  }, [activeChestId]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.COLLECTED_FRAGMENTS, collectedFragmentIds);
-  }, [collectedFragmentIds]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.SHUFFLED_VAULT, shuffledVaultOrder);
-  }, [shuffledVaultOrder]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.ASSEMBLY_ORDER, assemblyOrder);
-  }, [assemblyOrder]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.PENALTY_SECONDS, penaltySeconds);
-  }, [penaltySeconds]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.QUIZ_ATTEMPTS, quizAttempts);
-  }, [quizAttempts]);
-
-  useEffect(() => {
-    localStorageService.set(STORAGE_KEYS.SUBMISSION_ATTEMPTS, submissionAttempts);
-  }, [submissionAttempts]);
-
-  useEffect(() => {
-    if (finalResult) localStorageService.set(STORAGE_KEYS.FINAL_RESULT, finalResult);
-  }, [finalResult]);
-
-  // ─── cooldown ticker ────────────────────────────────────────────
-
-  useEffect(() => {
-    if (cooldownRef.current) clearInterval(cooldownRef.current);
-    if (!activeChestId || !chestStates) { setCooldownRemaining(0); return; }
-    const cs = chestStates[activeChestId];
-    if (!cs?.cooldownUntil) { setCooldownRemaining(0); return; }
-
-    const tick = () => {
-      const remaining = Math.max(0, Math.ceil((cs.cooldownUntil - Date.now()) / 1000));
-      setCooldownRemaining(remaining);
-      if (remaining === 0) {
-        clearInterval(cooldownRef.current);
-        // advance quiz question
-        setChestStates((prev) => {
-          if (!prev || !prev[activeChestId]) return prev;
-          const chest = langConfig?.chests?.find((c) => c.id === activeChestId);
-          const pool = chest?.quizPool || [];
-          const nextIdx = ((prev[activeChestId].currentQuizIdx || 0) + 1) % Math.max(pool.length, 1);
-          return {
-            ...prev,
-            [activeChestId]: {
-              ...prev[activeChestId],
-              cooldownUntil: null,
-              currentQuizIdx: nextIdx,
-            },
-          };
-        });
-      }
-    };
-    tick();
-    cooldownRef.current = setInterval(tick, 500);
-    return () => clearInterval(cooldownRef.current);
-  }, [activeChestId, chestStates, langConfig]);
-
-  // ─── actions ────────────────────────────────────────────────────
-
-  /** Pick language (only before first chest opened / language locked) */
+  /** Pick language (only before first task answered) */
   const selectLanguage = useCallback((lang) => {
     if (languageLocked) return;
     setLanguage(lang);
-    // Reset chest states for new language
-    setChestStates(null);
-    setCollectedFragmentIds([]);
-    setAssemblyOrder([]);
-    setShuffledVaultOrder([]);
   }, [languageLocked]);
 
-  /** Start the hunt (called from Rules page or SETUP phase) */
-  const startChallenge = useCallback((selectedChalId) => {
+  /**
+   * Start the challenge: call server to start session, get first task.
+   * This replaces the old client-side startChallenge.
+   */
+  const startChallenge = useCallback(async (selectedChalId) => {
     const targetId = selectedChalId || challengeId;
     const now = Date.now();
-    setChallengeId(targetId);
-    setStartTime(now);
-    localStorageService.set(STORAGE_KEYS.START_TIME, now);
-    setPhase('HUNT');
-    setLanguageLocked(false);
-    setChestStates(null); // will be rebuilt by effect
-    setActiveChestId(null);
-    setCollectedFragmentIds([]);
-    setShuffledVaultOrder([]);
-    setAssemblyOrder([]);
-    setPenaltySeconds(0);
-    setQuizAttempts(0);
-    setSubmissionAttempts(0);
-    setFinalResult(null);
-    setCompileOutput(null);
-    setIsTimeExpired(false);
-  }, [challengeId]);
+
+    try {
+      const res = await challengeApi.startSession(targetId, language);
+      if (res.success) {
+        setChallengeId(targetId);
+        setStartTime(now);
+        localStorageService.set(STORAGE_KEYS.START_TIME, now);
+        setPhase('HUNT');
+        setLanguageLocked(false);
+        setCollectedFragments([]);
+        setCollectedFragmentIds([]);
+        setShuffledVaultOrder([]);
+        setAssemblyOrder([]);
+        setPenaltySeconds(res.session?.totalPenaltySeconds || 0);
+        setQuizAttempts(0);
+        setSubmissionAttempts(0);
+        setFinalResult(null);
+        setCompileOutput(null);
+        setIsTimeExpired(false);
+        setAllTasksCompleted(false);
+        setLastQuizExplain('');
+        setLastQuizCorrect(null);
+        setTaskCooldownRemaining(0);
+
+        // Set server state
+        setServerSession(res);
+        setCurrentTask(res.currentTask);
+        setTotalTasks(res.totalTasks || 0);
+        setCompletedTaskIds(res.session?.completedTaskIds || []);
+        setCurrentTaskIndex(res.session?.currentTaskIndex || 0);
+
+        // If session already has unlocked blocks (resume), load them
+        if (res.session?.unlockedBlocks?.length > 0) {
+          setCollectedFragments(res.session.unlockedBlocks);
+          setCollectedFragmentIds(res.session.unlockedBlocks.map((b) => b.blockId));
+          setLanguageLocked(true);
+        }
+      }
+    } catch (err) {
+      console.error('[ChallengeContext] startChallenge error:', err);
+      // Fallback: start locally
+      setChallengeId(targetId);
+      setStartTime(now);
+      localStorageService.set(STORAGE_KEYS.START_TIME, now);
+      setPhase('HUNT');
+    }
+  }, [challengeId, language]);
 
   /**
-   * Submit a quiz answer for the active chest.
-   * Returns { correct: boolean, explain: string, penalty: number }
+   * Try to recover session on mount (if phase is HUNT and we have a challengeId)
    */
-  const submitQuizAnswer = useCallback((chestId, answer) => {
-    if (!chestStates || !langConfig) return { correct: false, explain: '' };
-    const cs = chestStates[chestId];
-    if (!cs || cs.keyEarned || cs.cooldownUntil) return { correct: false, explain: 'Wait for cooldown.' };
+  useEffect(() => {
+    if (phase !== 'HUNT' && phase !== 'ASSEMBLE') return;
+    if (!challengeId) return;
 
-    const chest = langConfig.chests.find((c) => c.id === chestId);
-    if (!chest) return { correct: false, explain: '' };
+    let cancelled = false;
 
-    const quizId = pickQuizId(chest, cs);
-    const quiz = currentChallenge.quizzes?.[quizId];
-    if (!quiz) return { correct: false, explain: 'Quiz not found.' };
+    const recover = async () => {
+      try {
+        const res = await challengeApi.getProgress(challengeId);
+        if (cancelled) return;
+        if (res.success && res.hasSession) {
+          setServerSession(res);
+          setCurrentTask(res.currentTask);
+          setTotalTasks(res.session?.totalTasks || res.challenge?.totalTasks || 0);
+          setCompletedTaskIds(res.session?.completedTaskIds || []);
+          setCurrentTaskIndex(res.session?.currentTaskIndex || 0);
+          setAllTasksCompleted(res.allTasksCompleted || false);
+          setPenaltySeconds(res.session?.totalPenaltySeconds || 0);
 
-    setQuizAttempts((prev) => prev + 1);
+          if (res.unlockedBlocks?.length > 0) {
+            setCollectedFragments(res.unlockedBlocks);
+            setCollectedFragmentIds(res.unlockedBlocks.map((b) => b.blockId));
+            if (res.unlockedBlocks.length > 0) setLanguageLocked(true);
+          }
 
-    // ── evaluate answer ──
-    let correct = false;
-    if (quiz.type === 'mcq') {
-      correct = Number(answer) === Number(quiz.answer);
-    } else if (quiz.type === 'output') {
-      const norm = (s) => String(s).replace(/\r\n/g, '\n').trim();
-      correct = norm(answer) === norm(quiz.answer);
-    } else if (quiz.type === 'fill') {
-      const norm = (s) => String(s).replace(/\r\n/g, '\n').trim().toLowerCase();
-      const answers = Array.isArray(quiz.answer) ? quiz.answer : [quiz.answer];
-      correct = answers.some((a) => norm(answer) === norm(a));
-    }
+          if (res.cooldownRemaining > 0) {
+            setTaskCooldownRemaining(res.cooldownRemaining);
+          }
 
-    if (correct) {
-      setChestStates((prev) => ({
-        ...prev,
-        [chestId]: { ...prev[chestId], keyEarned: true, status: 'key-earned' },
-      }));
-      // lock language after first correct answer
-      if (!languageLocked) setLanguageLocked(true);
-      return { correct: true, explain: quiz.explain || '' };
-    } else {
-      // wrong: add penalty, start cooldown
-      setPenaltySeconds((prev) => prev + WRONG_ANSWER_PENALTY_SECONDS);
-      const cooldownUntil = Date.now() + WRONG_ANSWER_COOLDOWN_SECONDS * 1000;
-      setChestStates((prev) => ({
-        ...prev,
-        [chestId]: {
-          ...prev[chestId],
-          attempts: (prev[chestId]?.attempts || 0) + 1,
-          cooldownUntil,
-        },
-      }));
-      return {
-        correct: false,
-        explain: quiz.explain || 'Incorrect.',
-        penalty: WRONG_ANSWER_PENALTY_SECONDS,
-        cooldown: WRONG_ANSWER_COOLDOWN_SECONDS,
-      };
-    }
-  }, [chestStates, langConfig, currentChallenge, languageLocked]);
-
-  /**
-   * Open a chest (only if keyEarned for that chest).
-   * Adds the associated fragment to collectedFragmentIds.
-   * If last chest opened → automatically transition to ASSEMBLE.
-   */
-  const openChest = useCallback((chestId) => {
-    if (openingChestRef.current) return null;
-    if (!chestStates || !langConfig) return null;
-    const cs = chestStates[chestId];
-    if (!cs || !cs.keyEarned || cs.status === 'opened') return null;
-
-    openingChestRef.current = true;
-
-    // find which fragment this chest reveals
-    const chestIdx = langConfig.chests.findIndex((c) => c.id === chestId);
-    if (chestIdx < 0) { openingChestRef.current = false; return null; }
-    const fragmentId = langConfig.revealOrder[chestIdx];
-    const fragment = fragmentMap[fragmentId];
-    if (!fragment) { openingChestRef.current = false; return null; }
-
-    // add fragment (deduplicate)
-    setCollectedFragmentIds((prev) => {
-      if (prev.includes(fragmentId)) return prev;
-      return [...prev, fragmentId];
-    });
-
-    // find next unopened chest to set as active
-    const newStates = {
-      ...chestStates,
-      [chestId]: { ...cs, status: 'opened', keyEarned: false },
+          // Auto-transition to ASSEMBLE if all tasks done
+          if (res.allTasksCompleted && phase === 'HUNT') {
+            setPhase('ASSEMBLE');
+          }
+        }
+      } catch (err) {
+        console.warn('[ChallengeContext] Session recovery skipped:', err.message);
+      }
     };
-    // mark next locked chest as active
-    const nextChest = langConfig.chests.find(
-      (c) => c.id !== chestId && newStates[c.id]?.status === 'locked'
-    );
-    if (nextChest) {
-      newStates[nextChest.id] = { ...newStates[nextChest.id], status: 'active' };
-      setActiveChestId(nextChest.id);
-    } else {
-      setActiveChestId(null);
-    }
-    setChestStates(newStates);
 
-    // check if all chests opened
-    const totalChests = langConfig.chests.length;
-    const openedCount = Object.values(newStates).filter((s) => s.status === 'opened').length;
-    if (openedCount >= totalChests) {
-      // transition to ASSEMBLE after brief animation time
-      setTimeout(() => setPhase('ASSEMBLE'), 400);
+    recover();
+    return () => { cancelled = true; };
+  }, []); // Only on mount
+
+  /**
+   * Submit quiz answer to server.
+   * Returns { correct, explain, penalty?, cooldown?, unlockedBlock? }
+   */
+  const submitQuizAnswer = useCallback(async (answer) => {
+    if (taskSubmitting || taskCooldownRemaining > 0) {
+      return { correct: false, explain: 'Please wait...' };
     }
 
-    openingChestRef.current = false;
-    return fragment;
-  }, [chestStates, langConfig, fragmentMap]);
+    setTaskSubmitting(true);
+    setLastQuizCorrect(null);
+    setLastQuizExplain('');
+
+    try {
+      const res = await challengeApi.submitTaskAnswer(challengeId, answer);
+      setQuizAttempts((prev) => prev + 1);
+
+      if (res.correct) {
+        // Lock language after first correct answer
+        if (!languageLocked) setLanguageLocked(true);
+
+        setLastQuizCorrect(true);
+        setLastQuizExplain(res.explain || '');
+
+        // Add unlocked block
+        if (res.unlockedBlock) {
+          setCollectedFragments((prev) => {
+            if (prev.find((f) => f.blockId === res.unlockedBlock.blockId)) return prev;
+            return [...prev, res.unlockedBlock];
+          });
+          setCollectedFragmentIds((prev) => {
+            if (prev.includes(res.unlockedBlock.blockId)) return prev;
+            return [...prev, res.unlockedBlock.blockId];
+          });
+        }
+
+        // Update task state
+        setCompletedTaskIds(res.completedTaskIds || []);
+        setCurrentTaskIndex(res.currentTaskIndex || 0);
+        setCurrentTask(res.nextTask || null);
+        setAllTasksCompleted(res.allTasksCompleted || false);
+        setPenaltySeconds(res.totalPenaltySeconds || 0);
+
+        // Transition to ASSEMBLE if all tasks done
+        if (res.allTasksCompleted) {
+          // Also set all unlocked blocks from server
+          if (res.unlockedBlocks) {
+            setCollectedFragments(res.unlockedBlocks);
+            setCollectedFragmentIds(res.unlockedBlocks.map((b) => b.blockId));
+          }
+          setTimeout(() => setPhase('ASSEMBLE'), 600);
+        }
+
+        return { correct: true, explain: res.explain || '', unlockedBlock: res.unlockedBlock };
+      } else {
+        // Wrong answer: keep current task and question, apply only -penalty (no cooldown)
+        setLastQuizCorrect(false);
+        setLastQuizExplain(res.explain || 'Incorrect. Please try again!');
+        setPenaltySeconds(res.totalPenaltySeconds ?? (penaltySeconds + (res.penalty || 20)));
+        setTaskCooldownRemaining(0);
+
+        return {
+          correct: false,
+          explain: res.explain || 'Incorrect. Please try again!',
+          penalty: res.penalty || 20,
+          cooldown: 0,
+        };
+      }
+    } catch (err) {
+      console.error('[ChallengeContext] submitQuizAnswer error:', err);
+      // Handle cooldown errors
+      if (err.response?.status === 429) {
+        const cooldown = err.response?.data?.cooldownRemaining || 3;
+        setTaskCooldownRemaining(cooldown);
+        return { correct: false, explain: 'Cooldown active. Please wait.', cooldown };
+      }
+      return { correct: false, explain: 'Server error. Please try again.' };
+    } finally {
+      setTaskSubmitting(false);
+    }
+  }, [challengeId, taskSubmitting, taskCooldownRemaining, languageLocked, penaltySeconds]);
 
   /** Reorder assembly board by swapping two indices */
   const reorderAssembly = useCallback((sourceIdx, destIdx) => {
@@ -438,13 +451,13 @@ export function ChallengeProvider({ children }) {
     setAssemblyOrder([...shuffledVaultOrder]);
   }, [shuffledVaultOrder]);
 
-  // ─── execution ──────────────────────────────────────────────────
+  // ─── execution ──────────────────────────────────────────────────────
 
   const executeCode = useCallback(async (customInput = null) => {
     setIsCompiling(true);
     setCompileOutput(null);
     try {
-      const inputToUse = customInput ?? currentChallenge.sampleInput ?? '';
+      const inputToUse = customInput ?? challenge.sampleInput ?? '';
 
       if (!USE_MOCK_JUDGE) {
         try {
@@ -464,8 +477,8 @@ export function ChallengeProvider({ children }) {
         input: inputToUse,
         challenge: currentChallenge,
         assemblyOrder: assemblyFragments,
-        langFragments: langConfig?.fragments || [],
-        acceptedOrders: langConfig?.acceptedOrders || [],
+        langFragments: currentChallenge.languages?.[language]?.fragments || [],
+        acceptedOrders: currentChallenge.languages?.[language]?.acceptedOrders || [],
       });
       setCompileOutput(result);
       return result;
@@ -480,7 +493,7 @@ export function ChallengeProvider({ children }) {
     } finally {
       setIsCompiling(false);
     }
-  }, [language, assembledCode, assemblyFragments, currentChallenge, langConfig]);
+  }, [language, assembledCode, assemblyFragments, currentChallenge, challenge]);
 
   const submitSolution = useCallback(async (participant) => {
     if (submittingRef.current) return null;
@@ -493,7 +506,7 @@ export function ChallengeProvider({ children }) {
 
       if (!USE_MOCK_JUDGE) {
         try {
-          const apiRes = await apiSubmitSolution(language, assembledCode, currentChallenge.id);
+          const apiRes = await apiSubmitSolution(language, assembledCode, challengeId);
           if (apiRes && apiRes.status) outcome = apiRes;
         } catch (_) {
           // fall through to mock
@@ -506,8 +519,8 @@ export function ChallengeProvider({ children }) {
           sourceCode: assembledCode,
           challenge: currentChallenge,
           assemblyOrder: assemblyFragments,
-          langFragments: langConfig?.fragments || [],
-          acceptedOrders: langConfig?.acceptedOrders || [],
+          langFragments: currentChallenge.languages?.[language]?.fragments || [],
+          acceptedOrders: currentChallenge.languages?.[language]?.acceptedOrders || [],
         });
       }
 
@@ -517,17 +530,17 @@ export function ChallengeProvider({ children }) {
       const record = {
         ...outcome,
         passed: outcome.status === 'ACCEPTED' || outcome.success,
-        finalScore: outcome.score || (outcome.status === 'ACCEPTED' ? (currentChallenge.points || 100) : 0),
-        score: outcome.score || (outcome.status === 'ACCEPTED' ? (currentChallenge.points || 100) : 0),
+        finalScore: outcome.score || (outcome.status === 'ACCEPTED' ? (challenge.points || 100) : 0),
+        score: outcome.score || (outcome.status === 'ACCEPTED' ? (challenge.points || 100) : 0),
         participantName: participant?.name || 'Participant',
         participantId: participant?.participantId || 'MC-CONTESTANT',
-        challengeId: currentChallenge.id,
-        challengeTitle: currentChallenge.title,
+        challengeId: challengeId,
+        challengeTitle: challenge.title,
         language,
         timestamp: new Date().toISOString(),
         attempts: submissionAttempts + 1,
         penaltySeconds,
-        fragmentCount: langConfig?.fragments?.length || 0,
+        fragmentCount: collectedFragments.length,
         quizAttempts,
         rankingTime,
       };
@@ -550,19 +563,22 @@ export function ChallengeProvider({ children }) {
       submittingRef.current = false;
     }
   }, [
-    language, assembledCode, assemblyFragments, currentChallenge, langConfig,
-    startTime, penaltySeconds, quizAttempts, submissionAttempts,
+    language, assembledCode, assemblyFragments, currentChallenge, challenge,
+    challengeId, startTime, penaltySeconds, quizAttempts, submissionAttempts,
+    collectedFragments,
   ]);
 
   const handleTimeExpired = useCallback(() => setIsTimeExpired(true), []);
 
   const resetAll = useCallback(() => {
     localStorageService.clearAllChallengeData();
+    localStorageService.remove('mc_completed_task_ids');
+    localStorageService.remove('mc_current_task_index');
+    localStorageService.remove('mc_collected_fragment_ids');
     setPhase('SETUP');
     setStartTime(null);
     setLanguageLocked(false);
-    setChestStates(null);
-    setActiveChestId(null);
+    setCollectedFragments([]);
     setCollectedFragmentIds([]);
     setShuffledVaultOrder([]);
     setAssemblyOrder([]);
@@ -572,30 +588,74 @@ export function ChallengeProvider({ children }) {
     setFinalResult(null);
     setCompileOutput(null);
     setIsTimeExpired(false);
+    setServerSession(null);
+    setCurrentTask(null);
+    setAllTasksCompleted(false);
+    setTotalTasks(0);
+    setCompletedTaskIds([]);
+    setCurrentTaskIndex(0);
+    setLastQuizCorrect(null);
+    setLastQuizExplain('');
+    setTaskCooldownRemaining(0);
   }, []);
 
-  // ── expose active chest's current quiz ──
-  const activeChestQuizId = useMemo(() => {
-    if (!activeChestId || !chestStates || !langConfig) return null;
-    const cs = chestStates[activeChestId];
-    if (!cs || cs.status === 'opened') return null;
-    const chest = langConfig.chests.find((c) => c.id === activeChestId);
-    if (!chest) return null;
-    return pickQuizId(chest, cs);
-  }, [activeChestId, chestStates, langConfig]);
+  /**
+   * Select a challenge to solve: resets prior session state and prepares new challenge
+   */
+  const selectChallenge = useCallback((newId) => {
+    if (!newId) return;
+    setChallengeId(newId);
+    setPhase('SETUP');
+    setStartTime(null);
+    setServerSession(null);
+    setCurrentTask(null);
+    setAllTasksCompleted(false);
+    setTotalTasks(0);
+    setCompletedTaskIds([]);
+    setCurrentTaskIndex(0);
+    setCollectedFragments([]);
+    setCollectedFragmentIds([]);
+    setShuffledVaultOrder([]);
+    setAssemblyOrder([]);
+    setPenaltySeconds(0);
+    setQuizAttempts(0);
+    setSubmissionAttempts(0);
+    setFinalResult(null);
+    setCompileOutput(null);
+    setIsTimeExpired(false);
+    setTaskCooldownRemaining(0);
+    setLastQuizExplain('');
+    setLastQuizCorrect(null);
+    setLanguageLocked(false);
 
-  const activeChestQuiz = useMemo(() => {
-    if (!activeChestQuizId) return null;
-    return currentChallenge.quizzes?.[activeChestQuizId] || null;
-  }, [activeChestQuizId, currentChallenge]);
+    localStorageService.clearAllChallengeData();
+    localStorageService.remove('mc_completed_task_ids');
+    localStorageService.remove('mc_current_task_index');
+    localStorageService.remove('mc_collected_fragment_ids');
+    localStorageService.set(STORAGE_KEYS.PHASE, 'SETUP');
+    localStorageService.set(STORAGE_KEYS.CHALLENGE_SESSION, { challengeId: newId, language });
+  }, [language]);
+
+  // ── langConfig compat layer ──
+  const langConfig = useMemo(() => {
+    // Build a compat structure for components that still reference langConfig
+    return {
+      fragments: collectedFragments.map((f) => ({
+        id: f.blockId,
+        code: f.code,
+        role: f.role,
+      })),
+    };
+  }, [collectedFragments]);
 
   return (
     <ChallengeContext.Provider
       value={{
         // challenge
-        challenge: currentChallenge,
+        challenge,
         challenges: CHALLENGES,
         setChallengeId,
+        selectChallenge,
 
         // language
         language,
@@ -610,21 +670,24 @@ export function ChallengeProvider({ children }) {
         // phase
         phase,
 
-        // chest / quiz
-        chestStates,
-        activeChestId,
-        setActiveChestId,
-        activeChestQuiz,
-        activeChestQuizId,
+        // ── SERVER-DRIVEN TASK STATE ──
+        currentTask,
+        allTasksCompleted,
+        totalTasks,
+        completedTaskIds,
+        currentTaskIndex,
         submitQuizAnswer,
-        openChest,
-        cooldownRemaining,
+        taskCooldownRemaining,
+        lastQuizExplain,
+        lastQuizCorrect,
+        taskSubmitting,
 
-        // fragments
+        // fragments (blocks)
         collectedFragments,
         collectedFragmentIds,
         fragmentMap,
         shuffledVaultOrder,
+        totalFragments,
 
         // assembly
         assemblyOrder,
@@ -638,7 +701,7 @@ export function ChallengeProvider({ children }) {
         penaltySeconds,
         quizAttempts,
         submissionAttempts,
-        // compat aliases for timer/result pages
+        // compat aliases
         attempts: submissionAttempts,
 
         // execution
@@ -654,17 +717,28 @@ export function ChallengeProvider({ children }) {
         handleTimeExpired,
         resetAll,
 
-        // ── legacy aliases so unmodified components don't break ──
-        unlockedBlocks: collectedFragments,
+        // ── legacy aliases ──
+        unlockedBlocks: collectedFragments.map((f) => ({
+          id: f.blockId,
+          code: f.code,
+          role: f.role,
+          blockId: f.blockId,
+        })),
         assemblyBlocks: assemblyFragments,
         reorderAssemblyBlocks: reorderAssembly,
-        removeAssemblyBlock: (idx) => {
-          // no-op in new model (assembly always shows all fragments)
-        },
+        removeAssemblyBlock: () => {},
         addBlockToAssembly: () => false,
         revealNextBlock: async () => null,
         unlockQR: () => null,
         scannedQRIds: [],
+
+        // legacy chest compat (no-op)
+        chestStates: {},
+        activeChestId: null,
+        setActiveChestId: () => {},
+        activeChestQuiz: null,
+        openChest: () => null,
+        cooldownRemaining: taskCooldownRemaining,
       }}
     >
       {children}

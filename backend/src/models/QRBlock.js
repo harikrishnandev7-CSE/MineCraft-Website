@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const qrBlockSchema = new mongoose.Schema(
   {
-    challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true },
+    challengeId: { type: mongoose.Schema.Types.Mixed, required: true },
     blockId: { type: String, required: true }, // e.g. 'B01', 'B02'
     codeSnippet: { type: String, required: true },
     qrHash: { type: String, required: true, unique: true },
@@ -11,7 +11,7 @@ const qrBlockSchema = new mongoose.Schema(
     orderHint: { type: Number }, // Kept for backward compatibility
     blockType: {
       type: String,
-      enum: ['IMPORT', 'FUNCTION', 'LOGIC', 'WRAPPER', 'OUTPUT', 'INIT', 'LOOP', 'DECOY', 'COMMENT'],
+      enum: ['IMPORT', 'FUNCTION', 'LOGIC', 'WRAPPER', 'OUTPUT', 'INIT', 'LOOP', 'DECOY', 'COMMENT', 'INPUT', 'MAIN_WRAPPER', 'DECLARATION'],
       default: 'LOGIC',
     },
     language: { type: String, required: true, default: 'java' },

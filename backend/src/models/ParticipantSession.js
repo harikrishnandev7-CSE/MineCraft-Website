@@ -3,8 +3,26 @@ const mongoose = require('mongoose');
 const participantSessionSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true },
-    scannedBlocks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'QRBlock' }],
+    challengeId: { type: mongoose.Schema.Types.Mixed, required: true },
+
+    // ── NEW: Language & task progression ──────────────────────────────
+    selectedLanguage: { type: String, default: 'python' },
+    completedTaskIds: [{ type: String }],
+    currentTaskIndex: { type: Number, default: 0 },
+    currentQuizIndex: { type: Number, default: 0 }, // index into current task's quizPool
+    taskAttempts: [
+      {
+        taskId: { type: String },
+        attempts: { type: Number, default: 0 },
+        wrongAnswers: { type: Number, default: 0 },
+        penaltySeconds: { type: Number, default: 0 },
+        completedAt: { type: Date },
+        cooldownUntil: { type: Date },
+      },
+    ],
+
+    // ── Existing block tracking ──────────────────────────────────────
+    scannedBlocks: [{ type: mongoose.Schema.Types.Mixed }],
     revealedBlockIds: [{ type: String }],
     revealsCount: { type: Number, default: 0 },
     revealEvents: [
@@ -21,6 +39,7 @@ const participantSessionSchema = new mongoose.Schema(
     isCompleted: { type: Boolean, default: false },
     scoreAwarded: { type: Number, default: 0 },
     penaltyCount: { type: Number, default: 0 },
+    totalPenaltySeconds: { type: Number, default: 0 },
     wrongAttemptsCount: { type: Number, default: 0 },
     status: {
       type: String,
@@ -33,3 +52,4 @@ const participantSessionSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('ParticipantSession', participantSessionSchema);
+

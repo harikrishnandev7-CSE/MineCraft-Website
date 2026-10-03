@@ -94,7 +94,7 @@ exports.runCode = asyncHandler(async (req, res) => {
 exports.submitSolution = asyncHandler(async (req, res) => {
   const language = req.body?.language;
   const sourceCode = req.body?.sourceCode !== undefined ? req.body.sourceCode : req.body?.code;
-  const challengeId = req.body?.challengeId || 'ch-01';
+  const challengeId = req.body?.challengeId || 'ch-05';
   const assembledBlockIds = req.body?.assembledBlockIds || req.body?.blocksUsed || [];
 
   if (!language || !isSupportedLanguage(language)) {
@@ -117,12 +117,17 @@ exports.submitSolution = asyncHandler(async (req, res) => {
     challenge = await Challenge.findById(challengeId);
   }
   if (!challenge) {
-    challenge = await Challenge.findOne({ $or: [{ slug: challengeId }, { isPublished: true }] });
+    challenge = await Challenge.findOne({
+      $or: [
+        { slug: challengeId },
+        { slug: String(challengeId).toLowerCase() },
+      ],
+    });
   }
 
   // 2. Fetch test cases from MongoDB or fallback to static hidden tests
   let testCases = [];
-  if (challenge) {
+  if (challenge && challenge._id) {
     testCases = await TestCase.find({ challengeId: challenge._id, isEnabled: true });
   }
 
@@ -147,18 +152,24 @@ exports.submitSolution = asyncHandler(async (req, res) => {
 
   // 4. Fetch or update participant session
   let session = null;
-  if (req.user) {
-    session = await ParticipantSession.findOne({
-      userId: req.user._id,
-      challengeId: challenge ? challenge._id : challengeId,
-    });
-    if (!session) {
-      session = await ParticipantSession.create({
+  const targetChallengeId = challenge ? challenge._id : challengeId;
+
+  if (req.user && targetChallengeId) {
+    try {
+      session = await ParticipantSession.findOne({
         userId: req.user._id,
-        challengeId: challenge ? challenge._id : null,
-        revealedBlockIds: [],
-        revealsCount: 0,
+        challengeId: targetChallengeId,
       });
+      if (!session) {
+        session = await ParticipantSession.create({
+          userId: req.user._id,
+          challengeId: targetChallengeId,
+          revealedBlockIds: [],
+          revealsCount: 0,
+        });
+      }
+    } catch (sessionErr) {
+      console.warn('[SubmissionController.submitSolution] Session lookup skipped:', sessionErr.message);
     }
   }
 
@@ -176,37 +187,39 @@ exports.submitSolution = asyncHandler(async (req, res) => {
 
   // 6. Record submission in DB
   let sub = null;
-  try {
-    sub = await Submission.create({
-      userId: req.user?._id || null,
-      challengeId: challenge ? challenge._id : null,
-      code: sourceCode,
-      language,
-      assembledBlockIds: Array.isArray(assembledBlockIds) ? assembledBlockIds : [],
-      status: evalResult.overallStatus,
-      testCasesPassed: evalResult.passedCount,
-      totalTestCases: evalResult.totalCount,
-      score: scoreBreakdown.finalScore,
-      revealPenalty: scoreBreakdown.revealPenalty,
-      wrongSubmissionPenalty: scoreBreakdown.wrongSubmissionPenalty,
-      testCaseResults: evalResult.details.map((d) => {
-        const tc = testCases.find((t) => String(t._id) === String(d.testCaseId));
-        return {
-          testCaseId: d.testCaseId,
-          passed: d.passed,
-          input: tc ? tc.input : '',
-          expectedOutput: tc ? tc.expectedOutput : '',
-          actualOutput: d.stdout || '',
-          compileError: d.compileOutput || '',
-          runtimeError: d.stderr || '',
-          isHidden: tc ? tc.isHidden : false,
-          status: d.status,
-          time: d.time,
-        };
-      }),
-    });
-  } catch (dbErr) {
-    console.warn('[SubmissionController.submitSolution] Could not save submission to DB:', dbErr.message);
+  if (targetChallengeId) {
+    try {
+      sub = await Submission.create({
+        userId: req.user?._id || null,
+        challengeId: targetChallengeId,
+        code: sourceCode,
+        language,
+        assembledBlockIds: Array.isArray(assembledBlockIds) ? assembledBlockIds : [],
+        status: evalResult.overallStatus,
+        testCasesPassed: evalResult.passedCount,
+        totalTestCases: evalResult.totalCount,
+        score: scoreBreakdown.finalScore,
+        revealPenalty: scoreBreakdown.revealPenalty,
+        wrongSubmissionPenalty: scoreBreakdown.wrongSubmissionPenalty,
+        testCaseResults: evalResult.details.map((d) => {
+          const tc = testCases.find((t) => String(t._id) === String(d.testCaseId));
+          return {
+            testCaseId: tc ? tc._id : d.testCaseId,
+            passed: d.passed,
+            input: tc ? tc.input : '',
+            expectedOutput: tc ? tc.expectedOutput : '',
+            actualOutput: d.stdout || '',
+            compileError: d.compileOutput || '',
+            runtimeError: d.stderr || '',
+            isHidden: tc ? tc.isHidden : false,
+            status: d.status,
+            time: d.time,
+          };
+        }),
+      });
+    } catch (dbErr) {
+      console.warn('[SubmissionController.submitSolution] Could not save submission to DB:', dbErr.message);
+    }
   }
 
   // 7. Update session if exists
@@ -221,7 +234,11 @@ exports.submitSolution = asyncHandler(async (req, res) => {
       session.endTime = new Date();
     }
     session.lastActivityAt = new Date();
-    await session.save();
+    try {
+      await session.save();
+    } catch (saveErr) {
+      console.warn('[SubmissionController.submitSolution] Session save warning:', saveErr.message);
+    }
   }
 
   // 8. Sanitize test results for contestant output (hide expected output on hidden tests)

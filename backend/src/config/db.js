@@ -8,11 +8,23 @@ const connectDB = async () => {
       return;
     }
     const conn = await mongoose.connect(env.MONGO_URI, {
-      serverSelectionTimeoutMS: 2000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
     });
     console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.warn(`[Database] MongoDB not available (${error.message}). Running in standalone execution mode.`);
+    console.warn(`[Database] MongoDB connection warning (${error.message}). Retrying in background...`);
+    // Attempt background reconnection
+    setTimeout(() => {
+      mongoose.connect(env.MONGO_URI, {
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS: 15000,
+      }).then(c => {
+        console.log(`[Database] MongoDB Connected in background: ${c.connection.host}`);
+      }).catch(e => {
+        console.warn(`[Database] Background MongoDB connection retry failed: ${e.message}`);
+      });
+    }, 2000);
   }
 };
 

@@ -15,6 +15,15 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const participant = localStorage.getItem('mindcraft_participant');
+    if (participant) {
+      try {
+        const p = JSON.parse(participant);
+        if (p?.participantId) {
+          config.headers['x-participant-id'] = p.participantId;
+        }
+      } catch (_) {}
+    }
     return config;
   },
   (error) => Promise.reject(error)

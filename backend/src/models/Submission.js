@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const submissionSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true },
+    challengeId: { type: mongoose.Schema.Types.Mixed, required: true },
     code: { type: String, required: true },
     language: { type: String, required: true },
     assembledBlockIds: [{ type: String }],
@@ -23,7 +23,7 @@ const submissionSchema = new mongoose.Schema(
     wrongSubmissionPenalty: { type: Number, default: 0 },
     testCaseResults: [
       {
-        testCaseId: { type: mongoose.Schema.Types.ObjectId, ref: 'TestCase' },
+        testCaseId: { type: mongoose.Schema.Types.Mixed },
         passed: { type: Boolean, default: false },
         input: { type: String, default: '' },
         expectedOutput: { type: String, default: '' },

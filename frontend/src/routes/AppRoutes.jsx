@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../pages/Home';
 import Register from '../pages/Register';
 import Rules from '../pages/Rules';
+import Challenges from '../pages/Challenges';
 import Challenge from '../pages/Challenge';
 import Result from '../pages/Result';
 import Leaderboard from '../pages/Leaderboard';
@@ -30,6 +31,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route path="/rules" element={<Rules />} />
+      <Route path="/challenges" element={<Challenges />} />
       <Route path="/challenge" element={<Challenge />} />
       <Route path="/result" element={<Result />} />
       <Route path="/leaderboard" element={<Leaderboard />} />

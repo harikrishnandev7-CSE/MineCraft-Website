@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const testCaseSchema = new mongoose.Schema(
   {
-    challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true },
+    challengeId: { type: mongoose.Schema.Types.Mixed, required: true },
     input: { type: String, default: '' },
     expectedOutput: { type: String, required: true },
     isHidden: { type: Boolean, default: false },

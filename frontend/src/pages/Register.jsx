@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import Button from '../components/common/Button';
 import { UserCheck, ShieldCheck } from 'lucide-react';
+import api from '../services/api';
 
 export default function Register() {
   const { registerParticipant, participant } = useParticipant();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
 
   const [form, setForm] = useState({
     name: participant?.name || '',
@@ -33,11 +36,24 @@ export default function Register() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     registerParticipant(form);
-    navigate('/rules');
+    try {
+      const res = await api.post('/participant/register', {
+        name: form.name,
+        email: form.email,
+        teamName: form.participantId,
+        college: form.college,
+      });
+      if (res.data?.token) {
+        localStorage.setItem('mindcraft_token', res.data.token);
+      }
+    } catch (_) {
+      // Continue even if backend call fails
+    }
+    navigate(redirectUrl || '/challenges');
   };
 
   return (

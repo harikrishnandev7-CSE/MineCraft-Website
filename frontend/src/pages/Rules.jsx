@@ -11,8 +11,7 @@ export default function Rules() {
 
   const handleStart = () => {
     if (!agreed) return;
-    startChallenge();
-    navigate('/challenge');
+    navigate('/challenges');
   };
 
   const rulesList = [
@@ -116,7 +115,7 @@ export default function Rules() {
           onClick={handleStart}
           className="w-full text-sm font-black"
         >
-          START CHALLENGE
+          CHOOSE CHALLENGE
         </Button>
       </div>
     </div>

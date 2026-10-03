@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import { useChallenge } from '../hooks/useChallenge';
 import { useTimer } from '../hooks/useTimer';
@@ -15,13 +15,14 @@ import RunButton from '../components/execution/RunButton';
 import SubmitButton from '../components/execution/SubmitButton';
 import OutputPanel from '../components/execution/OutputPanel';
 
-// new gameplay components
+// gameplay components
 import PhaseStepper from '../components/gameplay/PhaseStepper';
 import LanguagePicker from '../components/gameplay/LanguagePicker';
-import ChestGrid from '../components/gameplay/ChestGrid';
-import QuizPanel from '../components/gameplay/QuizPanel';
 import FragmentVault from '../components/gameplay/FragmentVault';
 import ProgressCard from '../components/gameplay/ProgressCard';
+
+// task renderer
+import TaskPanel from '../components/gameplay/TaskPanel';
 
 import {
   User, Blocks, BookOpen, Terminal, RotateCcw, Shuffle,
@@ -31,29 +32,35 @@ import { USE_MOCK_JUDGE } from '../utils/constants';
 export default function Challenge() {
   const { participant } = useParticipant();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlId = searchParams.get('id') || searchParams.get('challengeId');
 
   const {
     challenge,
+    selectChallenge,
     language,
     selectLanguage,
     languageLocked,
-    langConfig,
     startTime,
     startChallenge,
     phase,
 
-    // chest / quiz
-    chestStates,
-    activeChestId,
-    setActiveChestId,
-    activeChestQuiz,
+    // server-driven task state
+    currentTask,
+    allTasksCompleted,
+    totalTasks,
+    completedTaskIds,
+    currentTaskIndex,
     submitQuizAnswer,
-    openChest,
-    cooldownRemaining,
+    taskCooldownRemaining,
+    lastQuizExplain,
+    lastQuizCorrect,
+    taskSubmitting,
 
     // fragments
     collectedFragments,
     collectedFragmentIds,
+    totalFragments,
     fragmentMap,
     shuffledVaultOrder,
 
@@ -92,6 +99,13 @@ export default function Challenge() {
     setToastType(type);
   }, []);
 
+  // sync URL id with selected challenge
+  useEffect(() => {
+    if (urlId && urlId !== challenge.id && urlId !== challenge.slug) {
+      selectChallenge(urlId);
+    }
+  }, [urlId, challenge.id, challenge.slug, selectChallenge]);
+
   // redirect if not registered
   useEffect(() => {
     if (!participant) navigate('/register');
@@ -102,11 +116,9 @@ export default function Challenge() {
     if (finalResult?.status === 'ACCEPTED') navigate('/result');
   }, [finalResult, navigate]);
 
-  // start challenge if no startTime (e.g. came from /rules)
+  // start challenge if no startTime and past SETUP
   useEffect(() => {
-    if (participant && !startTime && phase === 'SETUP') {
-      // Don't auto-start; let the SETUP UI handle it
-    } else if (participant && !startTime && phase !== 'SETUP') {
+    if (participant && !startTime && phase !== 'SETUP') {
       startChallenge();
     }
   }, [participant, startTime, phase]);
@@ -118,35 +130,17 @@ export default function Challenge() {
     finalResult?.status === 'ACCEPTED'
   );
 
-  // ── chest click handler ──
-  const handleChestClick = useCallback((chestId) => {
-    if (isTimeExpired) return;
-    const cs = chestStates?.[chestId];
-    if (!cs) return;
-    if (cs.status === 'opened') return;
-    setActiveChestId(chestId);
-  }, [chestStates, isTimeExpired, setActiveChestId]);
-
-  // ── quiz answer ──
-  const handleQuizAnswer = useCallback((answer) => {
-    if (!activeChestId || isTimeExpired) return { correct: false, explain: '' };
-    const result = submitQuizAnswer(activeChestId, answer);
+  // ── quiz answer handler ──
+  const handleQuizAnswer = useCallback(async (answer) => {
+    if (isTimeExpired) return { correct: false, explain: '' };
+    const result = await submitQuizAnswer(answer);
     if (result?.correct) {
-      showToast('✅ Correct! Key earned — open the chest to claim your fragment.', 'success');
+      showToast('✅ Correct! Code block unlocked.', 'success');
     } else if (result?.penalty) {
-      showToast(`❌ Wrong answer. +${result.penalty}s penalty. Cooldown ${result.cooldown}s…`, 'error');
+      showToast(`❌ Wrong answer (+${result.penalty}s penalty applied). Try again!`, 'error');
     }
     return result;
-  }, [activeChestId, submitQuizAnswer, isTimeExpired, showToast]);
-
-  // ── open chest ──
-  const handleOpenChest = useCallback(() => {
-    if (!activeChestId || isTimeExpired) return;
-    const fragment = openChest(activeChestId);
-    if (fragment) {
-      showToast(`📦 Fragment collected! Role: ${fragment.role}`, 'success');
-    }
-  }, [activeChestId, openChest, isTimeExpired, showToast]);
+  }, [submitQuizAnswer, isTimeExpired, showToast]);
 
   // ── run code ──
   const handleRunCode = useCallback(async () => {
@@ -173,21 +167,27 @@ export default function Challenge() {
     }
   }, [isTimeExpired, assembledCode, submitSolution, participant, showToast]);
 
-  // ── derived ──
-  const totalFragments  = langConfig?.fragments?.length || 0;
-  const allChests       = langConfig?.chests || [];
-  const activeChestState = chestStates?.[activeChestId] || null;
-  const activeChestIdx   = allChests.findIndex((c) => c.id === activeChestId);
-
   // ─── SETUP phase UI ─────────────────────────────────────────────────────
   if (phase === 'SETUP') {
     return (
-      <div className="max-w-lg mx-auto px-4 py-16 space-y-6 font-mono text-slate-200">
+      <div className="max-w-lg mx-auto px-4 py-12 space-y-6 font-mono text-slate-200">
+        <div className="flex items-center justify-between">
+          <Link
+            to="/challenges"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-400 font-mono transition"
+          >
+            ← Back to All Challenges
+          </Link>
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
+            {challenge.difficulty} // {challenge.points} PTS
+          </span>
+        </div>
+
         <div className="text-center space-y-2">
           <span className="text-[10px] px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
             MIND CRAFT ARENA
           </span>
-          <h1 className="text-3xl font-black text-white mt-3">{challenge.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-white mt-3">{challenge.title}</h1>
           <p className="text-xs text-slate-400">{challenge.description}</p>
         </div>
 
@@ -211,7 +211,7 @@ export default function Challenge() {
           </Button>
 
           <p className="text-[11px] text-slate-500 text-center">
-            You can change language until the first chest opens.
+            You can change language until the first task is answered.
           </p>
         </div>
 
@@ -227,7 +227,16 @@ export default function Challenge() {
       {/* ── ARENA HEADER ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+          <Link
+            to="/challenges"
+            className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs font-mono transition flex items-center gap-1.5 shrink-0"
+            title="Browse all challenges"
+          >
+            <span>←</span>
+            <span className="hidden sm:inline">Challenges</span>
+          </Link>
+
+          <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
             <Blocks className="w-5 h-5" />
           </div>
           <div>
@@ -322,41 +331,76 @@ export default function Challenge() {
         {/* ── COLUMN 2: HUNT or ASSEMBLE (col-span-5) ── */}
         <div className="lg:col-span-5 space-y-4">
 
-          {/* HUNT phase: chests + active quiz */}
+          {/* HUNT phase: task-based progression */}
           {phase === 'HUNT' && (
             <>
-              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-lg">
-                <ChestGrid
-                  chests={allChests}
-                  chestStates={chestStates || {}}
-                  fragmentMap={fragmentMap}
-                  revealOrder={langConfig?.revealOrder || []}
-                  activeChestId={activeChestId}
-                  onChestClick={handleChestClick}
-                />
+              {/* Task progress bar */}
+              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Task Progress
+                  </h3>
+                  <span className="text-[10px] text-cyan-300 font-mono">
+                    {completedTaskIds.length} / {totalTasks} tasks
+                  </span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${totalTasks > 0 ? (completedTaskIds.length / totalTasks) * 100 : 0}%` }}
+                  />
+                </div>
+                {/* Task dots */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {Array.from({ length: totalTasks }, (_, i) => {
+                    const isDone = i < completedTaskIds.length;
+                    const isCurrent = i === currentTaskIndex;
+                    return (
+                      <div
+                        key={i}
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                          isDone
+                            ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                            : isCurrent
+                            ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 animate-pulse'
+                            : 'bg-slate-800/60 text-slate-600 border border-slate-700/40'
+                        }`}
+                      >
+                        {isDone ? '✓' : i + 1}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Quiz panel for active chest */}
-              {activeChestId && (
-                <div className="space-y-2">
-                  <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider px-1">
-                    Active: Chest #{activeChestIdx + 1}
-                  </div>
-                  <QuizPanel
-                    quiz={activeChestQuiz}
-                    onSubmit={handleQuizAnswer}
-                    cooldown={cooldownRemaining}
-                    keyEarned={activeChestState?.keyEarned || false}
-                    onOpenChest={handleOpenChest}
-                    chestIndex={activeChestIdx + 1}
-                    disabled={isTimeExpired}
-                  />
+              {/* Task Panel: displays current quiz */}
+              {currentTask && !allTasksCompleted && (
+                <TaskPanel
+                  task={currentTask}
+                  onSubmit={handleQuizAnswer}
+                  cooldown={taskCooldownRemaining}
+                  taskIndex={currentTaskIndex}
+                  totalTasks={totalTasks}
+                  disabled={isTimeExpired}
+                  lastResult={lastQuizCorrect}
+                  lastExplain={lastQuizExplain}
+                  isSubmitting={taskSubmitting}
+                />
+              )}
+
+              {/* Waiting state: no current task but not all done */}
+              {!currentTask && !allTasksCompleted && (
+                <div className="p-4 bg-slate-950/60 border border-dashed border-slate-800 rounded-2xl text-center text-xs text-slate-500 font-mono">
+                  Loading next task...
                 </div>
               )}
 
-              {!activeChestId && collectedFragmentIds.length < totalFragments && (
-                <div className="p-4 bg-slate-950/60 border border-dashed border-slate-800 rounded-2xl text-center text-xs text-slate-500 font-mono">
-                  Click a chest above to start the quiz for that fragment.
+              {/* All tasks completed — transition message */}
+              {allTasksCompleted && (
+                <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl text-center space-y-2 animate-fadeIn">
+                  <span className="text-2xl">🎉</span>
+                  <p className="text-sm font-bold text-emerald-300">All Tasks Completed!</p>
+                  <p className="text-xs text-slate-400">Moving to Code Assembly phase...</p>
                 </div>
               )}
             </>
@@ -379,7 +423,7 @@ export default function Challenge() {
 
               <AssemblyPreview combinedCode={assembledCode} />
 
-              {/* Shuffle / Reset buttons */}
+              {/* Reset button */}
               <div className="flex gap-2">
                 <button
                   onClick={resetAssemblyOrder}
@@ -395,10 +439,15 @@ export default function Challenge() {
         {/* ── COLUMN 3: Fragment Vault (col-span-4) ── */}
         <div className="lg:col-span-4 space-y-4">
           <FragmentVault
-            fragments={langConfig?.fragments || []}
+            fragments={collectedFragments.map((f) => ({
+              id: f.blockId,
+              code: f.code,
+              role: f.role,
+            }))}
             collectedIds={collectedFragmentIds}
             shuffledOrder={shuffledVaultOrder}
             phase={phase}
+            totalExpected={totalFragments}
           />
         </div>
       </div>

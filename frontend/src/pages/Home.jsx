@@ -72,7 +72,7 @@ export default function Home() {
 
         <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
           <Link
-            to={participant ? '/challenge' : '/register'}
+            to="/challenges"
             className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 hover:from-blue-500 hover:via-cyan-400 hover:to-emerald-300 text-slate-950 font-mono font-black text-sm tracking-wider shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
           >
             [ ENTER CHALLENGE ] <ArrowRight className="w-4 h-4" />

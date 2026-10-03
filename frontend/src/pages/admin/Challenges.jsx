@@ -36,6 +36,10 @@ export default function AdminChallenges() {
   // Preview Modal
   const [previewChallenge, setPreviewChallenge] = useState(null);
 
+  // Delete Confirmation Modal
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
   const fetchChallenges = async () => {
     try {
       setLoading(true);
@@ -88,16 +92,36 @@ export default function AdminChallenges() {
     }
   };
 
-  const handleDelete = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to permanently delete challenge "${title}"?`)) return;
+  const handleDelete = (c) => {
+    const id = c._id || c.id;
+    const title = c.title || 'Untitled Challenge';
+    const slug = c.slug || '';
+    setDeleteTarget({ id, title, slug });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?.id) return;
     try {
-      const res = await adminApi.deleteChallenge(id);
-      if (res.success) {
-        setToast({ message: 'Challenge deleted', type: 'success' });
+      setDeleting(true);
+      const res = await adminApi.deleteChallenge(deleteTarget.id);
+      if (res && res.success !== false) {
+        setToast({ message: `Challenge "${deleteTarget.title}" deleted successfully`, type: 'success' });
+        // Optimistically remove from state immediately
+        setChallenges((prev) =>
+          prev.filter((item) => (item._id || item.id) !== deleteTarget.id && item.slug !== deleteTarget.slug)
+        );
+        setDeleteTarget(null);
         fetchChallenges();
+      } else {
+        setToast({ message: res?.message || 'Delete failed', type: 'error' });
       }
     } catch (err) {
-      setToast({ message: 'Delete failed', type: 'error' });
+      setToast({
+        message: err.response?.data?.message || err.message || 'Failed to delete challenge',
+        type: 'error',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -340,7 +364,7 @@ export default function AdminChallenges() {
                           )}
 
                           <button
-                            onClick={() => handleDelete(c._id, c.title)}
+                            onClick={() => handleDelete(c)}
                             title="Delete Challenge"
                             className="p-1.5 text-rose-400 hover:bg-rose-950/40 rounded-lg transition"
                           >
@@ -458,6 +482,62 @@ export default function AdminChallenges() {
                     Launch in Arena
                   </Button>
                 </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CONFIRM DELETE MODAL */}
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md bg-slate-900 border border-rose-500/40 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3 text-rose-400">
+                <div className="p-2.5 bg-rose-950/80 border border-rose-500/30 rounded-xl">
+                  <Trash2 className="w-6 h-6 text-rose-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-wide">PERMANENTLY DELETE CHALLENGE?</h3>
+                  <p className="text-[11px] text-rose-300/80">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-2">
+                <div className="text-slate-300">
+                  You are about to delete <strong className="text-white font-bold">"{deleteTarget.title}"</strong>
+                </div>
+                <div className="text-[11px] text-slate-500 leading-relaxed">
+                  All associated QR code blocks, test cases, contestant submissions, and active participant sessions for this challenge will be purged from the database.
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-lg shadow-rose-950/50"
+                >
+                  {deleting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete Permanently
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

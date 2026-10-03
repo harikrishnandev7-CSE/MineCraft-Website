@@ -12,8 +12,9 @@ export default function FragmentVault({
   collectedIds = [],       // collected fragment ids (in collection order)
   shuffledOrder = [],      // seeded shuffle for ASSEMBLE phase
   phase = 'HUNT',
+  totalExpected = 0,       // total expected fragment count (from server)
 }) {
-  const totalCount     = fragments.length;
+  const totalCount     = totalExpected || fragments.length;
   const collectedCount = collectedIds.length;
 
   // In ASSEMBLE phase show shuffled vault order; in HUNT show collection order

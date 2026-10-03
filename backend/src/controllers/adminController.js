@@ -11,6 +11,17 @@ const { getLeaderboardData } = require('../services/leaderboard/leaderboardServi
 const { generateExcelReport } = require('../services/reports/excelExportService');
 const { generatePdfReport } = require('../services/reports/pdfExportService');
 
+const findAdminChallenge = async (idOrSlug) => {
+  if (!idOrSlug) return null;
+  if (/^[0-9a-fA-F]{24}$/.test(idOrSlug)) {
+    const c = await Challenge.findById(idOrSlug);
+    if (c) return c;
+  }
+  return await Challenge.findOne({
+    $or: [{ slug: idOrSlug }, { slug: String(idOrSlug).toLowerCase() }],
+  });
+};
+
 /**
  * OVERVIEW / DASHBOARD STATS
  */
@@ -139,8 +150,37 @@ exports.getChallenges = asyncHandler(async (req, res) => {
   res.json({ success: true, challenges: enriched });
 });
 
+function formatChallengeForAdmin(challengeDoc, blocks = null, testCases = null) {
+  if (!challengeDoc) return null;
+  const obj = challengeDoc.toObject ? challengeDoc.toObject() : { ...challengeDoc };
+
+  if (Array.isArray(obj.tasks)) {
+    obj.tasks = obj.tasks.map((task) => {
+      let rewardsObj = {};
+      if (task.rewards) {
+        if (task.rewards instanceof Map) {
+          rewardsObj = Object.fromEntries(task.rewards);
+        } else if (typeof task.rewards.entries === 'function') {
+          rewardsObj = Object.fromEntries(task.rewards.entries());
+        } else if (typeof task.rewards === 'object') {
+          rewardsObj = { ...task.rewards };
+        }
+      }
+      return {
+        ...task,
+        rewards: rewardsObj,
+      };
+    });
+  }
+
+  if (blocks) obj.blocks = blocks;
+  if (testCases) obj.testCases = testCases;
+
+  return obj;
+}
+
 exports.getChallengeById = asyncHandler(async (req, res) => {
-  const challenge = await Challenge.findById(req.params.id);
+  const challenge = await findAdminChallenge(req.params.id);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
@@ -152,11 +192,7 @@ exports.getChallengeById = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    challenge: {
-      ...challenge.toObject(),
-      blocks,
-      testCases,
-    },
+    challenge: formatChallengeForAdmin(challenge, blocks, testCases),
   });
 });
 
@@ -229,13 +265,18 @@ exports.createChallenge = asyncHandler(async (req, res) => {
   }
 
   const finalChallenge = await Challenge.findById(challenge._id);
-  res.status(201).json({ success: true, challenge: finalChallenge });
+  res.status(201).json({ success: true, challenge: formatChallengeForAdmin(finalChallenge) });
 });
 
 exports.updateChallenge = asyncHandler(async (req, res) => {
   const { blocks, testCases, ...updateData } = req.body;
 
-  const challenge = await Challenge.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  const existing = await findAdminChallenge(req.params.id);
+  if (!existing) {
+    return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  const challenge = await Challenge.findByIdAndUpdate(existing._id, updateData, { new: true });
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
@@ -287,28 +328,45 @@ exports.updateChallenge = asyncHandler(async (req, res) => {
   }
 
   const populated = await Challenge.findById(challenge._id);
-  res.json({ success: true, challenge: populated });
+  res.json({ success: true, challenge: formatChallengeForAdmin(populated) });
 });
 
 exports.deleteChallenge = asyncHandler(async (req, res) => {
-  const challenge = await Challenge.findById(req.params.id);
+  const { id } = req.params;
+  let challenge = null;
+
+  if (/^[0-9a-fA-F]{24}$/.test(id)) {
+    challenge = await Challenge.findById(id);
+  }
+  if (!challenge) {
+    challenge = await Challenge.findOne({
+      $or: [{ slug: id }, { slug: String(id).toLowerCase() }],
+    });
+  }
+
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
 
-  await Promise.all([
+  const idsToMatch = [challenge._id, challenge._id.toString()];
+  if (challenge.slug) {
+    idsToMatch.push(challenge.slug);
+    idsToMatch.push(String(challenge.slug).toLowerCase());
+  }
+
+  await Promise.allSettled([
     Challenge.findByIdAndDelete(challenge._id),
-    QRBlock.deleteMany({ challengeId: challenge._id }),
-    TestCase.deleteMany({ challengeId: challenge._id }),
-    Submission.deleteMany({ challengeId: challenge._id }),
-    ParticipantSession.deleteMany({ challengeId: challenge._id }),
+    QRBlock.deleteMany({ challengeId: { $in: idsToMatch } }),
+    TestCase.deleteMany({ challengeId: { $in: idsToMatch } }),
+    Submission.deleteMany({ challengeId: { $in: idsToMatch } }),
+    ParticipantSession.deleteMany({ challengeId: { $in: idsToMatch } }),
   ]);
 
-  res.json({ success: true, message: 'Challenge and associated resources deleted successfully' });
+  res.json({ success: true, message: `Challenge "${challenge.title}" and associated resources deleted successfully` });
 });
 
 exports.duplicateChallenge = asyncHandler(async (req, res) => {
-  const source = await Challenge.findById(req.params.id);
+  const source = await findAdminChallenge(req.params.id);
   if (!source) {
     return res.status(404).json({ success: false, message: 'Source challenge not found' });
   }
@@ -537,9 +595,40 @@ exports.getParticipantById = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Participant not found' });
   }
 
+  const [rawSubmissions, rawSessions] = await Promise.all([
+    Submission.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
+    ParticipantSession.find({ userId: user._id }).sort({ startTime: -1 }).lean(),
+  ]);
+
   const [submissions, sessions] = await Promise.all([
-    Submission.find({ userId: user._id }).populate('challengeId', 'title difficulty points').sort({ createdAt: -1 }),
-    ParticipantSession.find({ userId: user._id }).populate('challengeId', 'title duration').sort({ startTime: -1 }),
+    Promise.all(
+      rawSubmissions.map(async (s) => {
+        if (s.challengeId && /^[0-9a-fA-F]{24}$/.test(String(s.challengeId))) {
+          const chal = await Challenge.findById(s.challengeId).select('title difficulty points').lean();
+          return { ...s, challengeId: chal || s.challengeId };
+        }
+        return {
+          ...s,
+          challengeId: typeof s.challengeId === 'string'
+            ? { title: s.challengeId, difficulty: 'Medium', points: 100 }
+            : s.challengeId,
+        };
+      })
+    ),
+    Promise.all(
+      rawSessions.map(async (s) => {
+        if (s.challengeId && /^[0-9a-fA-F]{24}$/.test(String(s.challengeId))) {
+          const chal = await Challenge.findById(s.challengeId).select('title duration').lean();
+          return { ...s, challengeId: chal || s.challengeId };
+        }
+        return {
+          ...s,
+          challengeId: typeof s.challengeId === 'string'
+            ? { title: s.challengeId, duration: 1200 }
+            : s.challengeId,
+        };
+      })
+    ),
   ]);
 
   const acceptedCount = submissions.filter((s) => s.status === 'ACCEPTED').length;

@@ -4,15 +4,76 @@ const QRBlock = require('../models/QRBlock');
 const TestCase = require('../models/TestCase');
 const ParticipantSession = require('../models/ParticipantSession');
 
+const findChallengeByIdOrSlug = async (idOrSlug) => {
+  if (!idOrSlug) return null;
+  if (/^[0-9a-fA-F]{24}$/.test(idOrSlug)) {
+    const c = await Challenge.findById(idOrSlug);
+    if (c) return c;
+  }
+  return await Challenge.findOne({
+    $or: [{ slug: idOrSlug }, { slug: String(idOrSlug).toLowerCase() }],
+  });
+};
+
+function sanitizePublicChallenge(challengeDoc, visibleTests = null) {
+  const raw = challengeDoc.toObject ? challengeDoc.toObject() : { ...challengeDoc };
+  delete raw.sourceCode;
+
+  if (Array.isArray(raw.tasks)) {
+    raw.tasks = raw.tasks.map((t) => ({
+      taskId: t.taskId,
+      title: t.title,
+      description: t.description || '',
+      order: t.order,
+      penalty: t.penalty,
+      cooldownSeconds: t.cooldownSeconds,
+      totalQuizzes: Array.isArray(t.quizPool) ? t.quizPool.length : 0,
+      quizPool: Array.isArray(t.quizPool)
+        ? t.quizPool.map((q) => ({
+            quizId: q.quizId,
+            type: q.type,
+            prompt: q.prompt,
+            options: q.options || [],
+            concept: q.concept || '',
+          }))
+        : [],
+    }));
+  }
+
+  if (Array.isArray(raw.languageConfigs)) {
+    raw.languageConfigs = raw.languageConfigs.map((lc) => ({
+      language: lc.language,
+      languageName: lc.languageName || lc.language,
+      blockCount: Array.isArray(lc.blocks) ? lc.blocks.length : 0,
+      revealOrder: lc.revealOrder || [],
+    }));
+  }
+
+  if (visibleTests) {
+    raw.visibleTestCases = visibleTests;
+  }
+
+  return raw;
+}
+
 exports.getChallenges = asyncHandler(async (req, res) => {
-  // Never expose sourceCode to participants
   const challenges = await Challenge.find({ isActive: true }).select('-sourceCode');
-  res.json({ success: true, challenges });
+  const sanitized = challenges.map((c) => sanitizePublicChallenge(c));
+  res.json({ success: true, challenges: sanitized });
 });
 
 exports.getChallengeById = asyncHandler(async (req, res) => {
   // Never expose sourceCode to participants
-  const challenge = await Challenge.findById(req.params.id).select('-sourceCode');
+  const challengeId = req.params.id;
+  let challenge = null;
+  if (/^[0-9a-fA-F]{24}$/.test(challengeId)) {
+    challenge = await Challenge.findById(challengeId).select('-sourceCode');
+  }
+  if (!challenge) {
+    challenge = await Challenge.findOne({
+      $or: [{ slug: challengeId }, { slug: String(challengeId).toLowerCase() }],
+    }).select('-sourceCode');
+  }
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
@@ -24,17 +85,16 @@ exports.getChallengeById = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    challenge: {
-      ...challenge.toObject(),
-      visibleTestCases: visibleTests,
-      tasks: challenge.tasks || [],
-    },
+    challenge: sanitizePublicChallenge(challenge, visibleTests),
   });
 });
 
 exports.getActiveChallenge = asyncHandler(async (req, res) => {
   const challenge = await Challenge.findOne({ isActive: true }).select('-sourceCode');
-  res.json({ success: true, challenge });
+  if (!challenge) {
+    return res.status(404).json({ success: false, message: 'No active challenge found' });
+  }
+  res.json({ success: true, challenge: sanitizePublicChallenge(challenge) });
 });
 
 /**
@@ -43,7 +103,7 @@ exports.getActiveChallenge = asyncHandler(async (req, res) => {
  */
 exports.getParticipantBlocks = asyncHandler(async (req, res) => {
   const challengeId = req.params.id;
-  const challenge = await Challenge.findById(challengeId);
+  const challenge = await findChallengeByIdOrSlug(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
@@ -98,7 +158,7 @@ exports.revealBlock = asyncHandler(async (req, res) => {
   const challengeId = req.params.id;
   const { taskId, blockId: requestedBlockId } = req.body || {};
 
-  const challenge = await Challenge.findById(challengeId);
+  const challenge = await findChallengeByIdOrSlug(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }

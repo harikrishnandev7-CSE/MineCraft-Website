@@ -15,15 +15,18 @@ exports.registerParticipant = asyncHandler(async (req, res) => {
   const email = reqEmail || `${displayName.toLowerCase().replace(/\s+/g, '')}_${Date.now()}@arena.local`;
   const pwd = password || 'guest_participant_pwd';
 
-  const user = await User.create({
-    name: displayName,
-    email,
-    password: pwd,
-    role: 'participant',
-    teamName: teamName || displayName,
-    college: college || 'Engineering Institute',
-    eventId: event?._id,
-  });
+  let user = await User.findOne({ email });
+  if (!user) {
+    user = await User.create({
+      name: displayName,
+      email,
+      password: pwd,
+      role: 'participant',
+      teamName: teamName || displayName,
+      college: college || 'Engineering Institute',
+      eventId: event?._id,
+    });
+  }
 
   res.status(201).json({
     success: true,
