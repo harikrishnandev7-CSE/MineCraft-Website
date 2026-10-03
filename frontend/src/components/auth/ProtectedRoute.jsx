@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children, requiredRole }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-cyan-400 font-mono text-sm">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-orange-400 font-mono text-sm">
         Authenticating session...
       </div>
     );

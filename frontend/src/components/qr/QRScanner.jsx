@@ -28,9 +28,9 @@ export default function QRScanner({ onScanSuccess, onScanError }) {
   }, [onScanSuccess, onScanError]);
 
   return (
-    <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
+    <div className="p-4 bg-white border border-slate-200 rounded-xl">
       <div id="qr-reader-container" className="overflow-hidden rounded-lg" />
-      <p className="text-center text-xs text-slate-400 mt-3 font-mono">{scanMessage}</p>
+      <p className="text-center text-xs text-slate-600 mt-3 font-mono">{scanMessage}</p>
     </div>
   );
 }

@@ -9,8 +9,8 @@ export default function Loader({ message = 'Loading...', size = 'md' }) {
 
   return (
     <div className="flex flex-col items-center justify-center p-8 gap-4">
-      <div className={`animate-spin rounded-full border-cyan-500/20 border-t-cyan-400 ${sizeMap[size] || sizeMap.md}`} />
-      {message && <p className="text-xs font-mono font-medium text-slate-400 tracking-wider">{message}</p>}
+      <div className={`animate-spin rounded-full border-orange-500/20 border-t-orange-400 ${sizeMap[size] || sizeMap.md}`} />
+      {message && <p className="text-xs font-mono font-medium text-slate-600 tracking-wider">{message}</p>}
     </div>
   );
 }

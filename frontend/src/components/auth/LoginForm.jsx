@@ -18,7 +18,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
         </div>
       )}
       <div>
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
           Email Address
         </label>
         <input
@@ -26,12 +26,12 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-cyan-400 text-sm"
+          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-orange-400 text-sm"
           placeholder="hacker@mindcraft.io"
         />
       </div>
       <div>
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
           Password
         </label>
         <input
@@ -39,7 +39,7 @@ export default function LoginForm({ onSubmit, isLoading, error }) {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-cyan-400 text-sm"
+          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-orange-400 text-sm"
           placeholder="••••••••"
         />
       </div>

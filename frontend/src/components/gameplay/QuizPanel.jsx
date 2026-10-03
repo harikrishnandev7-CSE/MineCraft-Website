@@ -51,7 +51,7 @@ export default function QuizPanel({
 
   if (!quiz) {
     return (
-      <div className="p-4 bg-slate-950/60 border border-dashed border-slate-800 rounded-2xl text-center text-xs text-slate-500 font-mono">
+      <div className="p-4 bg-slate-50/60 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-500 font-mono">
         No quiz available for this chest.
       </div>
     );
@@ -59,11 +59,11 @@ export default function QuizPanel({
 
   if (keyEarned) {
     return (
-      <div className="p-4 bg-slate-900/80 border border-yellow-500/40 rounded-2xl space-y-3 animate-fadeIn">
+      <div className="p-4 bg-white/80 border border-yellow-500/40 rounded-2xl space-y-3 animate-fadeIn">
         <div className="flex items-center gap-2 text-yellow-300 font-mono font-bold text-sm">
           <span className="text-xl">🔑</span> Key Earned!
         </div>
-        <p className="text-xs text-slate-400">Quiz solved. Click "Open Chest" to collect your fragment.</p>
+        <p className="text-xs text-slate-600">Quiz solved. Click "Open Chest" to collect your fragment.</p>
         <button
           onClick={onOpenChest}
           disabled={disabled}
@@ -76,9 +76,9 @@ export default function QuizPanel({
   }
 
   return (
-    <div className="p-4 bg-slate-900/80 border border-slate-700 rounded-2xl space-y-3 animate-fadeIn">
+    <div className="p-4 bg-white/80 border border-slate-300 rounded-2xl space-y-3 animate-fadeIn">
       {/* header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/40">
             {quiz.concept}
@@ -91,7 +91,7 @@ export default function QuizPanel({
       </div>
 
       {/* question */}
-      <pre className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+      <pre className="text-xs text-slate-800 font-mono whitespace-pre-wrap leading-relaxed bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
         {quiz.prompt}
       </pre>
 
@@ -106,8 +106,8 @@ export default function QuizPanel({
               aria-pressed={selected === idx}
               className={`text-left px-3 py-2 rounded-xl border text-xs font-mono transition ${
                 selected === idx
-                  ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-200'
-                  : 'bg-slate-950 border-slate-700 text-slate-300 hover:border-slate-500'
+                  ? 'bg-orange-500/20 border-orange-500/60 text-cyan-200'
+                  : 'bg-slate-50 border-slate-300 text-slate-700 hover:border-slate-500'
               } disabled:opacity-40`}
             >
               <span className="font-bold text-slate-500 mr-2">{String.fromCharCode(65 + idx)}.</span>
@@ -123,7 +123,7 @@ export default function QuizPanel({
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           disabled={disabled || cooldown > 0}
           placeholder={quiz.type === 'output' ? 'Type expected output…' : 'Fill in the blank…'}
-          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60 disabled:opacity-40"
+          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono text-slate-800 placeholder-slate-600 focus:outline-none focus:border-orange-500/60 disabled:opacity-40"
           aria-label="Quiz answer input"
         />
       )}
@@ -146,14 +146,14 @@ export default function QuizPanel({
             {!feedback.correct && feedback.penalty && (
               <p className="font-bold text-rose-400">+{feedback.penalty}s time penalty added</p>
             )}
-            <p className="text-slate-300">{feedback.explain}</p>
+            <p className="text-slate-700">{feedback.explain}</p>
           </div>
         </div>
       )}
 
       {/* cooldown */}
       {cooldown > 0 && (
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-400">
+        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600">
           <Clock className="w-3.5 h-3.5 text-amber-400" />
           <span>Next question in <strong className="text-amber-300">{cooldown}s</strong>…</span>
         </div>
@@ -167,7 +167,7 @@ export default function QuizPanel({
             disabled || submitting || cooldown > 0 ||
             (quiz.type === 'mcq' ? selected === null : !textAnswer.trim())
           }
-          className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-mono font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-950/30 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-2 bg-cyan-600 hover:bg-orange-500 text-slate-900 font-mono font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-950/30 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {submitting ? (
             <span className="animate-pulse">Checking…</span>

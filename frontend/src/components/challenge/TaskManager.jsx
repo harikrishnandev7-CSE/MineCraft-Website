@@ -267,7 +267,7 @@ export default function TaskManager({
   return (
     <div className="space-y-6">
       {/* TASK-TO-BLOCK SYNC STATUS BAR */}
-      <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+      <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
         <div className="flex items-center gap-2">
           {isCountMatching ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -276,7 +276,7 @@ export default function TaskManager({
           )}
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white uppercase">
+              <span className="font-bold text-slate-900 uppercase">
                 Task-To-Block 1:1 Requirement:
               </span>
               <span
@@ -289,7 +289,7 @@ export default function TaskManager({
                 {tasks.length} Tasks for {targetBlockCount} Blocks
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-600 mt-0.5">
               {isCountMatching
                 ? `✓ Perfect 1:1 match. Every code block is unlocked by exactly one task.`
                 : `All ${targetBlockCount} code blocks must each have exactly one task. Currently ${tasks.length} tasks configured.`}
@@ -300,7 +300,7 @@ export default function TaskManager({
         <button
           type="button"
           onClick={handleAutoScaffold1to1}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-white font-bold transition text-xs shadow-lg shadow-amber-950/40"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-slate-900 font-bold transition text-xs shadow-lg shadow-amber-950/40"
           title="Instantly create or sync exactly 1 task per block with unique assignment"
         >
           <Wand2 className="w-4 h-4 text-amber-400" />
@@ -309,10 +309,10 @@ export default function TaskManager({
       </div>
 
       {/* HEADER BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-900/90 border border-slate-800 rounded-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white/90 border border-slate-200 rounded-xl">
         <div className="flex items-center gap-2">
           <ListChecks className="w-5 h-5 text-amber-400" />
-          <span className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+          <span className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">
             Sequential Hunt Tasks ({tasks.length})
           </span>
           <span className="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono">
@@ -335,7 +335,7 @@ export default function TaskManager({
       {/* TASKS LIST */}
       <div className="space-y-4">
         {tasks.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl">
+          <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-200 rounded-xl">
             No tasks configured yet. Click "⚡ Auto-Map 1:1 with Blocks" above to scaffold all tasks.
           </div>
         ) : (
@@ -346,8 +346,8 @@ export default function TaskManager({
                 key={task.taskId || taskIdx}
                 className={`border rounded-2xl transition overflow-hidden ${
                   isExpanded
-                    ? 'bg-slate-900/90 border-amber-500/40 shadow-xl shadow-amber-500/5'
-                    : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                    ? 'bg-white/90 border-amber-500/40 shadow-xl shadow-amber-500/5'
+                    : 'bg-black/50 border-slate-200 hover:border-slate-300'
                 }`}
               >
                 {/* TASK SUMMARY HEADER / ACCORDION TOGGLE */}
@@ -362,19 +362,19 @@ export default function TaskManager({
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white font-mono">{task.title || `Task ${taskIdx + 1}`}</span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                        <span className="text-sm font-bold text-slate-900 font-mono">{task.title || `Task ${taskIdx + 1}`}</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                           {task.taskId}
                         </span>
                       </div>
-                      <p className="text-[11px] font-mono text-slate-400 truncate max-w-md">
+                      <p className="text-[11px] font-mono text-slate-600 truncate max-w-md">
                         {task.description || 'No description provided'}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-[10px] font-mono px-2 py-1 rounded bg-slate-950 text-slate-400 border border-slate-800">
+                    <span className="text-[10px] font-mono px-2 py-1 rounded bg-slate-50 text-slate-600 border border-slate-200">
                       {(task.quizPool || []).length} questions in pool
                     </span>
 
@@ -383,7 +383,7 @@ export default function TaskManager({
                       type="button"
                       disabled={taskIdx === 0}
                       onClick={() => handleMoveTask(taskIdx, -1)}
-                      className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 text-slate-400 hover:text-white"
+                      className="p-1 rounded hover:bg-slate-100 disabled:opacity-30 text-slate-600 hover:text-slate-900"
                       title="Move Up"
                     >
                       <ChevronUp className="w-4 h-4" />
@@ -392,7 +392,7 @@ export default function TaskManager({
                       type="button"
                       disabled={taskIdx === tasks.length - 1}
                       onClick={() => handleMoveTask(taskIdx, 1)}
-                      className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 text-slate-400 hover:text-white"
+                      className="p-1 rounded hover:bg-slate-100 disabled:opacity-30 text-slate-600 hover:text-slate-900"
                       title="Move Down"
                     >
                       <ChevronDown className="w-4 h-4" />
@@ -412,24 +412,24 @@ export default function TaskManager({
 
                 {/* EXPANDED TASK DETAILS */}
                 {isExpanded && (
-                  <div className="p-5 pt-0 border-t border-slate-800/80 space-y-6 font-mono text-xs">
+                  <div className="p-5 pt-0 border-t border-slate-200/80 space-y-6 font-mono text-xs">
                     {/* Basic Task Settings */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                       <div>
-                        <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                        <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                           Task Title *
                         </label>
                         <input
                           type="text"
                           value={task.title || ''}
                           onChange={(e) => handleTaskChange(taskIdx, 'title', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
                           placeholder="e.g. Task 1: Unlock Variable Block"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                        <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                           Wrong Answer Penalty (Sec)
                         </label>
                         <input
@@ -438,12 +438,12 @@ export default function TaskManager({
                           max="300"
                           value={task.penalty ?? 20}
                           onChange={(e) => handleTaskChange(taskIdx, 'penalty', Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 text-amber-400 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 text-amber-400 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                        <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                           Wrong Answer Cooldown (Sec)
                         </label>
                         <input
@@ -452,38 +452,38 @@ export default function TaskManager({
                           max="60"
                           value={task.cooldownSeconds ?? 3}
                           onChange={(e) => handleTaskChange(taskIdx, 'cooldownSeconds', Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 text-amber-400 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 text-amber-400 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                      <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                         Task Instructions / Prompt
                       </label>
                       <input
                         type="text"
                         value={task.description || ''}
                         onChange={(e) => handleTaskChange(taskIdx, 'description', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-300 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-3 py-2 focus:border-amber-500 focus:outline-none"
                         placeholder="e.g. Answer this quiz question to unlock code fragment #1"
                       />
                     </div>
 
                     {/* REWARD BLOCK MAPPING (PER LANGUAGE) - MUTUALLY EXCLUSIVE */}
-                    <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-3">
+                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Award className="w-4 h-4 text-emerald-400" />
-                          <span className="font-bold text-slate-200 uppercase text-xs">
+                          <span className="font-bold text-slate-800 uppercase text-xs">
                             Code Block Unlocked by This Task (1:1 per language)
                           </span>
                         </div>
-                        <span className="text-[10px] text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+                        <span className="text-[10px] text-orange-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
                           Blocks assigned to other tasks are hidden from selection
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-600">
                         When the participant solves this task, exactly this code block is unlocked for their chosen language:
                       </p>
 
@@ -511,12 +511,12 @@ export default function TaskManager({
                               key={lc.language}
                               className={`p-3 rounded-lg border space-y-1.5 transition ${
                                 currentAssignedId
-                                  ? 'bg-slate-900 border-emerald-500/40'
-                                  : 'bg-slate-900 border-amber-500/50'
+                                  ? 'bg-white border-emerald-500/40'
+                                  : 'bg-white border-amber-500/50'
                               }`}
                             >
                               <div className="flex items-center justify-between text-[10px]">
-                                <span className="font-bold text-cyan-400 uppercase">
+                                <span className="font-bold text-orange-400 uppercase">
                                   {lc.languageName || lc.language}
                                 </span>
                                 {currentAssignedId ? (
@@ -532,7 +532,7 @@ export default function TaskManager({
                                 aria-label={`Reward block for ${lc.languageName || lc.language}`}
                                 value={currentAssignedId}
                                 onChange={(e) => handleRewardChange(taskIdx, lc.language, e.target.value)}
-                                className={`w-full text-xs font-mono bg-slate-950 border rounded px-2 py-1.5 focus:outline-none ${
+                                className={`w-full text-xs font-mono bg-slate-50 border rounded px-2 py-1.5 focus:outline-none ${
                                   currentAssignedId
                                     ? 'border-emerald-500/50 text-emerald-300'
                                     : 'border-amber-500/60 text-amber-300'
@@ -552,8 +552,8 @@ export default function TaskManager({
                               </select>
 
                               {currentBlock ? (
-                                <p className="text-[10px] text-slate-400 font-mono truncate">
-                                  Role: <span className="text-slate-300 font-semibold">{currentBlock.role}</span>
+                                <p className="text-[10px] text-slate-600 font-mono truncate">
+                                  Role: <span className="text-slate-700 font-semibold">{currentBlock.role}</span>
                                 </p>
                               ) : (
                                 <p className="text-[10px] text-amber-400 font-mono">
@@ -568,10 +568,10 @@ export default function TaskManager({
 
                     {/* QUIZ POOL */}
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                         <div className="flex items-center gap-2">
                           <FileQuestion className="w-4 h-4 text-amber-400" />
-                          <span className="font-bold text-white uppercase text-xs">
+                          <span className="font-bold text-slate-900 uppercase text-xs">
                             Quiz Question Pool ({(task.quizPool || []).length})
                           </span>
                         </div>
@@ -589,18 +589,18 @@ export default function TaskManager({
                         {(task.quizPool || []).map((quiz, quizIdx) => (
                           <div
                             key={quiz.quizId || quizIdx}
-                            className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-3"
+                            className="p-4 bg-slate-50/60 border border-slate-200 rounded-xl space-y-3"
                           >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded bg-slate-800 text-slate-300 flex items-center justify-center text-[10px] font-bold">
+                                <span className="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center text-[10px] font-bold">
                                   Q{quizIdx + 1}
                                 </span>
                                 <select
                                   aria-label="Quiz Type"
                                   value={quiz.type || 'MCQ'}
                                   onChange={(e) => handleUpdateQuiz(taskIdx, quizIdx, 'type', e.target.value)}
-                                  className="text-xs bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 font-bold focus:border-amber-500 focus:outline-none"
+                                  className="text-xs bg-white border border-slate-300 text-slate-900 rounded px-2 py-1 font-bold focus:border-amber-500 focus:outline-none"
                                 >
                                   {QUIZ_TYPES.map((qt) => (
                                     <option key={qt.value} value={qt.value}>
@@ -613,7 +613,7 @@ export default function TaskManager({
                                   value={quiz.concept || ''}
                                   onChange={(e) => handleUpdateQuiz(taskIdx, quizIdx, 'concept', e.target.value)}
                                   placeholder="Concept tag (e.g. syntax)"
-                                  className="text-[11px] bg-slate-900 border border-slate-800 text-slate-400 rounded px-2 py-1 w-32 focus:outline-none"
+                                  className="text-[11px] bg-white border border-slate-200 text-slate-600 rounded px-2 py-1 w-32 focus:outline-none"
                                 />
                               </div>
 
@@ -629,7 +629,7 @@ export default function TaskManager({
 
                             {/* Prompt Input */}
                             <div>
-                              <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                              <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                                 Question Prompt *
                               </label>
                               <textarea
@@ -637,7 +637,7 @@ export default function TaskManager({
                                 value={quiz.prompt || ''}
                                 onChange={(e) => handleUpdateQuiz(taskIdx, quizIdx, 'prompt', e.target.value)}
                                 placeholder="Type the question prompt or problem snippet..."
-                                className="w-full font-mono text-xs p-2.5 bg-slate-900 border border-slate-800 text-white rounded-lg focus:border-amber-500 focus:outline-none leading-relaxed"
+                                className="w-full font-mono text-xs p-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:border-amber-500 focus:outline-none leading-relaxed"
                               />
                             </div>
 
@@ -645,13 +645,13 @@ export default function TaskManager({
                             {quiz.type === 'MCQ' ? (
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                  <label className="text-slate-400 font-bold uppercase text-[10px]">
+                                  <label className="text-slate-600 font-bold uppercase text-[10px]">
                                     Options (Select radio button for the correct answer)
                                   </label>
                                   <button
                                     type="button"
                                     onClick={() => handleAddOption(taskIdx, quizIdx)}
-                                    className="text-[11px] text-cyan-400 hover:text-cyan-300"
+                                    className="text-[11px] text-orange-400 hover:text-cyan-300"
                                   >
                                     + Add Option
                                   </button>
@@ -672,10 +672,10 @@ export default function TaskManager({
                                         type="text"
                                         value={opt}
                                         onChange={(e) => handleOptionChange(taskIdx, quizIdx, optIdx, e.target.value)}
-                                        className={`flex-1 bg-slate-900 border text-xs px-2.5 py-1.5 rounded-lg focus:outline-none font-mono ${
+                                        className={`flex-1 bg-white border text-xs px-2.5 py-1.5 rounded-lg focus:outline-none font-mono ${
                                           Number(quiz.answer) === optIdx
                                             ? 'border-emerald-500/60 text-emerald-300 bg-emerald-950/20'
-                                            : 'border-slate-800 text-slate-200 focus:border-slate-700'
+                                            : 'border-slate-200 text-slate-800 focus:border-slate-300'
                                         }`}
                                         placeholder={`Option ${optIdx + 1}`}
                                       />
@@ -694,7 +694,7 @@ export default function TaskManager({
                               </div>
                             ) : (
                               <div>
-                                <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                                <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                                   Correct Answer * {quiz.type === 'FILL_BLANK' && '(can be comma-separated for alternates)'}
                                 </label>
                                 <input
@@ -709,14 +709,14 @@ export default function TaskManager({
                                     }
                                   }}
                                   placeholder={quiz.type === 'FILL_BLANK' ? 'e.g. +=, += i' : 'e.g. 42'}
-                                  className="w-full bg-slate-900 border border-slate-800 text-emerald-400 font-bold rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none"
+                                  className="w-full bg-white border border-slate-200 text-emerald-400 font-bold rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none"
                                 />
                               </div>
                             )}
 
                             {/* Explanation */}
                             <div>
-                              <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1">
+                              <label className="block text-slate-600 font-bold uppercase text-[10px] mb-1">
                                 Explanation (Shown after participant answers)
                               </label>
                               <input
@@ -724,7 +724,7 @@ export default function TaskManager({
                                 value={quiz.explain || ''}
                                 onChange={(e) => handleUpdateQuiz(taskIdx, quizIdx, 'explain', e.target.value)}
                                 placeholder="e.g. Option A is correct because the loop terminates at N."
-                                className="w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-lg px-3 py-1.5 focus:border-amber-500 focus:outline-none text-[11px]"
+                                className="w-full bg-white border border-slate-200 text-slate-700 rounded-lg px-3 py-1.5 focus:border-amber-500 focus:outline-none text-[11px]"
                               />
                             </div>
                           </div>

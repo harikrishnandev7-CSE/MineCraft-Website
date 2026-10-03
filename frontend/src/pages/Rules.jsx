@@ -31,46 +31,46 @@ export default function Rules() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12 space-y-8 font-mono">
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold">
+          <Clock className="w-3.5 h-3.5 text-[#F28C0F]" />
           <span>OFFICIAL EVENT REGULATIONS</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
           MIND CRAFT – Quiz Hunt & Code Assembly
         </h1>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600">
           Review the competition mechanics before entering the mission track
         </p>
       </div>
 
       {/* HOW PROGRESSION WORKS */}
-      <div className="p-5 bg-slate-900/60 border border-cyan-500/20 rounded-2xl space-y-3">
-        <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-          <Layers className="w-4 h-4 text-cyan-400" /> Linear Mission Progression
+      <div className="p-5 bg-orange-50/60 border border-orange-200 rounded-2xl space-y-3">
+        <h3 className="text-xs font-bold text-[#F28C0F] uppercase tracking-widest flex items-center gap-2">
+          <Layers className="w-4 h-4 text-[#F28C0F]" /> Linear Mission Progression
         </h3>
-        <p className="text-xs text-slate-300 leading-relaxed font-sans">
+        <p className="text-xs text-slate-700 leading-relaxed font-sans">
           Participants do not select challenges arbitrarily. You must progress through the canonical 3-tier sequence:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-          <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30">
-            <span className="font-bold text-emerald-400 block">1. Easy (ch-05)</span>
-            <span className="text-[11px] text-slate-400">Available immediately. 100 PTS.</span>
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300">
+            <span className="font-bold text-emerald-700 block">1. Easy (ch-05)</span>
+            <span className="text-[11px] text-slate-600">Available immediately. 100 PTS.</span>
           </div>
-          <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30">
-            <span className="font-bold text-amber-400 block">2. Medium (ch-06)</span>
-            <span className="text-[11px] text-slate-400">Unlocks once Easy is ACCEPTED. 200 PTS.</span>
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-300">
+            <span className="font-bold text-amber-700 block">2. Medium (ch-06)</span>
+            <span className="text-[11px] text-slate-600">Unlocks once Easy is ACCEPTED. 200 PTS.</span>
           </div>
-          <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30">
-            <span className="font-bold text-rose-400 block">3. Hard (ch-07)</span>
-            <span className="text-[11px] text-slate-400">Unlocks once Medium is ACCEPTED. 300 PTS.</span>
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-300">
+            <span className="font-bold text-rose-700 block">3. Hard (ch-07)</span>
+            <span className="text-[11px] text-slate-600">Unlocks once Medium is ACCEPTED. 300 PTS.</span>
           </div>
         </div>
       </div>
 
       {/* HOW IT WORKS */}
-      <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3">
-        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Gameplay Flow</h3>
-        <ol className="space-y-2 text-xs text-slate-300 list-none">
+      <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-sm">
+        <h3 className="text-xs font-bold text-[#F28C0F] uppercase tracking-widest">How It Works</h3>
+        <ol className="space-y-2 text-xs text-slate-700 list-none">
           {[
             '1. Select your preferred programming language (Python / C / C++ / Java)',
             '2. Answer progressive programming tasks to unlock code fragments',
@@ -81,7 +81,7 @@ export default function Rules() {
             '7. ACCEPTED = advance to next challenge in sequence + commit leaderboard score',
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <CheckCircle className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="w-3.5 h-3.5 text-[#F28C0F] mt-0.5 flex-shrink-0" />
               <span>{step}</span>
             </li>
           ))}
@@ -89,28 +89,42 @@ export default function Rules() {
       </div>
 
       {/* RULES LIST */}
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl space-y-4">
-        <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-cyan-400" /> Tournament Rules
+      <div className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-sm">
+        <h3 className="text-xs font-bold text-[#F28C0F] uppercase tracking-widest flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-[#F28C0F]" /> Tournament Rules
         </h3>
-        <ul className="space-y-2.5 text-xs text-slate-300">
+        <ul className="space-y-2.5 text-xs text-slate-700">
           {rulesList.map((r, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <span className="text-cyan-400 font-bold">•</span>
+              <span className="text-[#F28C0F] font-bold">•</span>
               <span>{r}</span>
             </li>
           ))}
         </ul>
       </div>
 
+      {/* DURATION BADGE */}
+      <div className="p-5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+        <div>
+          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">
+            Challenge Duration
+          </span>
+          <span className="text-3xl font-black text-slate-900 font-mono tracking-wider">20:00</span>
+        </div>
+        <div className="text-right text-xs text-slate-600">
+          <p>Countdown starts immediately upon entry</p>
+          <p className="text-rose-500 font-semibold mt-1">Wrong quiz answers add +20s each</p>
+        </div>
+      </div>
+
       {/* AGREEMENT */}
-      <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl space-y-5">
-        <label className="flex items-center gap-3 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition">
+      <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-5">
+        <label className="flex items-center gap-3 cursor-pointer select-none text-xs text-slate-700 hover:text-slate-900 transition">
           <input
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-cyan-400 cursor-pointer"
+            className="w-4 h-4 rounded bg-white border-slate-300 text-[#F28C0F] focus:ring-orange-400 cursor-pointer"
           />
           <span>I have read and agree to all rules, linear unlock constraints, and timing protocols</span>
         </label>
@@ -120,7 +134,7 @@ export default function Rules() {
           size="lg"
           disabled={!agreed}
           onClick={handleStart}
-          className="w-full text-sm font-black"
+          className="w-full text-sm font-black bg-[#F28C0F] hover:bg-orange-500 text-slate-950"
         >
           ENTER MISSION ROADMAP
         </Button>

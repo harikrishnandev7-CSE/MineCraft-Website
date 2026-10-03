@@ -72,8 +72,8 @@ export default function Sidebar() {
       <div className="space-y-6">
         {/* Brand Header */}
         <div className="px-3 pt-2">
-          <div className="flex items-center gap-2 text-cyan-400 font-black tracking-wider text-sm">
-            <Shield className="w-5 h-5 text-cyan-400" />
+          <div className="flex items-center gap-2 text-orange-400 font-black tracking-wider text-sm">
+            <Shield className="w-5 h-5 text-orange-400" />
             <span>MINDCRAFT ADMIN</span>
           </div>
           <p className="text-[10px] text-slate-500 tracking-wider mt-1 uppercase font-semibold">
@@ -99,8 +99,8 @@ export default function Sidebar() {
                     className={({ isActive }) =>
                       `flex items-center gap-2.5 px-3 py-2 rounded-xl transition ${
                         isActive
-                          ? 'bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30 shadow-sm shadow-cyan-950'
-                          : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                          ? 'bg-orange-500/15 text-cyan-300 font-bold border border-orange-500/30 shadow-sm shadow-cyan-950'
+                          : 'text-slate-600 hover:bg-white hover:text-slate-800'
                       }`
                     }
                   >
@@ -118,7 +118,7 @@ export default function Sidebar() {
       <div className="pt-4 border-t border-slate-900 space-y-2">
         <NavLink
           to="/challenge"
-          className="flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition px-3 py-2 rounded-lg hover:bg-slate-900/60"
+          className="flex items-center gap-2 text-slate-600 hover:text-orange-400 transition px-3 py-2 rounded-lg hover:bg-white/60"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Participant Arena</span>
@@ -133,8 +133,8 @@ export default function Sidebar() {
         </button>
 
         {user && (
-          <div className="px-3 py-2 bg-slate-900/50 rounded-lg border border-slate-800/60 text-[10px] text-slate-400 truncate">
-            Admin: <strong className="text-slate-200">{user.name || user.email}</strong>
+          <div className="px-3 py-2 bg-black/50 rounded-lg border border-slate-200/60 text-[10px] text-slate-600 truncate">
+            Admin: <strong className="text-slate-800">{user.name || user.email}</strong>
           </div>
         )}
       </div>
@@ -147,7 +147,7 @@ export default function Sidebar() {
       <div className="lg:hidden fixed top-3 left-3 z-50">
         <button
           onClick={() => setIsOpenMobile(!isOpenMobile)}
-          className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-cyan-400 shadow-xl"
+          className="p-2.5 bg-white border border-slate-200 rounded-xl text-orange-400 shadow-xl"
           aria-label="Toggle Navigation"
         >
           {isOpenMobile ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -157,14 +157,14 @@ export default function Sidebar() {
       {/* Mobile Backdrop */}
       {isOpenMobile && (
         <div
-          className="lg:hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-slate-50/80 backdrop-blur-sm z-40"
           onClick={() => setIsOpenMobile(false)}
         />
       )}
 
       {/* Mobile Drawer */}
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 w-72 bg-slate-950 border-r border-slate-800 p-4 z-40 transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 w-72 bg-slate-50 border-r border-slate-200 p-4 z-40 transform transition-transform duration-300 ease-in-out ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -172,7 +172,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden lg:block w-64 min-h-[calc(100vh-60px)] bg-slate-950 border-r border-slate-800/80 p-4 shrink-0">
+      <aside className="hidden lg:block w-64 min-h-[calc(100vh-60px)] bg-slate-50 border-r border-slate-200/80 p-4 shrink-0">
         {content}
       </aside>
     </>

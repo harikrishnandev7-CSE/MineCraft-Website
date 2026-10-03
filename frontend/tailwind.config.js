@@ -15,17 +15,22 @@ export default {
           700: '#15803d',
           900: '#14532d',
         },
+        orange: {
+          400: '#faba7b', // Lighter shade
+          500: '#F28C0F', // Main color requested
+          600: '#d97c0d', // Darker shade
+        },
         cyber: {
-          dark: '#0f172a',
-          card: '#1e293b',
-          border: '#334155',
-          neon: '#38bdf8',
-          accent: '#a855f7',
+          dark: '#ffffff',
+          card: '#f8fafc',
+          border: '#e2e8f0',
+          neon: '#F28C0F',
+          accent: '#F28C0F',
         }
       },
       fontFamily: {
         mono: ['Fira Code', 'monospace', 'Consolas'],
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Montserrat', 'sans-serif'],
       }
     },
   },

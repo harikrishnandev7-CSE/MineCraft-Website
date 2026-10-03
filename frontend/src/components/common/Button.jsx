@@ -13,12 +13,12 @@ export default function Button({
   const base = "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]";
 
   const variants = {
-    primary: "bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:via-cyan-400 hover:to-teal-300 text-slate-950 font-bold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 focus:ring-cyan-400",
-    secondary: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 shadow-sm focus:ring-slate-500",
+    primary: "bg-gradient-to-r from-orange-600 via-orange-500 to-teal-400 hover:from-orange-500 hover:via-orange-400 hover:to-teal-300 text-slate-950 font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 focus:ring-orange-400",
+    secondary: "bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 hover:border-slate-400 shadow-sm focus:ring-slate-500",
     emerald: "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 focus:ring-emerald-400",
-    danger: "bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-md shadow-rose-600/20 focus:ring-rose-500",
-    ghost: "bg-transparent hover:bg-slate-800/80 text-slate-300 hover:text-white focus:ring-slate-600",
-    cyber: "bg-cyan-950/80 hover:bg-cyan-900/90 text-cyan-300 border border-cyan-500/40 hover:border-cyan-400 font-mono shadow-md shadow-cyan-500/10 focus:ring-cyan-400",
+    danger: "bg-rose-600 hover:bg-rose-500 text-slate-900 font-semibold shadow-md shadow-rose-600/20 focus:ring-rose-500",
+    ghost: "bg-transparent hover:bg-slate-100/80 text-slate-700 hover:text-slate-900 focus:ring-slate-600",
+    cyber: "bg-cyan-950/80 hover:bg-cyan-900/90 text-cyan-300 border border-orange-500/40 hover:border-orange-400 font-mono shadow-md shadow-orange-500/10 focus:ring-orange-400",
   };
 
   const sizes = {

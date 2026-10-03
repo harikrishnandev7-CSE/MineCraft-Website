@@ -69,8 +69,8 @@ export default function AdminDashboard() {
   };
 
   const statCards = [
-    { title: 'Total Participants', count: stats.totalParticipants, icon: Users, color: 'text-blue-400', bg: 'bg-blue-950/20 border-blue-800/40' },
-    { title: 'Active Participants', count: stats.activeParticipants, icon: Radio, color: 'text-cyan-400', bg: 'bg-cyan-950/20 border-cyan-800/40' },
+    { title: 'Total Participants', count: stats.totalParticipants, icon: Users, color: 'text-orange-400', bg: 'bg-blue-950/20 border-blue-800/40' },
+    { title: 'Active Participants', count: stats.activeParticipants, icon: Radio, color: 'text-orange-400', bg: 'bg-cyan-950/20 border-cyan-800/40' },
     { title: 'Total Challenges', count: stats.totalChallenges, icon: Code2, color: 'text-indigo-400', bg: 'bg-indigo-950/20 border-indigo-800/40' },
     { title: 'Published Challenges', count: stats.publishedChallenges, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-950/20 border-emerald-800/40' },
     { title: 'Total Submissions', count: stats.totalSubmissions, icon: Send, color: 'text-purple-400', bg: 'bg-purple-950/20 border-purple-800/40' },
@@ -80,17 +80,17 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-8 overflow-y-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
               COMMAND CENTER GATEWAY
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Live telemetry, real-time participant surveillance & competition management
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function AdminDashboard() {
             </span>
             <button
               onClick={fetchOverview}
-              className="px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-xs flex items-center gap-1.5 text-cyan-400 transition"
+              className="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-xs flex items-center gap-1.5 text-orange-400 transition"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -126,12 +126,12 @@ export default function AdminDashboard() {
                 className={`p-4 rounded-2xl border ${card.bg} transition hover:scale-[1.01]`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                  <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">
                     {card.title}
                   </span>
                   <Icon className={`w-4 h-4 ${card.color}`} />
                 </div>
-                <div className="text-2xl lg:text-3xl font-black text-white mt-2">
+                <div className="text-2xl lg:text-3xl font-black text-slate-900 mt-2">
                   {card.count}
                 </div>
               </div>
@@ -141,101 +141,101 @@ export default function AdminDashboard() {
 
         {/* QUICK ACTIONS */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
             QUICK ACTIONS & TOOLS
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-xs">
             <Link
               to="/admin/challenges/create"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
-              <PlusCircle className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">New Challenge</span>
+              <PlusCircle className="w-5 h-5 text-orange-400 group-hover:scale-110 transition" />
+              <span className="text-[11px] text-slate-700 font-semibold">New Challenge</span>
             </Link>
 
             <Link
               to="/admin/challenges"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
               <Code2 className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Challenges</span>
+              <span className="text-[11px] text-slate-700 font-semibold">Challenges</span>
             </Link>
 
             <Link
               to="/admin/live"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
               <Radio className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Live Monitor</span>
+              <span className="text-[11px] text-slate-700 font-semibold">Live Monitor</span>
             </Link>
 
             <Link
               to="/admin/sessions"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
               <Clock className="w-5 h-5 text-amber-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Sessions</span>
+              <span className="text-[11px] text-slate-700 font-semibold">Sessions</span>
             </Link>
 
             <Link
               to="/admin/participants"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
-              <Users className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Participants</span>
+              <Users className="w-5 h-5 text-orange-400 group-hover:scale-110 transition" />
+              <span className="text-[11px] text-slate-700 font-semibold">Participants</span>
             </Link>
 
             <Link
               to="/admin/submissions"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
               <Send className="w-5 h-5 text-purple-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Submissions</span>
+              <span className="text-[11px] text-slate-700 font-semibold">Submissions</span>
             </Link>
 
             <Link
               to="/admin/results"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
               <FileSpreadsheet className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Exports</span>
+              <span className="text-[11px] text-slate-700 font-semibold">Exports</span>
             </Link>
 
             <Link
               to="/admin/settings"
-              className="p-3 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
+              className="p-3 bg-white border border-slate-200 hover:border-orange-500/50 rounded-xl flex flex-col items-center justify-center gap-2 text-center group transition"
             >
-              <Settings className="w-5 h-5 text-slate-400 group-hover:scale-110 transition" />
-              <span className="text-[11px] text-slate-300 font-semibold">Settings</span>
+              <Settings className="w-5 h-5 text-slate-600 group-hover:scale-110 transition" />
+              <span className="text-[11px] text-slate-700 font-semibold">Settings</span>
             </Link>
           </div>
         </div>
 
         {/* LIVE COMPETITION MONITOR PANEL */}
-        <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4">
+        <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
               </span>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                 LIVE ARENA SURVEILLANCE ({data?.liveSessions?.length || 0})
               </h3>
             </div>
-            <Link to="/admin/live" className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold">
+            <Link to="/admin/live" className="text-xs text-orange-400 hover:text-cyan-300 flex items-center gap-1 font-semibold">
               Open Full Monitor →
             </Link>
           </div>
 
           {(!data?.liveSessions || data.liveSessions.length === 0) ? (
-            <div className="p-8 border border-dashed border-slate-800 rounded-xl text-center text-xs text-slate-500">
+            <div className="p-8 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-500">
               No active participant sessions right now. Active contestants will appear here automatically with real-time countdown and reveal counters.
             </div>
           ) : (
-            <div className="border border-slate-800 rounded-xl overflow-x-auto">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3">Participant</th>
                     <th className="px-4 py-3">Current Challenge</th>
@@ -245,19 +245,19 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-300">
+                <tbody className="divide-y divide-slate-800 text-slate-700">
                   {data.liveSessions.map((session) => (
-                    <tr key={session.id} className="hover:bg-slate-800/40">
+                    <tr key={session.id} className="hover:bg-slate-100/40">
                       <td className="px-4 py-3">
-                        <div className="font-bold text-white">{session.participantName}</div>
+                        <div className="font-bold text-slate-900">{session.participantName}</div>
                         <div className="text-[10px] text-slate-500">{session.participantEmail}</div>
                       </td>
-                      <td className="px-4 py-3 text-cyan-400 font-semibold">{session.challengeTitle}</td>
+                      <td className="px-4 py-3 text-orange-400 font-semibold">{session.challengeTitle}</td>
                       <td className="px-4 py-3 font-bold text-emerald-400">{session.currentScore} PTS</td>
                       <td className="px-4 py-3 text-amber-400 font-bold">{session.timeRemaining}</td>
                       <td className="px-4 py-3">{session.revealsCount} reveals</td>
                       <td className="px-4 py-3">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-cyan-950 text-cyan-400 border border-cyan-800/50">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-cyan-950 text-orange-400 border border-cyan-800/50">
                           {session.status}
                         </span>
                       </td>
@@ -270,24 +270,24 @@ export default function AdminDashboard() {
         </div>
 
         {/* RECENT SUBMISSIONS TABLE */}
-        <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4">
+        <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
               RECENT SUBMISSIONS FEED
             </h3>
-            <Link to="/admin/submissions" className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold">
+            <Link to="/admin/submissions" className="text-xs text-orange-400 hover:text-cyan-300 font-semibold">
               View All Submissions →
             </Link>
           </div>
 
           {(!data?.recentSubmissions || data.recentSubmissions.length === 0) ? (
-            <div className="p-8 border border-dashed border-slate-800 rounded-xl text-center text-xs text-slate-500">
+            <div className="p-8 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-500">
               No recent submissions recorded yet.
             </div>
           ) : (
-            <div className="border border-slate-800 rounded-xl overflow-x-auto">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3">Participant</th>
                     <th className="px-4 py-3">Challenge</th>
@@ -298,12 +298,12 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3">Submitted At</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-300">
+                <tbody className="divide-y divide-slate-800 text-slate-700">
                   {data.recentSubmissions.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-slate-800/40">
-                      <td className="px-4 py-3 text-white font-semibold">{sub.participant}</td>
-                      <td className="px-4 py-3 text-cyan-400">{sub.challenge}</td>
-                      <td className="px-4 py-3 uppercase text-slate-400">{sub.language}</td>
+                    <tr key={sub.id} className="hover:bg-slate-100/40">
+                      <td className="px-4 py-3 text-slate-900 font-semibold">{sub.participant}</td>
+                      <td className="px-4 py-3 text-orange-400">{sub.challenge}</td>
+                      <td className="px-4 py-3 uppercase text-slate-600">{sub.language}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`text-[10px] px-2 py-0.5 rounded font-bold ${
@@ -315,8 +315,8 @@ export default function AdminDashboard() {
                           {sub.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-bold text-white">{sub.score}</td>
-                      <td className="px-4 py-3 text-slate-400">{sub.executionTime}</td>
+                      <td className="px-4 py-3 font-bold text-slate-900">{sub.score}</td>
+                      <td className="px-4 py-3 text-slate-600">{sub.executionTime}</td>
                       <td className="px-4 py-3 text-slate-500 text-[11px]">
                         {new Date(sub.submittedAt).toLocaleTimeString()}
                       </td>

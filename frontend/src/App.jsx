@@ -7,7 +7,7 @@ import AppRoutes from './routes/AppRoutes';
 export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="flex flex-col min-h-screen bg-[#020617] text-slate-100 selection:bg-cyan-500 selection:text-slate-950 font-sans">
+      <div className="flex flex-col min-h-screen bg-white text-slate-900 selection:bg-orange-500 selection:text-white font-sans">
         <Navbar />
         <main className="flex-1">
           <AppRoutes />

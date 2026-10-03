@@ -68,17 +68,17 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto max-w-5xl">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
-              <SettingsIcon className="w-6 h-6 text-slate-400" />
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider flex items-center gap-2">
+              <SettingsIcon className="w-6 h-6 text-slate-600" />
               COMPETITION POLICIES & ARENA SETTINGS
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Configure competition duration, penalty rates, reveal parameters, and security policies
             </p>
           </div>
@@ -96,59 +96,59 @@ export default function AdminSettings() {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* GENERAL INFO */}
-          <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-xl">
-            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+          <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-4 shadow-xl">
+            <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-2">
               <Sliders className="w-4 h-4" /> EVENT PARAMETERS
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-slate-400 font-bold">Competition Name</label>
+                <label className="text-slate-600 font-bold">Competition Name</label>
                 <input
                   type="text"
                   value={settings.competitionName}
                   onChange={(e) => setSettings({ ...settings, competitionName: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Event Total Duration (Minutes)</label>
+                <label className="text-slate-600 font-bold">Event Total Duration (Minutes)</label>
                 <input
                   type="number"
                   value={settings.duration}
                   onChange={(e) => setSettings({ ...settings, duration: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-amber-400 font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-amber-400 font-bold"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Default Challenge Time (Minutes)</label>
+                <label className="text-slate-600 font-bold">Default Challenge Time (Minutes)</label>
                 <input
                   type="number"
                   value={settings.defaultChallengeTime}
                   onChange={(e) => setSettings({ ...settings, defaultChallengeTime: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-cyan-300 font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-cyan-300 font-bold"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Max Concurrent Participants</label>
+                <label className="text-slate-600 font-bold">Max Concurrent Participants</label>
                 <input
                   type="number"
                   value={settings.maxParticipants}
                   onChange={(e) => setSettings({ ...settings, maxParticipants: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Leaderboard Visibility</label>
+                <label className="text-slate-600 font-bold">Leaderboard Visibility</label>
                 <select
                   value={settings.leaderboardVisibility}
                   onChange={(e) => setSettings({ ...settings, leaderboardVisibility: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold"
                 >
                   <option value="Public">Public (All Participants)</option>
                   <option value="AdminOnly">Admin Only (Hidden from Students)</option>
@@ -159,62 +159,62 @@ export default function AdminSettings() {
           </div>
 
           {/* SCORING & PENALTIES */}
-          <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-xl">
+          <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-4 shadow-xl">
             <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-2">
               <Award className="w-4 h-4" /> GLOBAL SCORING & PENALTIES
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Reveal Penalty (Points per Unlocked Block)</label>
+                <label className="text-slate-600 font-bold">Reveal Penalty (Points per Unlocked Block)</label>
                 <input
                   type="number"
                   value={settings.revealPenalty}
                   onChange={(e) => setSettings({ ...settings, revealPenalty: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-rose-400 font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-rose-400 font-bold"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Wrong Submission Penalty (Points per Failed Submit)</label>
+                <label className="text-slate-600 font-bold">Wrong Submission Penalty (Points per Failed Submit)</label>
                 <input
                   type="number"
                   value={settings.wrongSubmissionPenalty}
                   onChange={(e) => setSettings({ ...settings, wrongSubmissionPenalty: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-rose-400 font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-rose-400 font-bold"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-xs">
-              <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-950 rounded-xl border border-slate-800">
+              <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <input
                   type="checkbox"
                   checked={settings.allowLateJoin}
                   onChange={(e) => setSettings({ ...settings, allowLateJoin: e.target.checked })}
-                  className="rounded bg-slate-900 border-slate-700"
+                  className="rounded bg-white border-slate-300"
                 />
-                <span className="text-slate-300 font-semibold">Allow Late Registration</span>
+                <span className="text-slate-700 font-semibold">Allow Late Registration</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-950 rounded-xl border border-slate-800">
+              <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <input
                   type="checkbox"
                   checked={settings.allowReattempt}
                   onChange={(e) => setSettings({ ...settings, allowReattempt: e.target.checked })}
-                  className="rounded bg-slate-900 border-slate-700"
+                  className="rounded bg-white border-slate-300"
                 />
-                <span className="text-slate-300 font-semibold">Allow Reattempt on Failure</span>
+                <span className="text-slate-700 font-semibold">Allow Reattempt on Failure</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-950 rounded-xl border border-slate-800">
+              <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <input
                   type="checkbox"
                   checked={settings.autoSubmit}
                   onChange={(e) => setSettings({ ...settings, autoSubmit: e.target.checked })}
-                  className="rounded bg-slate-900 border-slate-700"
+                  className="rounded bg-white border-slate-300"
                 />
-                <span className="text-slate-300 font-semibold">Auto-Submit on Timer Expiry</span>
+                <span className="text-slate-700 font-semibold">Auto-Submit on Timer Expiry</span>
               </label>
 
               <label className="flex items-start gap-3 cursor-pointer p-3.5 bg-slate-950/80 rounded-xl border border-cyan-800/60 hover:border-cyan-500/70 transition-colors sm:col-span-3">

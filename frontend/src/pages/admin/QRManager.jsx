@@ -88,27 +88,27 @@ export default function QRManager() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
         <div className="print:hidden">
           <Header
             title="QR Code Dispatch & Batch Printing"
-            subtitle="Cryptographically sign and export printable physical QR matrix cards for challenge fragments."
+            subtitle="Generate printable QR sheets, cryptographically sign and export physical QR matrix cards for challenge fragments."
           />
         </div>
 
         {/* Controls Toolbar (hidden during print) */}
-        <div className="print:hidden p-5 bg-slate-900 border border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div className="print:hidden p-5 bg-white border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="space-y-1">
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              <label className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
                 Select Challenge
               </label>
               <select
                 value={selectedChallengeId}
                 onChange={(e) => setSelectedChallengeId(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
               >
                 {challenges.map((c) => (
                   <option key={c._id} value={c._id}>
@@ -119,13 +119,13 @@ export default function QRManager() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              <label className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
                 Language Filter
               </label>
               <select
                 value={selectedLang}
                 onChange={(e) => setSelectedLang(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
               >
                 <option value="all">All Languages</option>
                 <option value="python">Python</option>
@@ -161,9 +161,9 @@ export default function QRManager() {
 
         {/* QR Blocks Grid */}
         {filteredBlocks.length === 0 ? (
-          <div className="p-12 text-center border border-dashed border-slate-800 rounded-2xl text-slate-500">
-            <QrCode className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-            <p className="text-sm font-bold text-slate-400">No QR blocks found for this challenge.</p>
+          <div className="p-12 text-center border border-dashed border-slate-200 rounded-2xl text-slate-500 bg-white">
+            <QrCode className="w-10 h-10 mx-auto mb-2 text-slate-400" />
+            <p className="text-sm font-bold text-slate-700">No QR blocks found for this challenge.</p>
             <p className="text-xs text-slate-500 mt-1">Select a challenge or click Regenerate Hashes to initialize.</p>
           </div>
         ) : (
@@ -171,24 +171,24 @@ export default function QRManager() {
             {filteredBlocks.map((block) => (
               <div
                 key={block.blockId + block.language}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col items-center justify-between text-center space-y-4 shadow-xl print:bg-white print:border-black print:text-black print:break-inside-avoid"
+                className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col items-center justify-between text-center space-y-4 shadow-sm print:bg-white print:border-black print:text-black print:break-inside-avoid"
               >
                 <div className="w-full space-y-1">
                   <div className="flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-cyan-400 print:text-black uppercase">
+                    <span className="text-[#F28C0F] print:text-black uppercase">
                       {block.language}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 print:bg-gray-200 print:text-black text-[10px]">
+                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 print:bg-gray-200 print:text-black text-[10px]">
                       {block.type || 'LOGIC'}
                     </span>
                   </div>
-                  <h3 className="text-sm font-black text-white print:text-black truncate">
+                  <h3 className="text-sm font-black text-slate-900 print:text-black truncate">
                     {block.title || `Block ${block.blockId}`}
                   </h3>
                 </div>
 
                 {/* QR Code image */}
-                <div className="p-3 bg-white rounded-xl shadow-inner border border-slate-700 print:border-black">
+                <div className="p-3 bg-white rounded-xl shadow-inner border border-slate-200 print:border-black">
                   <img
                     src={block.qrDataUrl}
                     alt={`QR for ${block.blockId}`}
@@ -197,10 +197,10 @@ export default function QRManager() {
                 </div>
 
                 <div className="w-full space-y-1">
-                  <p className="font-mono text-[10px] text-slate-400 print:text-black truncate select-all">
+                  <p className="font-mono text-[10px] text-slate-600 print:text-black truncate select-all">
                     {block.qrToken}
                   </p>
-                  <p className="text-[10px] text-slate-500 print:text-gray-600">
+                  <p className="text-[10px] text-slate-400 print:text-gray-600">
                     ID: {block.blockId}
                   </p>
                 </div>

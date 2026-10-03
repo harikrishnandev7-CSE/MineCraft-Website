@@ -27,18 +27,18 @@ export default function TreasureChest({
   // ── visual config per status ──
   const cfg = {
     locked: {
-      border: 'border-slate-800 hover:border-slate-600',
-      bg: 'bg-slate-950/60',
+      border: 'border-slate-200 hover:border-slate-400',
+      bg: 'bg-slate-50/60',
       icon: '🔒',
       label: 'Locked',
       labelColor: 'text-slate-500',
     },
     active: {
-      border: 'border-cyan-500/50 animate-chestReady',
+      border: 'border-orange-500/50 animate-chestReady',
       bg: 'bg-cyan-950/20',
       icon: '✨',
       label: 'Active',
-      labelColor: 'text-cyan-400',
+      labelColor: 'text-orange-400',
     },
     'key-earned': {
       border: 'border-yellow-500/60 animate-keyGlow',
@@ -66,11 +66,11 @@ export default function TreasureChest({
       className={`relative flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all cursor-pointer select-none
         ${c.border} ${c.bg}
         ${status === 'opened' ? 'opacity-80 cursor-default' : 'hover:scale-105 active:scale-95'}
-        ${isActive && status !== 'opened' ? 'ring-1 ring-cyan-500/40' : ''}
+        ${isActive && status !== 'opened' ? 'ring-1 ring-orange-500/40' : ''}
       `}
     >
       {/* chest number badge */}
-      <span className="absolute -top-2 -left-2 text-[10px] font-mono font-bold text-slate-400 bg-slate-900 border border-slate-800 rounded-full w-5 h-5 flex items-center justify-center">
+      <span className="absolute -top-2 -left-2 text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded-full w-5 h-5 flex items-center justify-center">
         {index + 1}
       </span>
 

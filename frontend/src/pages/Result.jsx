@@ -70,26 +70,26 @@ export default function Result() {
     <div className="max-w-2xl mx-auto px-6 py-16 text-center space-y-8 font-mono">
       <div className="space-y-4">
         <div
-          className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-2xl ${
+          className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-xl ${
             isAccepted
-              ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 shadow-emerald-500/20'
-              : 'bg-rose-500/20 border-2 border-rose-400 text-rose-400 shadow-rose-500/20'
+              ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-600 shadow-emerald-500/10'
+              : 'bg-rose-50 border-2 border-rose-500 text-rose-600 shadow-rose-500/10'
           }`}
         >
-          {isAccepted ? <Trophy className="w-10 h-10 animate-bounce" /> : <Award className="w-10 h-10" />}
+          {isAccepted ? <Trophy className="w-10 h-10 animate-bounce text-[#F28C0F]" /> : <Award className="w-10 h-10" />}
         </div>
 
-        <h1 className="text-3xl font-black text-white">
+        <h1 className="text-3xl font-black text-slate-900">
           {isAccepted ? '🏆 CHALLENGE COMPLETED' : isTimeExpired ? '⌛ TIME EXPIRED' : 'NOT ACCEPTED'}
         </h1>
-        <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <p className="text-xs text-slate-600 max-w-md mx-auto">
           {isAccepted
             ? 'All test cases verified! Your solution and completion duration have been committed to the live leaderboard.'
             : 'Challenge session concluded. Review official rankings or retry your current challenge below.'}
         </p>
 
         {isAccepted && allCompleted && (
-          <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm inline-flex items-center gap-2 shadow-lg shadow-amber-500/10">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-800 font-bold text-sm inline-flex items-center gap-2 shadow-sm">
             <span>🏆</span>
             <span>ALL CHALLENGES COMPLETED</span>
           </div>
@@ -97,25 +97,27 @@ export default function Result() {
       </div>
 
       {/* RESULT METRICS CARD */}
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+      <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Participant</span>
-          <p className="text-sm font-bold text-slate-200 truncate mt-1">{participant.name}</p>
-          <span className="text-[10px] text-cyan-400 block">{participant.participantId}</span>
+          <p className="text-sm font-bold text-slate-800 truncate mt-1">{participant?.name || 'Participant'}</p>
+          {participant?.participantId && (
+            <span className="text-[10px] text-[#F28C0F] block">{participant.participantId}</span>
+          )}
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Challenge</span>
-          <p className="text-sm font-bold text-cyan-400 truncate mt-1">{challenge?.title || 'Active Challenge'}</p>
+          <p className="text-sm font-bold text-[#F28C0F] truncate mt-1">{challenge?.title || 'Active Challenge'}</p>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Status</span>
-          <p className={`text-sm font-bold mt-1 ${isAccepted ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <p className={`text-sm font-bold mt-1 ${isAccepted ? 'text-emerald-600' : 'text-rose-600'}`}>
             {isAccepted ? 'ACCEPTED' : (isTimeExpired ? 'TIME EXPIRED' : 'UNFINISHED')}
           </p>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Tests Passed</span>
-          <p className="text-sm font-bold text-white mt-1">
+          <p className="text-sm font-bold text-slate-800 mt-1">
             {passedTests} / {totalTests}
           </p>
         </div>
@@ -128,7 +130,7 @@ export default function Result() {
           <Button
             variant="primary"
             size="lg"
-            className="bg-gradient-to-r from-cyan-500 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black shadow-lg shadow-cyan-500/30"
+            className="bg-[#F28C0F] hover:bg-orange-500 text-slate-950 font-black shadow-lg shadow-orange-500/20"
             onClick={() => {
               const nextId = nextChallenge.slug || nextChallenge.challengeId;
               selectChallenge(nextId);
@@ -145,7 +147,7 @@ export default function Result() {
             <Button
               variant="primary"
               size="lg"
-              className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/30"
+              className="bg-[#F28C0F] hover:bg-orange-500 text-slate-950 font-black shadow-lg shadow-orange-500/20"
             >
               VIEW LEADERBOARD 🏆
             </Button>
@@ -173,7 +175,7 @@ export default function Result() {
           <Button
             variant="primary"
             size="lg"
-            className="bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold"
+            className="bg-rose-500 hover:bg-rose-600 text-white font-bold"
             onClick={async () => {
               try {
                 if (startChallenge) await startChallenge();

@@ -255,30 +255,29 @@ export default function Challenge() {
   // ─── SETUP phase UI ─────────────────────────────────────────────────────
   if (phase === 'SETUP') {
     return (
-      <div className="max-w-lg mx-auto px-4 py-8 space-y-6 font-mono text-slate-200">
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-6 font-mono text-slate-700">
         <MissionStepper progress={userProgress} compact />
-
         <div className="flex items-center justify-between">
           <Link
             to="/challenges"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-400 font-mono transition"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-orange-400 font-mono transition"
           >
             ← Back to Roadmap
           </Link>
-          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-orange-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-orange-500/30">
             {challenge.difficulty} // {challenge.points} PTS
           </span>
         </div>
 
         <div className="text-center space-y-2">
-          <span className="text-[10px] px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
+          <span className="text-[10px] px-3 py-1 rounded-full bg-orange-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-orange-500/30">
             MIND CRAFT ARENA
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white mt-3">{challenge.title}</h1>
-          <p className="text-xs text-slate-400">{challenge.description}</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 mt-3">{challenge.title}</h1>
+          <p className="text-xs text-slate-600">{challenge.description}</p>
         </div>
 
-        <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl space-y-5">
+        <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-5">
           <LanguagePicker
             language={language}
             onSelect={selectLanguage}
@@ -318,32 +317,32 @@ export default function Challenge() {
 
   // ─── HUNT + ASSEMBLE + DONE layout ───────────────────────────────────────
   return (
-    <div className="max-w-[1700px] mx-auto px-4 py-5 space-y-4 font-mono text-slate-200">
+    <div className="max-w-[1700px] mx-auto px-4 py-5 space-y-4 font-mono text-slate-700">
 
       {/* ── ARENA HEADER ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50/80 border border-slate-200 rounded-2xl shadow-xl">
         <div className="flex items-center gap-3">
           <Link
             to="/challenges"
-            className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs font-mono transition flex items-center gap-1.5 shrink-0"
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-orange-500 text-xs font-mono transition flex items-center gap-1.5 shrink-0"
             title="Back to Mission Roadmap"
           >
             <span>←</span>
             <span className="hidden sm:inline">Roadmap</span>
           </Link>
 
-          <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
             <Blocks className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-orange-500/20 text-cyan-300 font-bold uppercase tracking-wider">
                 MIND CRAFT ARENA
               </span>
-              <h2 className="text-base font-bold text-white tracking-wide">{challenge.title}</h2>
+              <h2 className="text-base font-bold text-slate-800 tracking-wide">{challenge.title}</h2>
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Category: <span className="text-cyan-400">{challenge.category}</span>
+            <p className="text-[11px] text-slate-600 mt-0.5">
+              Category: <span className="text-orange-400">{challenge.category}</span>
               {' '}// Reward: <span className="text-emerald-400">{challenge.points} PTS</span>
               {' '}// Engine: <span className="text-emerald-400">Judge0</span>
             </p>
@@ -357,10 +356,10 @@ export default function Challenge() {
 
           <LanguagePicker language={language} onSelect={selectLanguage} locked={languageLocked} />
 
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-            <User className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-400">Contestant:</span>
-            <span className="text-slate-100 font-bold">{participant.name} ({participant.participantId})</span>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs">
+            <User className="w-3.5 h-3.5 text-orange-400" />
+            <span className="text-slate-600">Contestant:</span>
+            <span className="text-slate-800 font-bold">{participant?.name || 'Registered Participant'} {participant?.participantId ? `(${participant.participantId})` : ''}</span>
           </div>
 
           <Timer secondsRemaining={secondsRemaining} timerState={timerState} />
@@ -379,10 +378,10 @@ export default function Challenge() {
 
         {/* ── COLUMN 1: Challenge Brief + Progress (col-span-3) ── */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="p-5 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-4 shadow-lg">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-cyan-400" /> CHALLENGE BRIEF
+          <div className="p-5 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-4 shadow-lg">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-orange-400" /> CHALLENGE BRIEF
               </h3>
               <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-amber-950 text-amber-300 border border-amber-800/40">
                 {challenge.difficulty}
@@ -391,24 +390,24 @@ export default function Challenge() {
 
             <div className="space-y-2 text-xs leading-relaxed">
               <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Problem</label>
-              <p className="text-slate-300 whitespace-pre-line bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+              <p className="text-slate-700 whitespace-pre-line bg-slate-100 p-3 rounded-xl border border-slate-200/60">
                 {challenge.description}
               </p>
             </div>
 
             {/* Sample I/O */}
-            <div className="space-y-2 pt-1 border-t border-slate-800">
+            <div className="space-y-2 pt-1 border-t border-slate-200">
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Sample Test</span>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-[10px] text-slate-500">Input:</span>
-                  <pre className="p-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 text-[11px]">
+                  <pre className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-[11px]">
                     {challenge.sampleInput || 'N/A'}
                   </pre>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500">Output:</span>
-                  <pre className="p-2 bg-slate-950 border border-slate-800 rounded-lg text-emerald-400 text-[11px]">
+                  <pre className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-emerald-400 text-[11px]">
                     {challenge.sampleOutput || 'N/A'}
                   </pre>
                 </div>
@@ -433,18 +432,18 @@ export default function Challenge() {
           {phase === 'HUNT' && (
             <>
               {/* Task progress bar */}
-              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-3">
+              <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     Task Progress
                   </h3>
                   <span className="text-[10px] text-cyan-300 font-mono">
                     {completedTaskIds.length} / {totalTasks} tasks
                   </span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
+                <div className="w-full bg-slate-100 rounded-full h-2">
                   <div
-                    className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-orange-500 to-emerald-400 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${totalTasks > 0 ? (completedTaskIds.length / totalTasks) * 100 : 0}%` }}
                   />
                 </div>
@@ -460,8 +459,8 @@ export default function Challenge() {
                           isDone
                             ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
                             : isCurrent
-                            ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 animate-pulse'
-                            : 'bg-slate-800/60 text-slate-600 border border-slate-700/40'
+                            ? 'bg-orange-500/30 text-cyan-300 border border-orange-500/40 animate-pulse'
+                            : 'bg-slate-100/60 text-slate-600 border border-slate-300/40'
                         }`}
                       >
                         {isDone ? '✓' : i + 1}
@@ -488,7 +487,7 @@ export default function Challenge() {
 
               {/* Waiting state: no current task but not all done */}
               {!currentTask && !allTasksCompleted && (
-                <div className="p-4 bg-slate-950/60 border border-dashed border-slate-800 rounded-2xl text-center text-xs text-slate-500 font-mono">
+                <div className="p-4 bg-slate-100 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-500 font-mono">
                   Loading next task...
                 </div>
               )}
@@ -498,7 +497,7 @@ export default function Challenge() {
                 <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl text-center space-y-2 animate-fadeIn">
                   <span className="text-2xl">🎉</span>
                   <p className="text-sm font-bold text-emerald-300">All Tasks Completed!</p>
-                  <p className="text-xs text-slate-400">Moving to Code Assembly phase...</p>
+                  <p className="text-xs text-slate-600">Moving to Code Assembly phase...</p>
                 </div>
               )}
             </>
@@ -525,7 +524,7 @@ export default function Challenge() {
               <div className="flex gap-2">
                 <button
                   onClick={resetAssemblyOrder}
-                  className="flex-1 py-1.5 text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-slate-800 hover:border-slate-600 rounded-xl flex items-center justify-center gap-1.5 transition"
+                  className="flex-1 py-1.5 text-[11px] font-mono text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-400 rounded-xl flex items-center justify-center gap-1.5 transition"
                 >
                   <Shuffle className="w-3.5 h-3.5" /> Reset Order
                 </button>
@@ -554,17 +553,17 @@ export default function Challenge() {
       {(phase === 'ASSEMBLE' || phase === 'DONE') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
           {/* Execution controls */}
-          <div className="lg:col-span-4 p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 flex flex-col justify-between">
+          <div className="lg:col-span-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 flex flex-col justify-between">
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Terminal className="w-4 h-4 text-cyan-400" /> EXECUTION CONTROLS
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <Terminal className="w-4 h-4 text-orange-400" /> EXECUTION CONTROLS
               </h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-slate-600 leading-relaxed">
                 Run against sample input to verify, then submit for official hidden test scoring.
               </p>
             </div>
 
-            <div className="space-y-2.5 pt-2 border-t border-slate-800">
+            <div className="space-y-2.5 pt-2 border-t border-slate-200">
               <div className="grid grid-cols-2 gap-3">
                 <RunButton
                   onClick={handleRunCode}

@@ -358,21 +358,21 @@ export default function ChallengeCreate() {
   const previewConfig = languageConfigs.find((lc) => lc.language === previewLanguage) || languageConfigs[0];
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-8 overflow-y-auto max-w-6xl">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div className="flex items-center gap-3">
-            <Link to="/admin/challenges" className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition">
+            <Link to="/admin/challenges" className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 transition">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
-                <Code2 className="w-6 h-6 text-cyan-400" />
+              <h1 className="text-2xl font-black text-slate-900 tracking-wider flex items-center gap-2">
+                <Code2 className="w-6 h-6 text-orange-400" />
                 CREATE CODING CHALLENGE
               </h1>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 Progressive Task Unlocking & Multi-Language Code Assembly
               </p>
             </div>
@@ -402,59 +402,59 @@ export default function ChallengeCreate() {
 
         <form onSubmit={handleSaveChallenge} className="space-y-8">
           {/* SECTION 1: BASIC INFORMATION */}
-          <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-5 shadow-xl">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <span className="w-6 h-6 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xs font-bold">
+          <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-5 shadow-xl">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+              <span className="w-6 h-6 rounded-lg bg-cyan-950 border border-orange-500/40 text-orange-400 flex items-center justify-center text-xs font-bold">
                 1
               </span>
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                 Section 1 — Basic Problem Information
               </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Challenge Title *</label>
+                <label className="text-slate-600 font-bold">Challenge Title *</label>
                 <input
                   type="text"
                   value={basicInfo.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   placeholder="e.g. Two Number Adder"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:border-orange-500"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Slug (URL Identifier) *</label>
+                <label className="text-slate-600 font-bold">Slug (URL Identifier) *</label>
                 <input
                   type="text"
                   value={basicInfo.slug}
                   onChange={(e) => setBasicInfo({ ...basicInfo, slug: e.target.value })}
                   placeholder="e.g. two-number-adder"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-cyan-300 font-mono focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-cyan-300 font-mono focus:outline-none focus:border-orange-500"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Category</label>
+                <label className="text-slate-600 font-bold">Category</label>
                 <input
                   type="text"
                   value={basicInfo.category}
                   onChange={(e) => setBasicInfo({ ...basicInfo, category: e.target.value })}
                   placeholder="e.g. Algorithms, Math"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-slate-400 font-bold">Difficulty</label>
+                  <label className="text-slate-600 font-bold">Difficulty</label>
                   <select
                     value={basicInfo.difficulty}
                     onChange={(e) => setBasicInfo({ ...basicInfo, difficulty: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none"
                   >
                     <option value="Easy">Easy</option>
                     <option value="Medium">Medium</option>
@@ -463,11 +463,11 @@ export default function ChallengeCreate() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-slate-400 font-bold">Sequence (Roadmap)</label>
+                  <label className="text-slate-600 font-bold">Sequence (Roadmap)</label>
                   <select
                     value={basicInfo.sequenceOrder || ''}
                     onChange={(e) => setBasicInfo({ ...basicInfo, sequenceOrder: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-cyan-300 font-bold focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold focus:outline-none focus:border-orange-500"
                   >
                     <option value="">None (Draft / Hidden)</option>
                     <option value="1">1 // Easy (First)</option>
@@ -477,21 +477,21 @@ export default function ChallengeCreate() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-slate-400 font-bold">Points</label>
+                  <label className="text-slate-600 font-bold">Points</label>
                   <input
                     type="number"
                     value={basicInfo.points}
                     onChange={(e) => setBasicInfo({ ...basicInfo, points: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-emerald-400 font-bold focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-emerald-400 font-bold focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-slate-400 font-bold">Status</label>
+                  <label className="text-slate-600 font-bold">Status</label>
                   <select
                     value={basicInfo.status}
                     onChange={(e) => setBasicInfo({ ...basicInfo, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-cyan-300 font-bold focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-cyan-300 font-bold focus:outline-none"
                   >
                     <option value="Published">Published</option>
                     <option value="Draft">Draft</option>
@@ -502,97 +502,97 @@ export default function ChallengeCreate() {
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <label className="text-slate-400 font-bold">Problem Description *</label>
+              <label className="text-slate-600 font-bold">Problem Description *</label>
               <textarea
                 rows={3}
                 value={basicInfo.description}
                 onChange={(e) => setBasicInfo({ ...basicInfo, description: e.target.value })}
                 placeholder="Clear explanation of the problem statement..."
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white leading-relaxed focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 leading-relaxed focus:outline-none focus:border-orange-500"
                 required
               />
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <label className="text-slate-400 font-bold">Contestant Instructions</label>
+              <label className="text-slate-600 font-bold">Contestant Instructions</label>
               <textarea
                 rows={2}
                 value={basicInfo.instructions}
                 onChange={(e) => setBasicInfo({ ...basicInfo, instructions: e.target.value })}
                 placeholder="Assembly hints or instructions for the participant..."
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-300 focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Input Format</label>
+                <label className="text-slate-600 font-bold">Input Format</label>
                 <input
                   type="text"
                   value={basicInfo.inputFormat}
                   onChange={(e) => setBasicInfo({ ...basicInfo, inputFormat: e.target.value })}
                   placeholder="e.g. Two space-separated integers A and B"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Output Format</label>
+                <label className="text-slate-600 font-bold">Output Format</label>
                 <input
                   type="text"
                   value={basicInfo.outputFormat}
                   onChange={(e) => setBasicInfo({ ...basicInfo, outputFormat: e.target.value })}
                   placeholder="e.g. Single integer showing A + B"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Constraints</label>
+                <label className="text-slate-600 font-bold">Constraints</label>
                 <input
                   type="text"
                   value={basicInfo.constraints}
                   onChange={(e) => setBasicInfo({ ...basicInfo, constraints: e.target.value })}
                   placeholder="e.g. -10^5 <= A, B <= 10^5"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-1">
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Time Limit (Seconds)</label>
+                <label className="text-slate-600 font-bold">Time Limit (Seconds)</label>
                 <input
                   type="number"
                   value={basicInfo.timeLimitSeconds}
                   onChange={(e) => setBasicInfo({ ...basicInfo, timeLimitSeconds: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-amber-400 font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-amber-400 font-bold"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold">Max Execution Attempts</label>
+                <label className="text-slate-600 font-bold">Max Execution Attempts</label>
                 <input
                   type="number"
                   value={basicInfo.maxAttempts}
                   onChange={(e) => setBasicInfo({ ...basicInfo, maxAttempts: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
                 />
               </div>
             </div>
           </div>
 
           {/* SECTION 2: MULTI-LANGUAGE CODE BLOCKS */}
-          <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-5 shadow-xl">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <span className="w-6 h-6 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xs font-bold">
+          <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-5 shadow-xl">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+              <span className="w-6 h-6 rounded-lg bg-cyan-950 border border-orange-500/40 text-orange-400 flex items-center justify-center text-xs font-bold">
                 2
               </span>
               <div>
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                   Section 2 — Multi-Language Code Blocks
                 </h2>
-                <p className="text-[11px] text-cyan-400">
+                <p className="text-[11px] text-orange-400">
                   Every programming language MUST have the exact same number of blocks. Adding or deleting a block synchronizes across all languages.
                 </p>
               </div>
@@ -604,13 +604,13 @@ export default function ChallengeCreate() {
           </div>
 
           {/* SECTION 3: PROGRESSIVE TASKS & QUIZZES */}
-          <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-5 shadow-xl">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+          <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-5 shadow-xl">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
               <span className="w-6 h-6 rounded-lg bg-amber-950 border border-amber-500/40 text-amber-400 flex items-center justify-center text-xs font-bold">
                 3
               </span>
               <div>
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                   Section 3 — Progressive Tasks & Quizzes (1 Task per Block)
                 </h2>
                 <p className="text-[11px] text-amber-400">
@@ -626,13 +626,13 @@ export default function ChallengeCreate() {
           </div>
 
           {/* SECTION 4: TEST CASE MANAGEMENT */}
-          <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-5 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="p-6 bg-white/90 border border-slate-200 rounded-2xl space-y-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-lg bg-purple-950 border border-purple-500/40 text-purple-400 flex items-center justify-center text-xs font-bold">
                   4
                 </span>
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                   Section 4 — Test Cases ({testCases.length} tests)
                 </h2>
               </div>
@@ -652,19 +652,19 @@ export default function ChallengeCreate() {
               {testCases.map((tc, idx) => (
                 <div
                   key={idx}
-                  className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3 text-xs"
+                  className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900 pb-2">
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-cyan-400">Test Case #{idx + 1}</span>
+                      <span className="font-bold text-orange-400">Test Case #{idx + 1}</span>
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={tc.isHidden}
                           onChange={(e) => updateTestCase(idx, 'isHidden', e.target.checked)}
-                          className="rounded bg-slate-900 border-slate-700"
+                          className="rounded bg-white border-slate-300"
                         />
-                        <span className={tc.isHidden ? 'text-amber-400 font-bold' : 'text-slate-400'}>
+                        <span className={tc.isHidden ? 'text-amber-400 font-bold' : 'text-slate-600'}>
                           {tc.isHidden ? 'Hidden Test Case' : 'Visible Sample'}
                         </span>
                       </label>
@@ -673,9 +673,9 @@ export default function ChallengeCreate() {
                           type="checkbox"
                           checked={tc.isEnabled}
                           onChange={(e) => updateTestCase(idx, 'isEnabled', e.target.checked)}
-                          className="rounded bg-slate-900 border-slate-700"
+                          className="rounded bg-white border-slate-300"
                         />
-                        <span className="text-slate-400">Enabled</span>
+                        <span className="text-slate-600">Enabled</span>
                       </label>
                     </div>
 
@@ -686,7 +686,7 @@ export default function ChallengeCreate() {
                           type="number"
                           value={tc.weight || 20}
                           onChange={(e) => updateTestCase(idx, 'weight', Number(e.target.value))}
-                          className="w-16 px-2 py-1 bg-slate-900 border border-slate-800 rounded text-center text-emerald-400 font-bold"
+                          className="w-16 px-2 py-1 bg-white border border-slate-200 rounded text-center text-emerald-400 font-bold"
                         />
                         <span className="text-slate-500">pts</span>
                       </div>
@@ -694,7 +694,7 @@ export default function ChallengeCreate() {
                       <button
                         type="button"
                         onClick={() => duplicateTestCase(idx)}
-                        className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded"
+                        className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded"
                         title="Duplicate"
                       >
                         Copy
@@ -703,7 +703,7 @@ export default function ChallengeCreate() {
                       <button
                         type="button"
                         onClick={() => deleteTestCase(idx)}
-                        className="p-1 hover:bg-slate-800 text-rose-400 rounded"
+                        className="p-1 hover:bg-slate-100 text-rose-400 rounded"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -719,7 +719,7 @@ export default function ChallengeCreate() {
                         value={tc.input}
                         onChange={(e) => updateTestCase(idx, 'input', e.target.value)}
                         placeholder="e.g. 10 20"
-                        className="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg font-mono text-white"
+                        className="w-full p-2 bg-white border border-slate-200 rounded-lg font-mono text-slate-900"
                       />
                     </div>
 
@@ -730,7 +730,7 @@ export default function ChallengeCreate() {
                         value={tc.expectedOutput}
                         onChange={(e) => updateTestCase(idx, 'expectedOutput', e.target.value)}
                         placeholder="e.g. 30"
-                        className="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg font-mono text-cyan-300"
+                        className="w-full p-2 bg-white border border-slate-200 rounded-lg font-mono text-cyan-300"
                         required
                       />
                     </div>
@@ -741,7 +741,7 @@ export default function ChallengeCreate() {
           </div>
 
           {/* BOTTOM ACTIONS */}
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-200">
             <Link to="/admin/challenges">
               <Button variant="outline" size="sm" type="button">
                 Cancel
@@ -770,37 +770,37 @@ export default function ChallengeCreate() {
 
         {/* PARTICIPANT PREVIEW MODAL */}
         {isPreviewOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="fixed inset-0 z-50 bg-slate-50/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2">
-                  <Play className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-base font-bold text-white">
+                  <Play className="w-5 h-5 text-orange-400" />
+                  <h3 className="text-base font-bold text-slate-900">
                     PARTICIPANT PREVIEW: {basicInfo.title}
                   </h3>
                 </div>
                 <button
                   onClick={() => setIsPreviewOpen(false)}
-                  className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs"
                 >
                   Close
                 </button>
               </div>
 
               {/* Description */}
-              <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-2">
-                <div className="flex items-center gap-3 text-cyan-400 font-bold">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
+                <div className="flex items-center gap-3 text-orange-400 font-bold">
                   <span>{basicInfo.category}</span>
                   <span>•</span>
                   <span>{basicInfo.points} PTS</span>
                   <span>•</span>
                   <span className="text-amber-400">{basicInfo.difficulty}</span>
                 </div>
-                <p className="text-slate-300 whitespace-pre-line leading-relaxed">
+                <p className="text-slate-700 whitespace-pre-line leading-relaxed">
                   {basicInfo.description}
                 </p>
                 {basicInfo.instructions && (
-                  <p className="text-slate-400 italic text-[11px] pt-1">
+                  <p className="text-slate-600 italic text-[11px] pt-1">
                     Instructions: {basicInfo.instructions}
                   </p>
                 )}
@@ -813,10 +813,10 @@ export default function ChallengeCreate() {
                 </h4>
                 <div className="space-y-2">
                   {tasks.map((t, idx) => (
-                    <div key={idx} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
+                    <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
                       <div>
-                        <span className="font-bold text-white mr-2">#{t.order} {t.title}</span>
-                        <span className="text-slate-400 text-[11px]">{t.description}</span>
+                        <span className="font-bold text-slate-900 mr-2">#{t.order} {t.title}</span>
+                        <span className="text-slate-600 text-[11px]">{t.description}</span>
                       </div>
                       <span className="text-amber-400 text-[11px] font-bold">
                         Unlocks Block #{t.order}
@@ -829,7 +829,7 @@ export default function ChallengeCreate() {
               {/* Multi-Language Blocks Preview */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-cyan-400 uppercase flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-orange-400 uppercase flex items-center gap-1.5">
                     <Layers className="w-4 h-4" /> Code Blocks Preview ({previewConfig?.blocks?.length || 0} fragments)
                   </h4>
                   <div className="flex gap-2">
@@ -839,8 +839,8 @@ export default function ChallengeCreate() {
                         onClick={() => setPreviewLanguage(lc.language)}
                         className={`px-2.5 py-1 rounded text-xs font-mono font-bold ${
                           previewLanguage === lc.language
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            : 'bg-slate-950 text-slate-400'
+                            ? 'bg-orange-500/20 text-cyan-300 border border-orange-500/40'
+                            : 'bg-slate-50 text-slate-600'
                         }`}
                       >
                         {lc.languageName || lc.language}
@@ -851,12 +851,12 @@ export default function ChallengeCreate() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
                   {(previewConfig?.blocks || []).map((b, idx) => (
-                    <div key={idx} className="p-3 rounded-xl border bg-slate-950 border-slate-800 text-xs space-y-1.5">
+                    <div key={idx} className="p-3 rounded-xl border bg-slate-50 border-slate-200 text-xs space-y-1.5">
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-cyan-400">Block #{b.order} [{b.blockId}]</span>
+                        <span className="font-bold text-orange-400">Block #{b.order} [{b.blockId}]</span>
                         <span className="text-emerald-400 font-bold">{b.role}</span>
                       </div>
-                      <pre className="text-[11px] font-mono text-slate-200 bg-slate-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                      <pre className="text-[11px] font-mono text-slate-800 bg-white p-2 rounded overflow-x-auto whitespace-pre-wrap">
                         {b.code}
                       </pre>
                     </div>
@@ -871,15 +871,15 @@ export default function ChallengeCreate() {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                   {testCases.map((tc, idx) => (
-                    <div key={idx} className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                    <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-slate-300">Test #{idx + 1}</span>
+                        <span className="font-bold text-slate-700">Test #{idx + 1}</span>
                         <span className={tc.isHidden ? 'text-amber-400' : 'text-emerald-400'}>
                           {tc.isHidden ? 'Hidden Test' : 'Sample Test'} ({tc.weight || 20} pts)
                         </span>
                       </div>
-                      <div className="text-slate-400">Input: <code className="text-white">{tc.input || '(empty)'}</code></div>
-                      <div className="text-slate-400">Output: <code className="text-cyan-300">{tc.expectedOutput}</code></div>
+                      <div className="text-slate-600">Input: <code className="text-slate-900">{tc.input || '(empty)'}</code></div>
+                      <div className="text-slate-600">Output: <code className="text-cyan-300">{tc.expectedOutput}</code></div>
                     </div>
                   ))}
                 </div>
