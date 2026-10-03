@@ -27,6 +27,7 @@ export default function AdminSettings() {
     leaderboardVisibility: 'Public',
     autoSubmit: true,
     sessionTimeout: 60,
+    enforceProgression: true,
   });
 
   const [loading, setLoading] = useState(true);
@@ -214,6 +215,21 @@ export default function AdminSettings() {
                   className="rounded bg-slate-900 border-slate-700"
                 />
                 <span className="text-slate-300 font-semibold">Auto-Submit on Timer Expiry</span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer p-3.5 bg-slate-950/80 rounded-xl border border-cyan-800/60 hover:border-cyan-500/70 transition-colors sm:col-span-3">
+                <input
+                  type="checkbox"
+                  checked={settings.enforceProgression ?? true}
+                  onChange={(e) => setSettings({ ...settings, enforceProgression: e.target.checked })}
+                  className="mt-0.5 rounded bg-slate-900 border-cyan-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 cursor-pointer"
+                />
+                <div>
+                  <span className="text-cyan-300 font-bold block text-xs">Enforce Easy → Medium → Hard progression</span>
+                  <span className="text-slate-400 text-[11px] block mt-0.5">
+                    When enabled, participants must solve Easy to unlock Medium, and solve Medium to unlock Hard. When disabled, all challenges are accessible immediately.
+                  </span>
+                </div>
               </label>
             </div>
           </div>

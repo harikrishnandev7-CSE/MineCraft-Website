@@ -4,6 +4,7 @@ const Challenge = require('../models/Challenge');
 const ParticipantSession = require('../models/ParticipantSession');
 const { checkIfSessionExpired } = require('../services/session/timerService');
 const { validateQRToken } = require('../services/qr/qrValidation');
+const { checkChallengeLock } = require('../services/challenge/progressionService');
 
 async function findChallenge(idOrSlug) {
   if (!idOrSlug) return null;
@@ -57,6 +58,9 @@ exports.scanBlock = asyncHandler(async (req, res) => {
   let challenge = null;
   if (challengeId) {
     challenge = await findChallenge(challengeId);
+    if (challenge && !(await checkChallengeLock(req, res, challenge))) {
+      return;
+    }
   }
 
   // 1. Look up block in DB
@@ -73,6 +77,13 @@ exports.scanBlock = asyncHandler(async (req, res) => {
   const block = await QRBlock.findOne(blockQuery);
   if (!block) {
     return res.status(404).json({ success: false, message: 'Invalid or unknown QR code token' });
+  }
+
+  if (!challenge && block.challengeId) {
+    challenge = await findChallenge(block.challengeId);
+    if (challenge && !(await checkChallengeLock(req, res, challenge))) {
+      return;
+    }
   }
 
   const targetChallengeId = challenge ? challenge._id : block.challengeId;

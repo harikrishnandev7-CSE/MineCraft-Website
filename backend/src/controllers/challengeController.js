@@ -3,6 +3,7 @@ const Challenge = require('../models/Challenge');
 const QRBlock = require('../models/QRBlock');
 const TestCase = require('../models/TestCase');
 const ParticipantSession = require('../models/ParticipantSession');
+const { getProgressForUser, checkChallengeLock } = require('../services/challenge/progressionService');
 
 const findChallengeByIdOrSlug = async (idOrSlug) => {
   if (!idOrSlug) return null;
@@ -62,6 +63,15 @@ exports.getChallenges = asyncHandler(async (req, res) => {
   res.json({ success: true, challenges: sanitized });
 });
 
+exports.getUserProgress = asyncHandler(async (req, res) => {
+  const result = await getProgressForUser(req.user?._id, req.user);
+  res.json({
+    success: true,
+    progress: result.progress,
+    enforceProgression: result.enforceProgression,
+  });
+});
+
 exports.getChallengeById = asyncHandler(async (req, res) => {
   // Never expose sourceCode to participants
   const challengeId = req.params.id;
@@ -106,6 +116,10 @@ exports.getParticipantBlocks = asyncHandler(async (req, res) => {
   const challenge = await findChallengeByIdOrSlug(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  if (req.user && !(await checkChallengeLock(req, res, challenge))) {
+    return;
   }
 
   const allBlocks = await QRBlock.find({ challengeId }).sort({ displayOrder: 1 });
@@ -166,6 +180,10 @@ exports.revealBlock = asyncHandler(async (req, res) => {
   const challenge = await findChallengeByIdOrSlug(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  if (req.user && !(await checkChallengeLock(req, res, challenge))) {
+    return;
   }
 
   const allBlocks = await QRBlock.find({ challengeId }).sort({ displayOrder: 1 });

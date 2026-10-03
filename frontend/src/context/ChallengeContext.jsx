@@ -52,6 +52,7 @@ export function ChallengeProvider({ children }) {
   const [isValidating, setIsValidating] = useState(false);
   const [compileOutput, setCompileOutput] = useState(null);
   const [finalResult, setFinalResult] = useState(null);
+  const [lockedNotice, setLockedNotice] = useState(null);
 
   const submittingRef = useRef(false);
   const saveAssemblyTimerRef = useRef(null);
@@ -184,6 +185,9 @@ export function ChallengeProvider({ children }) {
           }
         }
       } catch (err) {
+        if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+          setLockedNotice(err.response.data.message || 'This challenge is locked.');
+        }
         // Participant session recovery failure is normal if no session was started yet
       }
     }
@@ -333,6 +337,11 @@ export function ChallengeProvider({ children }) {
         }
       }
     } catch (err) {
+      if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+        const msg = err.response.data.message || 'Complete previous tiers first to unlock this challenge.';
+        setLockedNotice(msg);
+        throw err;
+      }
       console.error('[ChallengeContext] startSession error:', err);
       setChallengeId(targetId);
       setStartTime(new Date().toISOString());
@@ -417,6 +426,9 @@ export function ChallengeProvider({ children }) {
         };
       }
     } catch (err) {
+      if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+        setLockedNotice(err.response.data.message || 'This challenge is locked.');
+      }
       return { correct: false, explain: err.response?.data?.message || 'Server error. Please try again.' };
     } finally {
       setTaskSubmitting(false);
@@ -460,6 +472,9 @@ export function ChallengeProvider({ children }) {
       setCompileOutput(apiRes);
       return apiRes;
     } catch (err) {
+      if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+        setLockedNotice(err.response.data.message || 'This challenge is locked.');
+      }
       const fallback = {
         success: false,
         status: 'Error',
@@ -516,6 +531,9 @@ export function ChallengeProvider({ children }) {
       }
       return record;
     } catch (err) {
+      if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+        setLockedNotice(err.response.data.message || 'This challenge is locked.');
+      }
       return {
         success: false,
         status: 'WRONG_ANSWER',
@@ -667,6 +685,8 @@ export function ChallengeProvider({ children }) {
         isTimeExpired,
         handleTimeExpired,
         resetAll,
+        lockedNotice,
+        setLockedNotice,
 
         // aliases for backward compatibility
         unlockedBlocks: collectedFragments.map((f) => ({

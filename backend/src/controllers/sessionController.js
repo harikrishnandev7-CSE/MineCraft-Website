@@ -3,6 +3,7 @@ const ParticipantSession = require('../models/ParticipantSession');
 const Challenge = require('../models/Challenge');
 const QRBlock = require('../models/QRBlock');
 const { checkIfSessionExpired, calculateRemainingTime } = require('../services/session/timerService');
+const { checkChallengeLock } = require('../services/challenge/progressionService');
 
 async function findChallenge(idOrSlug) {
   if (!idOrSlug) return null;
@@ -29,6 +30,10 @@ exports.startSession = asyncHandler(async (req, res) => {
   const challenge = await findChallenge(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  if (!(await checkChallengeLock(req, res, challenge))) {
+    return;
   }
 
   const durationSeconds = challenge.timeLimitSeconds || 1200;
@@ -105,6 +110,9 @@ exports.saveAssembly = asyncHandler(async (req, res) => {
   }
 
   const challenge = await findChallenge(challengeId);
+  if (challenge && !(await checkChallengeLock(req, res, challenge))) {
+    return;
+  }
   const targetId = challenge ? challenge._id : challengeId;
 
   const session = await ParticipantSession.findOne({

@@ -12,6 +12,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const Challenge = require('../models/Challenge');
 const ParticipantSession = require('../models/ParticipantSession');
 const User = require('../models/User');
+const { checkChallengeLock } = require('../services/challenge/progressionService');
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -130,6 +131,10 @@ exports.startSession = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
 
+  if (!(await checkChallengeLock(req, res, challenge))) {
+    return;
+  }
+
   // If no language provided or not configured, default to first available language
   let langConfig = language ? getLangConfig(challenge, language) : null;
   if (!langConfig) {
@@ -242,6 +247,10 @@ exports.getCurrentTask = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
   }
 
+  if (!(await checkChallengeLock(req, res, challenge))) {
+    return;
+  }
+
   const user = await getOrCreateSessionUser(req);
   let session = null;
   if (user) {
@@ -305,6 +314,10 @@ exports.submitTaskAnswer = asyncHandler(async (req, res) => {
   const challenge = await findChallenge(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  if (!(await checkChallengeLock(req, res, challenge))) {
+    return;
   }
 
   const user = await getOrCreateSessionUser(req);
@@ -475,6 +488,10 @@ exports.getProgress = asyncHandler(async (req, res) => {
   const challenge = await findChallenge(challengeId);
   if (!challenge) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  if (!(await checkChallengeLock(req, res, challenge))) {
+    return;
   }
 
   const user = await getOrCreateSessionUser(req);

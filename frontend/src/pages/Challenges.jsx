@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useChallenge } from '../hooks/useChallenge';
 import { useParticipant } from '../context/ParticipantContext';
 import { challengeApi } from '../services/challengeApi';
+import Toast from '../components/common/Toast';
 import {
   Trophy,
   Clock,
@@ -15,6 +16,10 @@ import {
   Code2,
   UserCheck,
   Shield,
+  Lock,
+  Unlock,
+  ChevronRight,
+  RotateCcw,
 } from 'lucide-react';
 
 const LANGUAGE_LABELS = {
@@ -27,26 +32,57 @@ const LANGUAGE_LABELS = {
 
 export default function Challenges() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { participant } = useParticipant();
   const { challenge: activeChallenge, selectChallenge } = useChallenge();
 
   const [loading, setLoading] = useState(true);
   const [challenges, setChallenges] = useState([]);
+  const [userProgress, setUserProgress] = useState([]);
+  const [enforceProgression, setEnforceProgression] = useState(true);
   const [needRegisterAlert, setNeedRegisterAlert] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [toastType, setToastType] = useState('info');
 
-  // ── Load challenges purely from API ──
+  // ── Handle incoming lock error or unlock announcements ──
+  useEffect(() => {
+    if (location.state?.lockError) {
+      setToastMessage(location.state.lockError);
+      setToastType('error');
+      window.history.replaceState({}, document.title);
+    }
+
+    const justUnlocked = sessionStorage.getItem('just_unlocked_tier');
+    if (justUnlocked) {
+      setToastMessage(`🔓 ${justUnlocked} Challenge Unlocked! Good luck.`);
+      setToastType('success');
+      sessionStorage.removeItem('just_unlocked_tier');
+    }
+  }, [location.state]);
+
+  // ── Load challenges and progress ──
   useEffect(() => {
     let cancelled = false;
 
     async function loadData() {
       try {
         setLoading(true);
-        const res = await challengeApi.getAll();
+        const [challengesRes, progressRes] = await Promise.all([
+          challengeApi.getAll().catch(() => ({ success: false, challenges: [] })),
+          participant ? challengeApi.getProgress().catch(() => null) : Promise.resolve(null),
+        ]);
         if (cancelled) return;
 
         let serverList = [];
-        if (res && res.success && Array.isArray(res.challenges)) {
-          serverList = res.challenges;
+        if (challengesRes && challengesRes.success && Array.isArray(challengesRes.challenges)) {
+          serverList = challengesRes.challenges;
+        }
+
+        let progressList = [];
+        if (progressRes && progressRes.success && Array.isArray(progressRes.progress)) {
+          progressList = progressRes.progress;
+          setEnforceProgression(progressRes.enforceProgression !== false);
+          setUserProgress(progressList);
         }
 
         const mappedServer = serverList.map((sc) => {
@@ -59,6 +95,31 @@ export default function Challenges() {
           const tasksCount = Array.isArray(sc.tasks) ? sc.tasks.length : 4;
           const blocksCount = sc.languageConfigs?.[0]?.blockCount || tasksCount;
 
+          let status = 'UNLOCKED';
+          let lockedReason = '';
+          const diffLower = (sc.difficulty || '').toLowerCase();
+          const tier = diffLower === 'easy' ? 1 : diffLower === 'medium' ? 2 : 3;
+
+          if (participant && progressList.length > 0) {
+            const prog = progressList.find(
+              (p) =>
+                String(p.challengeId).toLowerCase() === String(sc._id).toLowerCase() ||
+                String(p.slug || '').toLowerCase() === String(sc.slug || '').toLowerCase()
+            );
+            if (prog) {
+              status = prog.status;
+              lockedReason = prog.lockedReason;
+            }
+          } else if (!participant) {
+            // Unregistered participant: Easy available, Medium & Hard locked
+            if (tier > 1) {
+              status = 'LOCKED';
+              lockedReason = 'Register & complete Easy first to unlock.';
+            } else {
+              status = 'UNLOCKED';
+            }
+          }
+
           return {
             id: sc.slug || sc._id,
             slug: sc.slug || sc._id,
@@ -67,15 +128,19 @@ export default function Challenges() {
             description: sc.description || '',
             category: sc.category || 'Algorithms',
             difficulty: sc.difficulty || 'Medium',
+            tier,
             points: sc.points ?? 100,
             duration: sc.timeLimitSeconds || 1200,
             tasksCount,
             blocksCount,
             supportedLanguages: langs,
+            status,
+            lockedReason,
             isBackend: true,
           };
         });
 
+        mappedServer.sort((a, b) => a.tier - b.tier);
         setChallenges(mappedServer);
       } catch (err) {
         console.error('Failed to load challenges from backend API:', err);
@@ -89,16 +154,53 @@ export default function Challenges() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
+  }, [participant]);
 
   // ── Stats ──
   const totalPoints = useMemo(() => {
     return challenges.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
   }, [challenges]);
 
+  const completedCount = useMemo(() => {
+    return challenges.filter((c) => c.status === 'COMPLETED').length;
+  }, [challenges]);
+
+  const earnedPoints = useMemo(() => {
+    return challenges
+      .filter((c) => c.status === 'COMPLETED')
+      .reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+  }, [challenges]);
+
+  // ── Stepper Tier States ──
+  const tierStates = useMemo(() => {
+    const tiers = [
+      { tier: 1, name: 'Easy' },
+      { tier: 2, name: 'Medium' },
+      { tier: 3, name: 'Hard' },
+    ];
+
+    return tiers.map(({ tier, name }) => {
+      const items = challenges.filter((c) => c.tier === tier);
+      if (items.length === 0) return { tier, name, state: 'locked' };
+
+      const allDone = items.every((c) => c.status === 'COMPLETED');
+      if (allDone) return { tier, name, state: 'done' };
+
+      const anyUnlocked = items.some((c) => c.status === 'UNLOCKED');
+      if (anyUnlocked) return { tier, name, state: 'current' };
+
+      return { tier, name, state: 'locked' };
+    });
+  }, [challenges]);
+
   // ── Handler: Solve Challenge ──
   const handleSolve = (challenge) => {
+    if (challenge.status === 'LOCKED') {
+      setToastMessage(challenge.lockedReason || 'This challenge is locked. Complete previous tiers first.');
+      setToastType('warning');
+      return;
+    }
+
     if (!participant) {
       setNeedRegisterAlert(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -140,26 +242,98 @@ export default function Challenges() {
                 CHOOSE YOUR CHALLENGE
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
-                Select an active coding trial to enter the arena. Solve progressive quizzes to unlock 
-                code blocks one-by-one, reconstruct the correct logical order, and execute the solution against hidden test cases.
+                Progress sequentially through the tiers: complete Easy to unlock Medium, and solve Medium to unlock Hard.
+                Crack tasks to recover fragments, reassemble the code, and clear all test cases.
               </p>
             </div>
 
-            {/* Quick Stats Pill */}
-            <div className="flex flex-wrap sm:flex-col gap-3 min-w-[200px]">
+            {/* Header Stats Pills */}
+            <div className="flex flex-wrap sm:flex-col gap-3 min-w-[220px]">
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-4">
                 <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" /> Active Trials
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Completed
                 </span>
-                <span className="text-base font-black text-white">{challenges.length}</span>
+                <span className="text-base font-black text-emerald-400">
+                  {completedCount} / {challenges.length || 3}
+                </span>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-4">
                 <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" /> Total Points
+                  <Trophy className="w-3.5 h-3.5 text-amber-400" /> Points Earned
                 </span>
-                <span className="text-base font-black text-amber-400">{totalPoints} PTS</span>
+                <span className="text-base font-black text-amber-400">
+                  {earnedPoints} <span className="text-xs text-slate-500">/ {totalPoints} PTS</span>
+                </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── PROGRESS STEPPER ── */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-lg">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-cyan-400" /> Sequential Tier Progression
+            </span>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {enforceProgression ? 'Enforced: Easy → Medium → Hard' : 'Open Arena: All Unlocked'}
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {tierStates.map((step, idx) => {
+              const isDone = step.state === 'done';
+              const isCurrent = step.state === 'current';
+              const isLocked = step.state === 'locked';
+
+              return (
+                <React.Fragment key={step.tier}>
+                  <div
+                    className={`flex-1 p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                      isDone
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : isCurrent
+                        ? 'bg-cyan-950/40 border-cyan-500/60 text-cyan-300 shadow-md shadow-cyan-950/50 animate-pulse'
+                        : 'bg-slate-950/60 border-slate-800/80 text-slate-500'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                          isDone
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                            : isCurrent
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
+                            : 'bg-slate-900 border border-slate-800 text-slate-600'
+                        }`}
+                      >
+                        {isDone ? '✓' : step.tier}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-wider">
+                          Tier {step.tier}: {step.name}
+                        </div>
+                        <div className="text-[10px] opacity-80 font-sans">
+                          {isDone ? 'Fully Solved' : isCurrent ? 'Available to Solve' : 'Locked Tier'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 text-xs">
+                      {isDone && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                      {isCurrent && <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">CURRENT</span>}
+                      {isLocked && <Lock className="w-4 h-4 text-slate-600" />}
+                    </div>
+                  </div>
+
+                  {idx < tierStates.length - 1 && (
+                    <div className="hidden sm:flex text-slate-600 font-bold px-1">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
 
@@ -189,10 +363,10 @@ export default function Challenges() {
         {/* ── CHALLENGE CARDS GRID ── */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl animate-pulse space-y-4 h-72"
+                className="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl animate-pulse space-y-4 h-80"
               >
                 <div className="flex justify-between items-center">
                   <div className="h-5 w-20 bg-slate-800 rounded-md" />
@@ -217,20 +391,32 @@ export default function Challenges() {
             {challenges.map((c) => {
               const isCurrent = activeChallenge && (activeChallenge.id === c.id || activeChallenge.slug === c.slug);
               const durationMin = Math.round(c.duration / 60);
+              const isLocked = c.status === 'LOCKED';
+              const isCompleted = c.status === 'COMPLETED';
 
               return (
                 <div
                   key={c.id}
-                  className={`flex flex-col justify-between p-6 bg-slate-900/70 border rounded-2xl transition-all duration-300 group hover:shadow-2xl hover:shadow-cyan-950/40 hover:-translate-y-1 relative ${
-                    isCurrent
-                      ? 'border-cyan-500/60 bg-slate-900/90 shadow-lg shadow-cyan-950/30'
-                      : 'border-slate-800 hover:border-slate-700'
+                  className={`flex flex-col justify-between p-6 rounded-2xl transition-all duration-300 group relative ${
+                    isLocked
+                      ? 'bg-slate-950/50 border border-slate-800/60 opacity-65 hover:opacity-75'
+                      : isCompleted
+                      ? 'bg-slate-900/90 border border-emerald-500/40 shadow-lg shadow-emerald-950/20 hover:-translate-y-1'
+                      : isCurrent
+                      ? 'bg-slate-900/90 border border-cyan-500/60 shadow-lg shadow-cyan-950/30 hover:-translate-y-1'
+                      : 'bg-slate-900/70 border border-slate-800 hover:border-slate-700 hover:shadow-2xl hover:shadow-cyan-950/40 hover:-translate-y-1'
                   }`}
                 >
-                  {/* Current Active Badge Indicator */}
-                  {isCurrent && (
+                  {/* Active / Completed Floating Badges */}
+                  {isCurrent && !isCompleted && (
                     <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full bg-cyan-500 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-md shadow-cyan-500/40">
                       ACTIVE SESSION
+                    </div>
+                  )}
+
+                  {isCompleted && (
+                    <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-md shadow-emerald-500/40 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> COMPLETED ✓
                     </div>
                   )}
 
@@ -265,12 +451,28 @@ export default function Challenges() {
 
                     {/* Challenge Title */}
                     <div>
-                      <h2 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                      <h2
+                        className={`text-base font-bold transition-colors line-clamp-1 ${
+                          isLocked
+                            ? 'text-slate-400'
+                            : isCompleted
+                            ? 'text-emerald-300'
+                            : 'text-white group-hover:text-cyan-300'
+                        }`}
+                      >
                         {c.title}
                       </h2>
                       <p className="text-xs text-slate-400 font-sans mt-2 line-clamp-2 leading-relaxed">
                         {c.description}
                       </p>
+
+                      {/* Locked Reason Note */}
+                      {isLocked && (
+                        <div className="p-2.5 mt-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{c.lockedReason || 'Complete previous tier to unlock.'}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Specifications: Tasks & Blocks */}
@@ -319,17 +521,35 @@ export default function Challenges() {
 
                   {/* Action Button */}
                   <div className="pt-6 mt-4 border-t border-slate-800/80">
-                    <button
-                      onClick={() => handleSolve(c)}
-                      className={`w-full py-3 px-4 rounded-xl font-mono font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 ${
-                        isCurrent
-                          ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30'
-                          : 'bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:via-cyan-400 hover:to-teal-300 text-slate-950 shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/40 group-hover:scale-[1.02]'
-                      }`}
-                    >
-                      <span>{isCurrent ? '[ RESUME ARENA ]' : '[ SOLVE CHALLENGE ]'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    {isLocked ? (
+                      <button
+                        disabled
+                        className="w-full py-3 px-4 rounded-xl font-mono font-bold text-xs tracking-wider bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <Lock className="w-4 h-4 text-slate-500" />
+                        <span>[ LOCKED ]</span>
+                      </button>
+                    ) : isCompleted ? (
+                      <button
+                        onClick={() => handleSolve(c)}
+                        className="w-full py-3 px-4 rounded-xl font-mono font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/50 text-emerald-300 shadow-md shadow-emerald-950/30"
+                      >
+                        <RotateCcw className="w-4 h-4 text-emerald-400" />
+                        <span>[ PLAY AGAIN ]</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSolve(c)}
+                        className={`w-full py-3 px-4 rounded-xl font-mono font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 ${
+                          isCurrent
+                            ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30'
+                            : 'bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:via-cyan-400 hover:to-teal-300 text-slate-950 shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/40 group-hover:scale-[1.02]'
+                        }`}
+                      >
+                        <span>{isCurrent ? '[ RESUME ARENA ]' : '[ SOLVE CHALLENGE ]'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -337,6 +557,8 @@ export default function Challenges() {
           </div>
         )}
 
+        {/* Global Toast */}
+        <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
       </div>
     </div>
   );

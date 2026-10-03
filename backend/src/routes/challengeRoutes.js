@@ -5,6 +5,9 @@ const gameplayController = require('../controllers/gameplayController');
 const optionalAuth = require('../middleware/optionalAuth');
 const protect = require('../middleware/authMiddleware');
 
+// ── Progression info ──
+router.get('/progress', protect, challengeController.getUserProgress);
+
 // ── Public challenge info ──
 router.get('/', challengeController.getChallenges);
 router.get('/active', challengeController.getActiveChallenge);

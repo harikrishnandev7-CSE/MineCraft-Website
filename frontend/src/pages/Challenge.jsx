@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import { useChallenge } from '../hooks/useChallenge';
 import { useTimer } from '../hooks/useTimer';
+import { challengeApi } from '../services/challengeApi';
 
 // layout / shared
 import Timer from '../components/timer/Timer';
@@ -88,6 +89,7 @@ export default function Challenge() {
     isTimeExpired,
     handleTimeExpired,
     resetAll,
+    lockedNotice,
   } = useChallenge();
 
   const [toastMessage, setToastMessage] = useState(null);
@@ -98,6 +100,53 @@ export default function Challenge() {
     setToastMessage(msg);
     setToastType(type);
   }, []);
+
+  // Redirect to /challenges if challenge is locked from server
+  useEffect(() => {
+    if (lockedNotice) {
+      navigate('/challenges', {
+        replace: true,
+        state: { lockError: lockedNotice },
+      });
+    }
+  }, [lockedNotice, navigate]);
+
+  // Guard against direct URL access to locked challenges
+  useEffect(() => {
+    let cancelled = false;
+    async function checkDirectAccessLock() {
+      const target = urlId || challenge.id || challenge.slug;
+      if (!participant || !target) return;
+      try {
+        const progRes = await challengeApi.getProgress();
+        if (cancelled) return;
+        if (progRes.success && Array.isArray(progRes.progress)) {
+          const item = progRes.progress.find(
+            (p) =>
+              String(p.challengeId).toLowerCase() === String(target).toLowerCase() ||
+              String(p.slug || '').toLowerCase() === String(target).toLowerCase()
+          );
+          if (item && item.status === 'LOCKED') {
+            navigate('/challenges', {
+              replace: true,
+              state: { lockError: item.lockedReason || 'This challenge is locked. Complete previous challenges first.' },
+            });
+          }
+        }
+      } catch (err) {
+        if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+          navigate('/challenges', {
+            replace: true,
+            state: { lockError: err.response.data.message || 'Complete the previous challenge first to unlock this tier.' },
+          });
+        }
+      }
+    }
+    checkDirectAccessLock();
+    return () => {
+      cancelled = true;
+    };
+  }, [participant, urlId, challenge.id, challenge.slug, navigate]);
 
   // sync URL id with selected challenge
   useEffect(() => {
@@ -121,9 +170,16 @@ export default function Challenge() {
   // start challenge if no startTime and past SETUP
   useEffect(() => {
     if (participant && !startTime && phase !== 'SETUP') {
-      startChallenge();
+      startChallenge().catch((err) => {
+        if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+          navigate('/challenges', {
+            replace: true,
+            state: { lockError: err.response.data.message || 'This challenge is locked.' },
+          });
+        }
+      });
     }
-  }, [participant, startTime, phase]);
+  }, [participant, startTime, phase, startChallenge, navigate]);
 
   const { secondsRemaining, timerState } = useTimer(
     startTime,
@@ -204,9 +260,18 @@ export default function Challenge() {
             variant="primary"
             size="lg"
             className="w-full font-black"
-            onClick={() => {
-              startChallenge();
-              showToast('⏱ Timer started! Good luck.', 'info');
+            onClick={async () => {
+              try {
+                await startChallenge();
+                showToast('⏱ Timer started! Good luck.', 'info');
+              } catch (err) {
+                if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+                  navigate('/challenges', {
+                    replace: true,
+                    state: { lockError: err.response.data.message || 'This challenge is locked.' },
+                  });
+                }
+              }
             }}
           >
             ▶ START HUNT

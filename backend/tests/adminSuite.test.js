@@ -27,19 +27,15 @@ describe('Blind Coding Platform - Admin & Challenge Workflow Suite', () => {
 
     // Create participant user for security tests
     const partEmail = `test_part_${Date.now()}@college.edu`;
-    await request(app).post('/api/participants/register').send({
+    const regRes = await request(app).post('/api/participants/register').send({
       name: 'Jest Participant',
+      participantId: `P-${Date.now()}`,
       email: partEmail,
-      password: 'Password123!',
       teamName: 'JestSquad',
       college: 'Tech University',
+      department: 'Computer Science',
     });
-
-    const partRes = await request(app).post('/api/auth/login').send({
-      email: partEmail,
-      password: 'Password123!',
-    });
-    participantToken = partRes.body.token;
+    participantToken = regRes.body.token;
   });
 
   afterAll(async () => {

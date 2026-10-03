@@ -1,14 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useParticipant } from '../context/ParticipantContext';
 import { useChallenge } from '../hooks/useChallenge';
+import { challengeApi } from '../services/challengeApi';
 import Button from '../components/common/Button';
-import { Trophy, Award } from 'lucide-react';
+import { Trophy, Award, ArrowRight, CheckCircle2, RotateCcw } from 'lucide-react';
 
 export default function Result() {
   const navigate = useNavigate();
   const { participant } = useParticipant();
-  const { challenge, finalResult, isTimeExpired, startChallenge } = useChallenge();
+  const { challenge, finalResult, isTimeExpired, startChallenge, selectChallenge } = useChallenge();
+
+  const [nextChallenge, setNextChallenge] = useState(null);
+  const [allCompleted, setAllCompleted] = useState(false);
 
   useEffect(() => {
     if (!participant) {
@@ -16,13 +20,51 @@ export default function Result() {
     }
   }, [participant, navigate]);
 
-  if (!participant) {
-    return null;
-  }
-
   const isAccepted = finalResult?.status === 'ACCEPTED';
   const passedTests = finalResult?.passedCount ?? (isAccepted ? (finalResult?.totalCount || 3) : 0);
   const totalTests = finalResult?.totalCount ?? 3;
+
+  useEffect(() => {
+    if (!isAccepted) return;
+    let cancelled = false;
+
+    async function loadProgression() {
+      try {
+        const res = await challengeApi.getProgress();
+        if (cancelled) return;
+        if (res.success && Array.isArray(res.progress)) {
+          const allDone = res.progress.length > 0 && res.progress.every((p) => p.status === 'COMPLETED');
+          setAllCompleted(allDone);
+
+          const currentId = String(challenge?.id || challenge?.slug || '').toLowerCase();
+          const currentItem = res.progress.find(
+            (p) =>
+              String(p.challengeId).toLowerCase() === currentId ||
+              String(p.slug || '').toLowerCase() === currentId
+          );
+          const currentTier = currentItem ? currentItem.tier : 1;
+
+          // Find the next tier challenge
+          const next = res.progress.find((p) => p.tier === currentTier + 1);
+          if (next) {
+            setNextChallenge(next);
+            sessionStorage.setItem('just_unlocked_tier', next.difficulty);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load progress in Result.jsx:', err);
+      }
+    }
+
+    loadProgression();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAccepted, challenge?.id, challenge?.slug]);
+
+  if (!participant) {
+    return null;
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16 text-center space-y-8 font-mono">
@@ -45,6 +87,13 @@ export default function Result() {
             ? 'All test cases verified! Your solution and completion duration have been committed to the live leaderboard.'
             : 'Challenge session concluded. Review official rankings below.'}
         </p>
+
+        {isAccepted && allCompleted && (
+          <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm inline-flex items-center gap-2 shadow-lg shadow-amber-500/10">
+            <span>🏆</span>
+            <span>ALL CHALLENGES COMPLETED</span>
+          </div>
+        )}
       </div>
 
       {/* RESULT METRICS CARD */}
@@ -72,22 +121,60 @@ export default function Result() {
         </div>
       </div>
 
+      {/* ACTIONS */}
       <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => {
-            if (startChallenge) startChallenge();
-            navigate('/challenge');
-          }}
-        >
-          RESTART CHALLENGE
-        </Button>
-        <Link to="/leaderboard">
-          <Button variant="secondary" size="lg">
-            VIEW LEADERBOARD →
+        {isAccepted && nextChallenge && !allCompleted && (
+          <Button
+            variant="primary"
+            size="lg"
+            className="bg-gradient-to-r from-cyan-500 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black shadow-lg shadow-cyan-500/30"
+            onClick={() => {
+              const nextId = nextChallenge.slug || nextChallenge.challengeId;
+              selectChallenge(nextId);
+              navigate(`/challenge?id=${nextId}`);
+            }}
+          >
+            NEXT CHALLENGE ({nextChallenge.difficulty?.toUpperCase()}) →
+          </Button>
+        )}
+
+        {isAccepted && allCompleted && (
+          <Link to="/leaderboard">
+            <Button
+              variant="primary"
+              size="lg"
+              className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/30"
+            >
+              VIEW LEADERBOARD 🏆
+            </Button>
+          </Link>
+        )}
+
+        <Link to="/challenges">
+          <Button variant="outline" size="lg">
+            BROWSE CHALLENGES
           </Button>
         </Link>
+
+        {!allCompleted && (
+          <Link to="/leaderboard">
+            <Button variant="secondary" size="lg">
+              VIEW LEADERBOARD →
+            </Button>
+          </Link>
+        )}
+
+        <Button
+          variant="outline"
+          size="lg"
+          className="text-slate-400 hover:text-white"
+          onClick={() => {
+            if (startChallenge) startChallenge();
+            navigate(`/challenge?id=${challenge?.slug || challenge?.id}`);
+          }}
+        >
+          <RotateCcw className="w-4 h-4 mr-1.5" /> REPLAY THIS
+        </Button>
       </div>
     </div>
   );

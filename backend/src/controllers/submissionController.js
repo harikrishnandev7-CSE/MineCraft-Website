@@ -11,6 +11,7 @@ const { executeCode } = require('../services/judge0Service');
 const { getHiddenTests } = require('../config/challenges');
 
 const { checkIfSessionExpired } = require('../services/session/timerService');
+const { checkChallengeLock } = require('../services/challenge/progressionService');
 
 /**
  * Normalizes output string for comparison
@@ -57,6 +58,11 @@ exports.runCode = asyncHandler(async (req, res) => {
   const sourceCode = req.body?.sourceCode !== undefined ? req.body.sourceCode : req.body?.code;
   const stdin = req.body?.stdin !== undefined ? req.body.stdin : (req.body?.input !== undefined ? req.body.input : '');
   const challengeId = req.body?.challengeId;
+
+  if (challengeId) {
+    const isUnlocked = await checkChallengeLock(req, res, challengeId);
+    if (!isUnlocked) return;
+  }
 
   if (!language || typeof language !== 'string') {
     return res.status(400).json({
@@ -188,6 +194,10 @@ exports.submitSolution = asyncHandler(async (req, res) => {
   }
 
   const targetChallengeId = challenge ? challenge._id : challengeId;
+
+  // Enforce sequential tier progression
+  const isProgressionUnlocked = await checkChallengeLock(req, res, challenge || challengeId);
+  if (!isProgressionUnlocked) return;
 
   // 2. Fetch participant session and enforce session checks
   let session = null;
