@@ -3,9 +3,9 @@ import { Trophy, CheckCircle2 } from 'lucide-react';
 
 export default function LeaderboardTable({ rankings = [], currentParticipantId = null }) {
   return (
-    <div className="overflow-x-auto border border-slate-800 rounded-2xl bg-slate-900/80 shadow-xl">
+    <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white/80 shadow-xl">
       <table className="w-full text-left text-xs font-mono">
-        <thead className="bg-slate-950/90 text-slate-400 uppercase tracking-wider border-b border-slate-800 text-[11px]">
+        <thead className="bg-slate-50/90 text-slate-600 uppercase tracking-wider border-b border-slate-200 text-[11px]">
           <tr>
             <th className="px-5 py-3.5">Rank</th>
             <th className="px-5 py-3.5">Participant</th>
@@ -22,8 +22,8 @@ export default function LeaderboardTable({ rankings = [], currentParticipantId =
                 key={r.id || r.rank}
                 className={`transition-colors ${
                   isMe
-                    ? 'bg-cyan-950/40 border-l-4 border-l-cyan-400 text-white font-bold'
-                    : 'hover:bg-slate-850/50 text-slate-300'
+                    ? 'bg-cyan-950/40 border-l-4 border-l-orange-400 text-slate-900 font-bold'
+                    : 'hover:bg-slate-850/50 text-slate-700'
                 }`}
               >
                 <td className="px-5 py-3.5 font-bold flex items-center gap-2">
@@ -33,16 +33,16 @@ export default function LeaderboardTable({ rankings = [], currentParticipantId =
                     <span>#{r.rank}</span>
                   )}
                   {isMe && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 uppercase font-black">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500 text-slate-950 uppercase font-black">
                       YOU
                     </span>
                   )}
                 </td>
                 <td className="px-5 py-3.5">
-                  <div className="font-semibold text-slate-100">{r.name}</div>
+                  <div className="font-semibold text-slate-900">{r.name}</div>
                   <div className="text-[10px] text-slate-500">{r.college || r.participantId}</div>
                 </td>
-                <td className="px-5 py-3.5 text-slate-400">{r.challengeTitle}</td>
+                <td className="px-5 py-3.5 text-slate-600">{r.challengeTitle}</td>
                 <td className="px-5 py-3.5">
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
                     <CheckCircle2 className="w-3 h-3" /> {r.status}

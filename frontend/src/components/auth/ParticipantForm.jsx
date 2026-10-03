@@ -18,7 +18,7 @@ export default function ParticipantForm({ onJoin, isLoading, error }) {
         </div>
       )}
       <div>
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
           Team / Participant Name
         </label>
         <input
@@ -26,12 +26,12 @@ export default function ParticipantForm({ onJoin, isLoading, error }) {
           required
           value={teamName}
           onChange={(e) => setTeamName(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-400 text-sm"
+          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-emerald-400 text-sm"
           placeholder="ByteBusters"
         />
       </div>
       <div>
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
           Event Session Code
         </label>
         <input
@@ -39,7 +39,7 @@ export default function ParticipantForm({ onJoin, isLoading, error }) {
           required
           value={sessionCode}
           onChange={(e) => setSessionCode(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 font-mono tracking-widest uppercase focus:outline-none focus:border-emerald-400 text-sm"
+          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono tracking-widest uppercase focus:outline-none focus:border-emerald-400 text-sm"
           placeholder="MINDCRAFT-2026"
         />
       </div>

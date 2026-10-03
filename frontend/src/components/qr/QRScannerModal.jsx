@@ -96,11 +96,11 @@ export default function QRScannerModal({
         {step === 'scanning' && (
           <div className="space-y-4 text-center py-4">
             <QRDecodeAnimation active={true} />
-            <div className="font-mono text-xs space-y-1.5 text-slate-300">
-              <p className="text-cyan-400 font-bold animate-pulse">Scanning QR token matrix...</p>
-              <p className="text-slate-400 text-[11px] truncate">Token ID: {qrItem.token}</p>
-              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-                <div className="bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 h-full w-full animate-[progress_1.2s_ease-in-out]" />
+            <div className="font-mono text-xs space-y-1.5 text-slate-700">
+              <p className="text-orange-400 font-bold animate-pulse">Scanning QR token matrix...</p>
+              <p className="text-slate-600 text-[11px] truncate">Token ID: {qrItem.token}</p>
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-300">
+                <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-emerald-400 h-full w-full animate-[progress_1.2s_ease-in-out]" />
               </div>
             </div>
           </div>
@@ -110,25 +110,25 @@ export default function QRScannerModal({
         {step === 'task' && taskData && (
           <div className="space-y-4 py-1 font-mono">
             {/* TASK HEADER BANNER */}
-            <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+            <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-cyan-400 font-bold flex items-center gap-1.5 uppercase">
-                  <ShieldCheck className="w-4 h-4 text-cyan-400" /> {taskData.title}
+                <span className="text-orange-400 font-bold flex items-center gap-1.5 uppercase">
+                  <ShieldCheck className="w-4 h-4 text-orange-400" /> {taskData.title}
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
                   TASK REQUIRED
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-slate-600 leading-relaxed">
                 {taskData.description}
               </p>
             </div>
 
             {/* TASK QUESTION */}
-            <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl space-y-3">
+            <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-3">
               <div className="flex items-start gap-2">
-                <HelpCircle className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                <h4 className="text-xs font-bold text-white leading-relaxed">
+                <HelpCircle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                <h4 className="text-xs font-bold text-slate-900 leading-relaxed">
                   {taskData.question}
                 </h4>
               </div>
@@ -147,23 +147,23 @@ export default function QRScannerModal({
                       }}
                       className={`w-full p-2.5 rounded-lg border text-left text-xs transition flex items-center justify-between ${
                         isSelected
-                          ? 'bg-cyan-950/60 border-cyan-500 text-cyan-200 shadow-sm shadow-cyan-500/20'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60 hover:border-slate-700'
+                          ? 'bg-cyan-950/60 border-orange-500 text-cyan-200 shadow-sm shadow-orange-500/20'
+                          : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-slate-100/60 hover:border-slate-300'
                       }`}
                     >
                       <span className="flex items-center gap-2">
                         <span
                           className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                             isSelected
-                              ? 'bg-cyan-500 text-slate-950'
-                              : 'bg-slate-800 text-slate-400'
+                              ? 'bg-orange-500 text-slate-950'
+                              : 'bg-slate-100 text-slate-600'
                           }`}
                         >
                           {String.fromCharCode(65 + idx)}
                         </span>
                         <span>{option}</span>
                       </span>
-                      {isSelected && <span className="text-cyan-400 text-xs">●</span>}
+                      {isSelected && <span className="text-orange-400 text-xs">●</span>}
                     </button>
                   );
                 })}
@@ -202,26 +202,26 @@ export default function QRScannerModal({
               <div className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
                 <CheckCircle className="w-4 h-4" /> TASK COMPLETED & BLOCK UNLOCKED!
               </div>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-slate-700">
                 You can now place this fragment onto the Assembly Canvas.
               </p>
             </div>
 
             {unlockedBlock && (
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2">
-                  <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs border-b border-slate-200/80 pb-2">
+                  <span className="font-bold text-orange-400 flex items-center gap-1.5">
                     <Cpu className="w-3.5 h-3.5" /> BLOCK #{unlockedBlock.blockId}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 uppercase">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
                     {unlockedBlock.type || 'LOGIC'}
                   </span>
                 </div>
-                <pre className="text-xs text-emerald-300 whitespace-pre-wrap p-3 bg-slate-900/60 rounded border border-slate-800/60 max-h-40 overflow-y-auto">
+                <pre className="text-xs text-emerald-300 whitespace-pre-wrap p-3 bg-white/60 rounded border border-slate-200/60 max-h-40 overflow-y-auto">
                   {unlockedBlock.code || unlockedBlock.codeSnippet}
                 </pre>
                 {unlockedBlock.hint && (
-                  <p className="text-[11px] text-slate-400 italic">Hint: {unlockedBlock.hint}</p>
+                  <p className="text-[11px] text-slate-600 italic">Hint: {unlockedBlock.hint}</p>
                 )}
               </div>
             )}

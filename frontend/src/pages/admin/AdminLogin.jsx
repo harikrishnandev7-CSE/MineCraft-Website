@@ -24,14 +24,14 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 font-mono">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl space-y-6">
+      <div className="w-full max-w-md bg-white border border-slate-200 p-8 rounded-2xl shadow-xl space-y-6">
         <div className="text-center space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-wider">ADMIN CONTROL GATEWAY</h2>
-          <p className="text-xs text-slate-400">MindCraft Blind Coding Platform Administrator</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-wider">ADMIN CONTROL GATEWAY</h2>
+          <p className="text-xs text-slate-600">MindCraft Blind Coding Platform Administrator</p>
         </div>
         <LoginForm onSubmit={handleAdminSignIn} isLoading={loading} error={error} />
-        <div className="text-center pt-2 border-t border-slate-800 text-[11px] text-slate-500">
-          Default Admin: <span className="text-cyan-400 font-semibold">admin@mindcraft.io</span>
+        <div className="text-center pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+          Default Admin: <span className="text-orange-400 font-semibold">admin@mindcraft.io</span>
         </div>
       </div>
     </div>

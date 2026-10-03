@@ -44,12 +44,12 @@ export default function Leaderboard() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 space-y-10 font-mono">
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-orange-500/40 text-cyan-300 text-xs">
           <Trophy className="w-3.5 h-3.5 text-amber-400" />
           <span>TOURNAMENT STANDINGS</span>
         </div>
-        <h1 className="text-3xl font-black text-white">Live Leaderboard</h1>
-        <p className="text-xs text-slate-400">
+        <h1 className="text-3xl font-black text-slate-800">Live Leaderboard</h1>
+        <p className="text-xs text-slate-600">
           Rankings computed dynamically based on accepted tests and elapsed time
         </p>
       </div>
@@ -59,9 +59,9 @@ export default function Leaderboard() {
 
       {/* FULL LEADERBOARD TABLE */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+        <div className="flex items-center justify-between text-xs text-slate-600 px-1">
           <span className="flex items-center gap-1.5 font-bold">
-            <Users className="w-4 h-4 text-cyan-400" /> Total Ranked Participants: {fullLeaderboard.length}
+            <Users className="w-4 h-4 text-orange-400" /> Total Ranked Participants: {fullLeaderboard.length}
           </span>
           <span>Rank formula: Correctness → Earliest Timestamp</span>
         </div>

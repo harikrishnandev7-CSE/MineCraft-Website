@@ -7,10 +7,10 @@ export default function Countdown({ durationInSeconds, onExpire }) {
 
   return (
     <div className="text-center font-mono">
-      <span className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+      <span className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-emerald-400">
         {formatTime(seconds)}
       </span>
-      <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Time Remaining</p>
+      <p className="text-xs text-slate-600 uppercase tracking-widest mt-1">Time Remaining</p>
     </div>
   );
 }

@@ -33,22 +33,22 @@ export default function Rules() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12 space-y-8 font-mono">
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-orange-500/40 text-cyan-300 text-xs">
+          <Clock className="w-3.5 h-3.5 text-orange-400" />
           <span>OFFICIAL EVENT REGULATIONS</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-800">
           MIND CRAFT – Quiz Hunt & Code Assembly
         </h1>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600">
           Review the competition mechanics before initializing the clock
         </p>
       </div>
 
       {/* HOW IT WORKS */}
-      <div className="p-5 bg-slate-900/60 border border-cyan-500/20 rounded-2xl space-y-3">
-        <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest">How It Works</h3>
-        <ol className="space-y-2 text-xs text-slate-300 list-none">
+      <div className="p-5 bg-slate-50/80 border border-orange-500/20 rounded-2xl space-y-3">
+        <h3 className="text-xs font-bold text-orange-400 uppercase tracking-widest">How It Works</h3>
+        <ol className="space-y-2 text-xs text-slate-700 list-none">
           {[
             '1. Choose your programming language (Python / C / C++ / Java)',
             '2. Click a treasure chest to start a quiz about that language and problem',
@@ -60,7 +60,7 @@ export default function Rules() {
             '8. ACCEPTED = all hidden tests pass → your result is committed to the leaderboard',
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <CheckCircle className="w-3.5 h-3.5 text-cyan-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="w-3.5 h-3.5 text-orange-500 mt-0.5 flex-shrink-0" />
               <span>{step}</span>
             </li>
           ))}
@@ -68,14 +68,14 @@ export default function Rules() {
       </div>
 
       {/* RULES LIST */}
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl space-y-4">
-        <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-cyan-400" /> Tournament Rules
+      <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+        <h3 className="text-xs font-bold text-orange-400 uppercase tracking-widest flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-orange-400" /> Tournament Rules
         </h3>
-        <ul className="space-y-2.5 text-xs text-slate-300">
+        <ul className="space-y-2.5 text-xs text-slate-700">
           {rulesList.map((r, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <span className="text-cyan-400 font-bold">•</span>
+              <span className="text-orange-400 font-bold">•</span>
               <span>{r}</span>
             </li>
           ))}
@@ -83,27 +83,27 @@ export default function Rules() {
       </div>
 
       {/* DURATION BADGE */}
-      <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl flex items-center justify-between">
+      <div className="p-5 bg-slate-50/80 border border-slate-200 rounded-2xl flex items-center justify-between">
         <div>
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">
+          <span className="text-[10px] text-slate-600 uppercase tracking-widest font-bold block">
             Challenge Duration
           </span>
-          <span className="text-3xl font-black text-white font-mono tracking-wider">20:00</span>
+          <span className="text-3xl font-black text-slate-800 font-mono tracking-wider">20:00</span>
         </div>
-        <div className="text-right text-xs text-slate-400">
+        <div className="text-right text-xs text-slate-600">
           <p>Countdown starts immediately upon entry</p>
           <p className="text-rose-400 mt-1">Wrong quiz answers add +20s each</p>
         </div>
       </div>
 
       {/* AGREEMENT */}
-      <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl space-y-5">
-        <label className="flex items-center gap-3 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition">
+      <div className="p-6 bg-slate-100 border border-slate-200 rounded-2xl space-y-5">
+        <label className="flex items-center gap-3 cursor-pointer select-none text-xs text-slate-700 hover:text-slate-800 transition">
           <input
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-cyan-400 cursor-pointer"
+            className="w-4 h-4 rounded bg-slate-50 border-slate-300 text-orange-500 focus:ring-orange-400 cursor-pointer"
           />
           <span>I have read and understood all rules and mechanics</span>
         </label>

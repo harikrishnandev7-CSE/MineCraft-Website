@@ -1,131 +1,175 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useParticipant } from '../context/ParticipantContext';
-import { KeyRound, Puzzle, Play, Clock, Trophy, ArrowRight, Sparkles, Package } from 'lucide-react';
+import { ClipboardList, KeyRound, Box, Code, Puzzle, PlayCircle, Zap, Package, Play, Clock, BarChart2, ArrowRight } from 'lucide-react';
 
 export default function Home() {
-  const { participant } = useParticipant();
+  const steps = [
+    { title: 'Solve Quiz', desc: 'Solve MCQ, predict output, fill-in-the-blank to earn keys.', icon: ClipboardList },
+    { title: 'Earn Key', desc: 'Answer correctly to get keys.', icon: KeyRound },
+    { title: 'Open Chest', desc: 'Unlock and collect shuffled code fragments.', icon: Box },
+    { title: 'Collect Fragment', desc: 'Pick the right fragments from each chest.', icon: Code },
+    { title: 'Assemble Code', desc: 'Arrange the fragments in logical order.', icon: Puzzle },
+    { title: 'Run & Submit', desc: 'Execute your code and submit before time runs out.', icon: PlayCircle },
+  ];
 
-  const features = [
-    {
-      title: 'Quiz → Key',
-      desc: 'Solve programming quizzes (MCQ, predict output, fill-in-the-blank) to earn keys that unlock treasure chests.',
-      icon: KeyRound,
-      color: 'text-cyan-400',
-    },
-    {
-      title: 'Treasure Chests',
-      desc: 'Each key opens a chest that reveals one code fragment — collected in a deliberately shuffled order.',
-      icon: Package,
-      color: 'text-amber-400',
-    },
-    {
-      title: 'Fragment Assembly',
-      desc: 'Once all fragments are collected, arrange them in the correct logical order on the assembly board.',
-      icon: Puzzle,
-      color: 'text-emerald-400',
-    },
-    {
-      title: 'Real Execution',
-      desc: 'Run your assembled code against sample input via Judge0, then submit for hidden test-case scoring.',
-      icon: Play,
-      color: 'text-blue-400',
-    },
-    {
-      title: 'Timed Challenge',
-      desc: 'Beat the 20-minute countdown. Wrong quiz answers add time penalties to your ranking score.',
-      icon: Clock,
-      color: 'text-purple-400',
-    },
-    {
-      title: 'Live Leaderboard',
-      desc: 'Rank is determined by completion time + quiz penalties. Fastest correct solution wins.',
-      icon: Trophy,
-      color: 'text-rose-400',
-    },
+  const highlights = [
+    { title: 'Quiz to Keys', desc: 'Solve MCQ, predict output, fill-in-the-blank to earn keys.', icon: Zap },
+    { title: 'Treasure Chests', desc: 'Unlock and collect shuffled code fragments.', icon: Package },
+    { title: 'Fragment Assembly', desc: 'Arrange the fragments in logical order.', icon: Puzzle },
+    { title: 'Real Execution', desc: 'Run your assembled code against sample input.', icon: Play },
+    { title: 'Timed Challenge', desc: '20-minute countdown with fair penalties.', icon: Clock },
+    { title: 'Live Leaderboard', desc: 'Track your position based on completion time and accuracy.', icon: BarChart2 },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16 space-y-20">
-      {/* HERO */}
-      <div className="text-center space-y-6 max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs font-mono tracking-wider shadow-lg shadow-cyan-950/50">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-          <span>ANNUAL TECHNICAL HACKATHON // ARENA 2026</span>
-        </div>
+    <div className="bg-white min-h-screen font-sans text-slate-800 overflow-hidden relative">
+      
+      {/* Decorative background shapes mimicking the design */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-orange-100/40 to-transparent rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+      <div className="absolute top-[40%] left-0 w-[400px] h-[400px] bg-orange-50/50 rounded-full -translate-x-1/2 pointer-events-none"></div>
+      
+      <div className="max-w-7xl mx-auto px-6">
+        
+        <section className="relative pt-2 pb-12 lg:pt-4 lg:pb-16 flex flex-col lg:flex-row items-center justify-between gap-12">
 
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white font-mono">
-          MIND CRAFT
-          <span className="block text-2xl sm:text-3xl lg:text-4xl mt-2 font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-emerald-300">
-            Quiz Hunt & Code Assembly
-          </span>
-        </h1>
 
-        <p className="text-xs sm:text-sm font-mono text-cyan-300 uppercase tracking-widest font-semibold">
-          Think. Quiz. Unlock. Assemble. Execute.
-        </p>
+          <div className="w-full lg:w-1/2 space-y-6 z-10">
 
-        <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-          Solve programming quizzes to earn keys, open treasure chests to collect code fragments,
-          assemble them in the right order, and submit your solution before time runs out.
-        </p>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 mt-4">
+              Quiz Hunt & Code Assembly
+            </h2>
+            
+            <p className="text-[#F28C0F] font-bold text-base md:text-lg tracking-widest uppercase">
+              Think . Quiz . Unlock . Assemble . Execute .
+            </p>
 
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            to="/challenges"
-            className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 hover:from-blue-500 hover:via-cyan-400 hover:to-emerald-300 text-slate-950 font-mono font-black text-sm tracking-wider shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
-          >
-            [ ENTER CHALLENGE ] <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            to="/rules"
-            className="px-6 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition"
-          >
-            READ RULES & PROTOCOL
-          </Link>
-        </div>
-      </div>
+            <p className="text-slate-600 text-lg max-w-lg leading-relaxed pt-2 font-medium">
+              Solve programming quizzes to earn keys, open treasure chests to collect code fragments, assemble them in the right order, and submit your solution before time runs out.
+            </p>
 
-      {/* FEATURE CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((f, i) => {
-          const Icon = f.icon;
-          return (
-            <div
-              key={i}
-              className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3 hover:border-slate-700 transition duration-200 group hover:shadow-xl hover:shadow-cyan-950/20"
-            >
-              <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Icon className={`w-6 h-6 ${f.color}`} />
-              </div>
-              <h3 className="text-base font-bold text-slate-100 font-mono">{f.title}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+            <div className="flex flex-wrap gap-4 pt-6">
+              <Link to="/challenges" className="px-10 py-4 text-lg rounded-full bg-[#F28C0F] hover:bg-orange-500 text-slate-900 font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/30">
+                Enter Challenge <ArrowRight className="w-6 h-6" />
+              </Link>
+              <Link to="/rules" className="px-10 py-4 text-lg rounded-full border-2 border-slate-900 hover:bg-slate-900 hover:text-white text-slate-900 font-bold transition">
+                Read Rules & Protocol
+              </Link>
             </div>
-          );
-        })}
+          </div>
+
+          <div className="w-full lg:w-1/2 relative z-10 flex justify-center lg:justify-end">
+            <div className="relative w-full max-w-lg aspect-square">
+               {/* 
+                 A placeholder for the hero image if the exact asset is not available. 
+                 You can replace src with the exact image from the design.
+               */}
+               <div className="absolute inset-0 bg-gradient-to-tr from-orange-100 to-transparent rounded-full opacity-60 animate-pulse"></div>
+               <img 
+                 src="/hero-illustration.png" 
+                 alt="Mind Craft Arena Illustration" 
+                 className="absolute inset-0 w-full h-full object-contain scale-110 drop-shadow-2xl relative z-10"
+               />
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 md:py-16 border-t border-slate-100 relative">
+          <div className="flex items-center gap-4 mb-16">
+            <div className="w-10 h-1.5 bg-[#F28C0F] rounded-full"></div>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-wider uppercase">HOW IT WORKS</h3>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 relative">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div key={index} className="relative min-h-[280px] p-6 bg-white rounded-2xl border-2 border-[#F28C0F]/30 shadow-lg hover:shadow-[0_0_30px_rgba(242,140,15,0.3)] hover:border-[#F28C0F] hover:-translate-y-2 transition-all duration-300 group flex flex-col items-center text-center">
+                  <div className="absolute top-2 left-3 text-4xl font-black text-slate-50 opacity-70 select-none transition-all group-hover:text-orange-50">
+                    0{index + 1}
+                  </div>
+                  <div className="w-16 h-16 rounded-xl bg-orange-50 flex items-center justify-center relative mb-5 group-hover:scale-110 group-hover:bg-[#F28C0F] transition duration-300 z-10 mt-2">
+                    <Icon className="w-8 h-8 text-[#F28C0F] group-hover:text-white transition duration-300" strokeWidth={2.5} />
+                  </div>
+                  <h4 className="font-extrabold text-slate-900 text-base lg:text-lg mb-3 z-10">{step.title}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium z-10">{step.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="py-12 md:py-16 border-t border-slate-100 relative">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="w-10 h-1.5 bg-[#F28C0F] rounded-full"></div>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-wider uppercase">CHALLENGE HIGHLIGHTS</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {highlights.map((highlight, index) => {
+              const Icon = highlight.icon;
+              return (
+                <div key={index} className="p-8 bg-white rounded-3xl border-2 border-[#F28C0F]/30 shadow-lg hover:shadow-[0_0_40px_rgba(242,140,15,0.25)] hover:border-[#F28C0F] hover:-translate-y-2 transition-all duration-300 flex flex-col sm:flex-row gap-6 group relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-transparent opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                  
+                  <div className="w-16 h-16 rounded-2xl bg-orange-50 flex-shrink-0 flex items-center justify-center text-[#F28C0F] group-hover:bg-[#F28C0F] group-hover:text-white transition duration-300 z-10 shadow-sm">
+                    <Icon className="w-8 h-8" strokeWidth={1.5} />
+                  </div>
+                  <div className="z-10">
+                    <h4 className="font-extrabold text-slate-900 text-xl mb-2">{highlight.title}</h4>
+                    <p className="text-base text-slate-500 leading-relaxed font-medium">{highlight.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
 
-      {/* HOW IT WORKS */}
-      <div className="p-8 bg-slate-900/40 border border-slate-800/80 rounded-2xl text-center space-y-4 max-w-3xl mx-auto">
-        <h3 className="text-sm font-bold font-mono text-slate-300 uppercase tracking-widest">
-          HOW THE ARENA OPERATES
-        </h3>
-        <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-xs text-slate-400">
-          {[
-            '1. Solve Quiz',
-            '2. Earn Key',
-            '3. Open Chest',
-            '4. Collect Fragment',
-            '5. Assemble Code',
-            '6. Run & Submit',
-          ].map((step, i, arr) => (
-            <React.Fragment key={step}>
-              <span className="px-3 py-1 bg-slate-950 rounded-lg border border-slate-800">{step}</span>
-              {i < arr.length - 1 && <span className="text-slate-600">→</span>}
-            </React.Fragment>
-          ))}
+      <section className="relative py-28 md:py-40 overflow-hidden bg-[#FFFCF8]">
+        
+        {/* Left Waves */}
+        <div className="absolute top-0 left-0 w-[45vw] md:w-[35vw] h-full pointer-events-none opacity-80">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+            <path d="M0,0 C50,0 70,50 0,100 Z" fill="#FFEDC2" opacity="0.6"/>
+            <path d="M0,20 C40,30 50,80 0,100 Z" fill="#FFD37A" opacity="0.5"/>
+            <path d="M0,40 C30,50 35,90 0,100 Z" fill="#FFB733" opacity="0.4"/>
+            {/* Outline curve mimicking the design */}
+            <path d="M0,10 C60,20 80,70 10,100" fill="none" stroke="#FFC04D" strokeWidth="0.5" opacity="0.8"/>
+          </svg>
         </div>
-      </div>
+
+        {/* Right Waves */}
+        <div className="absolute top-0 right-0 w-[45vw] md:w-[35vw] h-full pointer-events-none opacity-80 transform rotate-180">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+            <path d="M0,0 C50,0 70,50 0,100 Z" fill="#FFEDC2" opacity="0.6"/>
+            <path d="M0,20 C40,30 50,80 0,100 Z" fill="#FFD37A" opacity="0.5"/>
+            <path d="M0,40 C30,50 35,90 0,100 Z" fill="#FFB733" opacity="0.4"/>
+            <path d="M0,10 C60,20 80,70 10,100" fill="none" stroke="#FFC04D" strokeWidth="0.5" opacity="0.8"/>
+          </svg>
+        </div>
+
+
+
+        {/* Right Side Sparkle */}
+        <div className="absolute top-[40%] right-[15%] md:right-[25%] text-[#F28C0F] opacity-70 w-4 h-4 z-10">
+           <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-20 max-w-2xl mx-auto text-center px-6">
+          <h2 className="text-5xl md:text-[64px] font-black text-[#0B1A28] mb-1 tracking-tight leading-tight">
+            Ready to Enter<br/>
+            <span className="text-[#F28C0F]">the Arena?</span>
+          </h2>
+          <p className="text-slate-600 text-lg md:text-xl font-medium max-w-lg mx-auto mt-6 mb-10 leading-relaxed">
+            Test your logic, speed and problem-solving skills in the ultimate coding challenge.
+          </p>
+          <Link to="/register" className="inline-flex px-10 py-4 rounded-full bg-[#FFBE4D] hover:bg-[#F28C0F] text-[#0B1A28] font-bold text-lg transition items-center gap-2 shadow-xl shadow-orange-500/20 hover:-translate-y-1 transform">
+            Register Now <ArrowRight className="w-5 h-5" strokeWidth={3} />
+          </Link>
+        </div>
+      </section>
+
     </div>
   );
 }

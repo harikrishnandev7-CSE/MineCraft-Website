@@ -25,10 +25,10 @@ export default function Result() {
           {isAccepted ? <Trophy className="w-10 h-10 animate-bounce" /> : <Award className="w-10 h-10" />}
         </div>
 
-        <h1 className="text-3xl font-black text-white">
+        <h1 className="text-3xl font-black text-slate-800">
           {isAccepted ? '🏆 CHALLENGE COMPLETED' : isTimeExpired ? '⌛ TIME EXPIRED' : 'NOT ACCEPTED'}
         </h1>
-        <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <p className="text-xs text-slate-600 max-w-md mx-auto">
           {isAccepted
             ? 'All test cases verified! Your solution and completion duration have been committed to the live leaderboard.'
             : 'Challenge session concluded. Review official rankings below.'}
@@ -36,14 +36,14 @@ export default function Result() {
       </div>
 
       {/* RESULT METRICS CARD */}
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+      <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Participant</span>
-          <p className="text-sm font-bold text-slate-200 truncate mt-1">{participant?.name || 'Anthony'}</p>
+          <p className="text-sm font-bold text-slate-700 truncate mt-1">{participant?.name || 'Anthony'}</p>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Challenge</span>
-          <p className="text-sm font-bold text-cyan-400 truncate mt-1">{challenge?.title || 'Find the Sum'}</p>
+          <p className="text-sm font-bold text-orange-400 truncate mt-1">{challenge?.title || 'Find the Sum'}</p>
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Status</span>
@@ -53,7 +53,7 @@ export default function Result() {
         </div>
         <div>
           <span className="text-[10px] text-slate-500 uppercase block">Tests Passed</span>
-          <p className="text-sm font-bold text-white mt-1">
+          <p className="text-sm font-bold text-slate-800 mt-1">
             {isAccepted ? '3 / 3' : '0 / 3'}
           </p>
         </div>

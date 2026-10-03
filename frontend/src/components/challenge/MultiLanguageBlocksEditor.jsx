@@ -22,11 +22,11 @@ const PRESET_LANGUAGES = [
 
 const BLOCK_ROLES = [
   { value: 'INPUT', label: 'Input / Reading', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-  { value: 'LOGIC', label: 'Core Logic / Computation', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+  { value: 'LOGIC', label: 'Core Logic / Computation', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
   { value: 'LOOP', label: 'Loop / Iteration', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-  { value: 'OUTPUT', label: 'Output / Printing', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  { value: 'OUTPUT', label: 'Output / Printing', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
   { value: 'DECLARATION', label: 'Variable / State Declaration', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-  { value: 'MAIN_WRAPPER', label: 'Class / Main Boilerplate', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
+  { value: 'MAIN_WRAPPER', label: 'Class / Main Boilerplate', color: 'bg-slate-500/20 text-slate-700 border-slate-500/30' },
 ];
 
 export default function MultiLanguageBlocksEditor({
@@ -356,7 +356,7 @@ export default function MultiLanguageBlocksEditor({
   return (
     <div className="space-y-6">
       {/* SYNCHRONIZATION STATUS BAR */}
-      <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+      <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
         <div className="flex items-center gap-2">
           {hasMismatch ? (
             <AlertTriangle className="w-5 h-5 text-amber-400 animate-pulse" />
@@ -365,7 +365,7 @@ export default function MultiLanguageBlocksEditor({
           )}
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white uppercase">
+              <span className="font-bold text-slate-900 uppercase">
                 Synchronized Block Count:
               </span>
               <span className={`px-2 py-0.5 rounded text-xs font-bold ${
@@ -374,7 +374,7 @@ export default function MultiLanguageBlocksEditor({
                 {hasMismatch ? 'Mismatch Detected' : `${targetBlockCount} Blocks per Language`}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-600 mt-0.5">
               {hasMismatch
                 ? 'All programming languages must have the exact same number of blocks.'
                 : `Adding or deleting a block is automatically synchronized across all ${languageConfigs.length} configured languages.`}
@@ -395,10 +395,10 @@ export default function MultiLanguageBlocksEditor({
       </div>
 
       {/* LANGUAGE SELECTOR HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-900/90 border border-slate-800 rounded-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white/90 border border-slate-200 rounded-xl">
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-cyan-400" />
-          <span className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+          <Layers className="w-5 h-5 text-orange-400" />
+          <span className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">
             Supported Languages ({languageConfigs.length})
           </span>
         </div>
@@ -414,7 +414,7 @@ export default function MultiLanguageBlocksEditor({
               }
             }}
             defaultValue=""
-            className="text-xs font-mono bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 focus:border-cyan-500 focus:outline-none"
+            className="text-xs font-mono bg-slate-50 border border-slate-300 text-slate-800 rounded-lg px-3 py-1.5 focus:border-orange-500 focus:outline-none"
           >
             <option value="" disabled>
               + Add Language Config...
@@ -432,7 +432,7 @@ export default function MultiLanguageBlocksEditor({
       </div>
 
       {/* LANGUAGE TABS */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
         {languageConfigs.map((lc) => {
           const isActive = lc.language === activeLang;
           const count = lc.blocks?.length || 0;
@@ -444,16 +444,16 @@ export default function MultiLanguageBlocksEditor({
               onClick={() => setActiveLang(lc.language)}
               className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-bold cursor-pointer transition-all ${
                 isActive
-                  ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 shadow-lg shadow-cyan-500/10'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  ? 'bg-orange-500/20 border border-orange-500/50 text-cyan-300 shadow-lg shadow-orange-500/10'
+                  : 'bg-white/60 border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
-              <FileCode className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
+              <FileCode className={`w-3.5 h-3.5 ${isActive ? 'text-orange-400' : 'text-slate-500'}`} />
               <span>{lc.languageName || lc.language.toUpperCase()}</span>
               <span className={`px-1.5 py-0.2 rounded text-[10px] border ${
                 isCountWrong
                   ? 'bg-amber-950 text-amber-300 border-amber-800'
-                  : 'bg-slate-950/60 text-slate-300 border-slate-800'
+                  : 'bg-slate-50/60 text-slate-700 border-slate-200'
               }`}>
                 {count} blocks
               </span>
@@ -477,21 +477,21 @@ export default function MultiLanguageBlocksEditor({
 
       {/* ACTIVE LANGUAGE PANEL */}
       {currentConfig ? (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+        <div className="bg-white/60 border border-slate-200 rounded-2xl p-5 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-base font-bold text-white font-mono">
+                <h4 className="text-base font-bold text-slate-900 font-mono">
                   {currentConfig.languageName || currentConfig.language.toUpperCase()} Code Blocks
                 </h4>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                   lang ID: {currentConfig.language}
                 </span>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-bold">
                   {currentConfig.blocks?.length || 0} Blocks
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">
+              <p className="text-xs text-slate-600 font-mono mt-0.5">
                 Contestants choosing this language will unlock and assemble these {currentConfig.blocks?.length || 0} code fragments.
               </p>
             </div>
@@ -509,10 +509,10 @@ export default function MultiLanguageBlocksEditor({
               <button
                 type="button"
                 onClick={handleAddBlock}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 text-xs font-mono font-bold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/30 text-cyan-300 hover:bg-orange-500/20 text-xs font-mono font-bold transition"
                 title="Adds a new block across all configured languages to keep counts equal"
               >
-                <Plus className="w-3.5 h-3.5 text-cyan-400" />
+                <Plus className="w-3.5 h-3.5 text-orange-400" />
                 <span>+ Add Block (All Languages)</span>
               </button>
             </div>
@@ -521,7 +521,7 @@ export default function MultiLanguageBlocksEditor({
           {/* CODE BLOCKS TABLE / LIST */}
           <div className="space-y-3">
             {(!currentConfig.blocks || currentConfig.blocks.length === 0) ? (
-              <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl">
+              <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-200 rounded-xl">
                 No code blocks configured. Click "+ Add Block (All Languages)" above.
               </div>
             ) : (
@@ -530,13 +530,13 @@ export default function MultiLanguageBlocksEditor({
                 return (
                   <div
                     key={block.blockId || idx}
-                    className="p-4 bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl space-y-3 transition"
+                    className="p-4 bg-slate-50/80 border border-slate-200 hover:border-slate-300 rounded-xl space-y-3 transition"
                   >
                     {/* Block Header */}
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
                       <div className="flex items-center gap-2">
                         {/* Order Badge */}
-                        <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center font-bold text-xs">
+                        <div className="w-7 h-7 rounded-lg bg-orange-500/20 border border-orange-500/40 text-cyan-300 flex items-center justify-center font-bold text-xs">
                           #{idx + 1}
                         </div>
 
@@ -547,7 +547,7 @@ export default function MultiLanguageBlocksEditor({
                             type="text"
                             value={block.blockId}
                             onChange={(e) => handleBlockChange(idx, 'blockId', e.target.value)}
-                            className="bg-slate-900 border border-slate-700 text-cyan-400 font-bold px-2 py-1 rounded text-xs focus:border-cyan-500 focus:outline-none w-28"
+                            className="bg-white border border-slate-300 text-orange-400 font-bold px-2 py-1 rounded text-xs focus:border-orange-500 focus:outline-none w-28"
                             placeholder="blockId"
                           />
                         </div>
@@ -558,10 +558,10 @@ export default function MultiLanguageBlocksEditor({
                           <select
                             value={block.role || 'LOGIC'}
                             onChange={(e) => handleBlockChange(idx, 'role', e.target.value)}
-                            className={`text-[11px] font-bold px-2 py-1 rounded border bg-slate-900 focus:outline-none ${roleObj.color}`}
+                            className={`text-[11px] font-bold px-2 py-1 rounded border bg-white focus:outline-none ${roleObj.color}`}
                           >
                             {BLOCK_ROLES.map((r) => (
-                              <option key={r.value} value={r.value} className="bg-slate-900 text-slate-200">
+                              <option key={r.value} value={r.value} className="bg-white text-slate-800">
                                 {r.label}
                               </option>
                             ))}
@@ -575,7 +575,7 @@ export default function MultiLanguageBlocksEditor({
                           type="button"
                           disabled={idx === 0}
                           onClick={() => handleMoveBlock(idx, -1)}
-                          className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 text-slate-400 hover:text-white transition"
+                          className="p-1 rounded hover:bg-slate-100 disabled:opacity-30 text-slate-600 hover:text-slate-900 transition"
                           title="Move Up"
                         >
                           <ChevronUp className="w-4 h-4" />
@@ -584,7 +584,7 @@ export default function MultiLanguageBlocksEditor({
                           type="button"
                           disabled={idx === currentConfig.blocks.length - 1}
                           onClick={() => handleMoveBlock(idx, 1)}
-                          className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 text-slate-400 hover:text-white transition"
+                          className="p-1 rounded hover:bg-slate-100 disabled:opacity-30 text-slate-600 hover:text-slate-900 transition"
                           title="Move Down"
                         >
                           <ChevronDown className="w-4 h-4" />
@@ -607,7 +607,7 @@ export default function MultiLanguageBlocksEditor({
                         value={block.code || ''}
                         onChange={(e) => handleBlockChange(idx, 'code', e.target.value)}
                         placeholder={`// Enter ${currentConfig.languageName} code fragment #${idx + 1}...`}
-                        className="w-full font-mono text-xs p-3 bg-slate-900/90 border border-slate-800 text-slate-100 rounded-lg focus:border-cyan-500 focus:outline-none resize-y leading-relaxed"
+                        className="w-full font-mono text-xs p-3 bg-white/90 border border-slate-200 text-slate-900 rounded-lg focus:border-orange-500 focus:outline-none resize-y leading-relaxed"
                         spellCheck="false"
                       />
                     </div>
@@ -618,7 +618,7 @@ export default function MultiLanguageBlocksEditor({
           </div>
         </div>
       ) : (
-        <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl">
+        <div className="p-8 text-center text-slate-500 font-mono text-xs border border-dashed border-slate-200 rounded-xl">
           Select or add a language above to configure its code blocks.
         </div>
       )}
@@ -626,29 +626,29 @@ export default function MultiLanguageBlocksEditor({
       {/* QUICK SPLIT MODAL */}
       {splitModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-4 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 space-y-4 font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2">
                 <Scissors className="w-4 h-4 text-indigo-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                   Split Full Solution into Blocks ({currentConfig?.languageName || activeLang})
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSplitModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-600 hover:text-slate-900"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-slate-400 text-xs leading-relaxed">
+            <p className="text-slate-600 text-xs leading-relaxed">
               Paste the working, complete {currentConfig?.languageName} solution below. Choose a split strategy, and it will automatically generate the ordered fragments for this language.
             </p>
 
             <div className="space-y-2">
-              <label className="block text-slate-300 font-bold uppercase text-[10px]">
+              <label className="block text-slate-700 font-bold uppercase text-[10px]">
                 Split Strategy:
               </label>
               <div className="flex flex-wrap gap-2">
@@ -664,7 +664,7 @@ export default function MultiLanguageBlocksEditor({
                     className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition ${
                       splitMode === s.id
                         ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
                     {s.label}
@@ -674,7 +674,7 @@ export default function MultiLanguageBlocksEditor({
             </div>
 
             <div>
-              <label className="block text-slate-300 font-bold uppercase text-[10px] mb-1">
+              <label className="block text-slate-700 font-bold uppercase text-[10px] mb-1">
                 Full Solution Code:
               </label>
               <textarea
@@ -682,16 +682,16 @@ export default function MultiLanguageBlocksEditor({
                 value={splitCode}
                 onChange={(e) => setSplitCode(e.target.value)}
                 placeholder={`Paste complete ${currentConfig?.languageName} program here...`}
-                className="w-full font-mono text-xs p-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
+                className="w-full font-mono text-xs p-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
                 spellCheck="false"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setSplitModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
               >
                 Cancel
               </button>
@@ -699,7 +699,7 @@ export default function MultiLanguageBlocksEditor({
                 type="button"
                 onClick={handleExecuteSplit}
                 disabled={!splitCode.trim()}
-                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-slate-900 text-xs font-bold transition flex items-center gap-1.5"
               >
                 <Scissors className="w-3.5 h-3.5" />
                 <span>Generate Blocks</span>

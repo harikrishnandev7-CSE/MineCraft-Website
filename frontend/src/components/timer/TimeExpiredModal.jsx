@@ -11,8 +11,8 @@ export default function TimeExpiredModal({ isOpen, onAcknowledge, onRestart }) {
           <Hourglass className="w-8 h-8 animate-pulse" />
         </div>
         <div className="space-y-1">
-          <h4 className="text-lg font-bold font-mono text-white">Challenge Locked</h4>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+          <h4 className="text-lg font-bold font-mono text-slate-900">Challenge Locked</h4>
+          <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
             The 20-minute countdown has elapsed. QR scanning, code assembly, and submission endpoints are now closed.
           </p>
         </div>

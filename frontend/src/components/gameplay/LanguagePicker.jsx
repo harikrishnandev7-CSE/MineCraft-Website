@@ -9,7 +9,7 @@ export default function LanguagePicker({ language, onSelect, locked = false }) {
   if (locked) {
     const lang = SUPPORTED_LANGUAGES.find((l) => l.id === language);
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-xs font-mono">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-950/40 border border-orange-500/40 text-xs font-mono">
         <span>{lang?.icon || '💻'}</span>
         <span className="font-bold text-cyan-300">{lang?.name || language.toUpperCase()}</span>
         <span className="text-slate-500 text-[10px] ml-1">(locked)</span>
@@ -29,8 +29,8 @@ export default function LanguagePicker({ language, onSelect, locked = false }) {
             onClick={() => onSelect(lang.id)}
             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-mono font-bold transition-all ${
               language === lang.id
-                ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300 shadow-inner shadow-cyan-950/30'
-                : 'bg-slate-950 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                ? 'bg-orange-500/20 border-orange-500/60 text-cyan-300 shadow-inner shadow-cyan-950/30'
+                : 'bg-slate-50 border-slate-300 text-slate-600 hover:border-slate-500 hover:text-slate-800'
             }`}
             aria-pressed={language === lang.id}
           >

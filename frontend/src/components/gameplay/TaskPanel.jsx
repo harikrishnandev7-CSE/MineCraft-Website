@@ -79,7 +79,7 @@ export default function TaskPanel({
 
   if (!task || !quiz) {
     return (
-      <div className="p-6 bg-slate-900/80 border border-slate-800 rounded-2xl text-center text-slate-500 text-xs font-mono">
+      <div className="p-6 bg-white/80 border border-slate-200 rounded-2xl text-center text-slate-500 text-xs font-mono">
         No task available
       </div>
     );
@@ -94,25 +94,25 @@ export default function TaskPanel({
   }[quiz.type] || quiz.type;
 
   return (
-    <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-4 shadow-lg">
+    <div className="p-5 bg-white/90 border border-slate-200 rounded-2xl space-y-4 shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center">
-            <HelpCircle className="w-4 h-4 text-cyan-400" />
+          <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-orange-500/40 flex items-center justify-center">
+            <HelpCircle className="w-4 h-4 text-orange-400" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">{task.title || `Task ${taskIndex + 1}`}</h3>
+            <h3 className="text-sm font-bold text-slate-900">{task.title || `Task ${taskIndex + 1}`}</h3>
             <span className="text-[10px] text-slate-500 font-mono uppercase">{typeLabel}</span>
           </div>
         </div>
-        <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold font-mono">
+        <span className="text-[10px] px-2 py-0.5 rounded bg-orange-500/20 text-cyan-300 font-bold font-mono">
           {taskIndex + 1} / {totalTasks}
         </span>
       </div>
 
       {/* Quiz prompt */}
-      <div className="text-xs text-slate-200 leading-relaxed whitespace-pre-line bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
+      <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line bg-slate-50/60 p-4 rounded-xl border border-slate-200/60">
         {quiz.prompt}
       </div>
 
@@ -150,15 +150,15 @@ export default function TaskPanel({
                       : wasWrongOption
                       ? 'border-rose-500/60 bg-rose-950/30 text-rose-200'
                       : isSelected
-                      ? 'border-cyan-500/60 bg-cyan-950/30 text-cyan-200'
-                      : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-600 hover:bg-slate-900/60'
+                      ? 'border-orange-500/60 bg-cyan-950/30 text-cyan-200'
+                      : 'border-slate-200 bg-slate-50/40 text-slate-700 hover:border-slate-400 hover:bg-white/60'
                   } ${disabled || cooldown > 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <span
                     className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${
                       isSelected
-                        ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
-                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                        ? 'bg-orange-500/30 text-cyan-300 border border-orange-500/50'
+                        : 'bg-slate-100 text-slate-500 border border-slate-300'
                     }`}
                   >
                     {String.fromCharCode(65 + idx)}
@@ -188,7 +188,7 @@ export default function TaskPanel({
                   : 'Type your answer...'
               }
               disabled={disabled || cooldown > 0 || isSubmitting}
-              className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 disabled:opacity-50"
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 disabled:opacity-50"
             />
           </div>
         )}
@@ -203,7 +203,7 @@ export default function TaskPanel({
             placeholder="Enter the correct order (comma-separated or one per line)"
             disabled={disabled || cooldown > 0 || isSubmitting}
             rows={3}
-            className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 disabled:opacity-50 resize-none"
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 disabled:opacity-50 resize-none"
           />
         )}
       </div>
@@ -227,7 +227,7 @@ export default function TaskPanel({
               {localFeedback.correct ? '✅ Correct! Code block unlocked.' : '❌ Wrong Answer (Penalty Added)'}
             </span>
             {localFeedback.explain && (
-              <p className="text-slate-400 leading-relaxed">{localFeedback.explain}</p>
+              <p className="text-slate-600 leading-relaxed">{localFeedback.explain}</p>
             )}
           </div>
         </div>
@@ -250,7 +250,7 @@ export default function TaskPanel({
           isSubmitting ||
           (quiz.type === 'MCQ' ? selectedOption === null : !answer.trim())
         }
-        className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-cyan-600 disabled:hover:to-cyan-500 active:scale-[0.98]"
+        className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-gradient-to-r from-cyan-600 to-orange-500 text-slate-900 hover:from-orange-500 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-cyan-600 disabled:hover:to-orange-500 active:scale-[0.98]"
       >
         {isSubmitting ? (
           <>

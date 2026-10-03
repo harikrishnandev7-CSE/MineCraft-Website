@@ -65,17 +65,17 @@ export default function AdminSubmissions() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider flex items-center gap-2">
               <Send className="w-6 h-6 text-purple-400" />
               SUBMISSION AUDIT & JUDGING LOGS
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Audit assembled block orders, Judge0 evaluation output, test breakdown, and penalty deductions
             </p>
           </div>
@@ -92,14 +92,14 @@ export default function AdminSubmissions() {
         </div>
 
         {/* Filters */}
-        <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="p-4 bg-white/80 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400">Result Status:</span>
+              <span className="text-[11px] text-slate-600">Result Status:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900"
               >
                 <option value="All">All Results</option>
                 <option value="ACCEPTED">Accepted</option>
@@ -111,11 +111,11 @@ export default function AdminSubmissions() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400">Language:</span>
+              <span className="text-[11px] text-slate-600">Language:</span>
               <select
                 value={langFilter}
                 onChange={(e) => setLangFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900"
               >
                 <option value="All">All Languages</option>
                 <option value="java">Java</option>
@@ -127,16 +127,16 @@ export default function AdminSubmissions() {
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-400">
-            Total Audited: <strong className="text-white">{submissions.length}</strong>
+          <div className="text-[11px] text-slate-600">
+            Total Audited: <strong className="text-slate-900">{submissions.length}</strong>
           </div>
         </div>
 
         {/* Submissions Table */}
-        <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/90 shadow-xl">
+        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white/90 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3.5">Submission ID</th>
                   <th className="px-4 py-3.5">Participant</th>
@@ -150,11 +150,11 @@ export default function AdminSubmissions() {
                   <th className="px-4 py-3.5 text-right">Inspect</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-slate-800 text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan="10" className="p-8 text-center text-slate-400">
-                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
+                    <td colSpan="10" className="p-8 text-center text-slate-600">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-orange-400" />
                       Loading submission records...
                     </td>
                   </tr>
@@ -166,18 +166,18 @@ export default function AdminSubmissions() {
                   </tr>
                 ) : (
                   submissions.map((s) => (
-                    <tr key={s._id} className="hover:bg-slate-800/40 transition">
-                      <td className="px-4 py-3.5 font-bold text-cyan-400 font-mono">
+                    <tr key={s._id} className="hover:bg-slate-100/40 transition">
+                      <td className="px-4 py-3.5 font-bold text-orange-400 font-mono">
                         #{s._id.slice(-6).toUpperCase()}
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-white">{s.userId?.name || 'Anonymous'}</div>
+                        <div className="font-bold text-slate-900">{s.userId?.name || 'Anonymous'}</div>
                         <div className="text-[10px] text-slate-500">{s.userId?.email || 'N/A'}</div>
                       </td>
-                      <td className="px-4 py-3.5 font-semibold text-slate-200">
+                      <td className="px-4 py-3.5 font-semibold text-slate-800">
                         {s.challengeId?.title || 'Unknown'}
                       </td>
-                      <td className="px-4 py-3.5 uppercase font-bold text-slate-400">
+                      <td className="px-4 py-3.5 uppercase font-bold text-slate-600">
                         {s.language}
                       </td>
                       <td className="px-4 py-3.5">
@@ -193,13 +193,13 @@ export default function AdminSubmissions() {
                           {s.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-slate-200">
+                      <td className="px-4 py-3.5 font-bold text-slate-800">
                         {s.testCasesPassed}/{s.totalTestCases}
                       </td>
                       <td className="px-4 py-3.5 font-black text-emerald-400">
                         {s.score || 0}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-400">
+                      <td className="px-4 py-3.5 text-slate-600">
                         {s.executionTimeMs ? `${s.executionTimeMs}ms` : '0ms'}
                       </td>
                       <td className="px-4 py-3.5 text-slate-500 text-[11px]">
@@ -208,7 +208,7 @@ export default function AdminSubmissions() {
                       <td className="px-4 py-3.5 text-right">
                         <button
                           onClick={() => openSubmissionDetails(s._id)}
-                          className="p-1.5 hover:bg-slate-800 text-cyan-400 rounded-lg transition"
+                          className="p-1.5 hover:bg-slate-100 text-orange-400 rounded-lg transition"
                           title="Inspect Submission"
                         >
                           <Eye className="w-4 h-4" />
@@ -224,18 +224,18 @@ export default function AdminSubmissions() {
 
         {/* SUBMISSION INSPECTION MODAL */}
         {selectedSubmission && (
-          <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="fixed inset-0 z-50 bg-slate-50/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2">
-                  <Terminal className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-base font-bold text-white">
+                  <Terminal className="w-5 h-5 text-orange-400" />
+                  <h3 className="text-base font-bold text-slate-900">
                     AUDIT REPORT: SUBMISSION #{selectedSubmission._id.slice(-8).toUpperCase()}
                   </h3>
                 </div>
                 <button
                   onClick={() => setSelectedSubmission(null)}
-                  className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs"
                 >
                   Close
                 </button>
@@ -243,19 +243,19 @@ export default function AdminSubmissions() {
 
               {/* Contestant and Challenge metadata */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <span className="text-[10px] text-slate-500 font-bold uppercase">Participant</span>
-                  <div className="font-bold text-white truncate">{selectedSubmission.userId?.name}</div>
-                  <div className="text-[10px] text-slate-400">{selectedSubmission.userId?.email}</div>
+                  <div className="font-bold text-slate-900 truncate">{selectedSubmission.userId?.name}</div>
+                  <div className="text-[10px] text-slate-600">{selectedSubmission.userId?.email}</div>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <span className="text-[10px] text-slate-500 font-bold uppercase">Challenge</span>
                   <div className="font-bold text-cyan-300 truncate">{selectedSubmission.challengeId?.title}</div>
-                  <div className="text-[10px] text-slate-400 uppercase">{selectedSubmission.language}</div>
+                  <div className="text-[10px] text-slate-600 uppercase">{selectedSubmission.language}</div>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <span className="text-[10px] text-slate-500 font-bold uppercase">Final Score</span>
                   <div className="text-xl font-black text-emerald-400">{selectedSubmission.score || 0} PTS</div>
                   <div className="text-[10px] text-rose-400">
@@ -263,10 +263,10 @@ export default function AdminSubmissions() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <span className="text-[10px] text-slate-500 font-bold uppercase">Judging Result</span>
-                  <div className="font-bold text-white">{selectedSubmission.status}</div>
-                  <div className="text-[10px] text-slate-400">
+                  <div className="font-bold text-slate-900">{selectedSubmission.status}</div>
+                  <div className="text-[10px] text-slate-600">
                     Passed: {selectedSubmission.testCasesPassed}/{selectedSubmission.totalTestCases}
                   </div>
                 </div>
@@ -274,25 +274,25 @@ export default function AdminSubmissions() {
 
               {/* Assembled Source Code */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-600 flex items-center justify-between">
                   <span>Assembled Code Submitted by Participant</span>
                   <span className="text-[10px] text-slate-500">
                     Execution time: {selectedSubmission.executionTimeMs || 0}ms
                   </span>
                 </label>
-                <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-slate-200 leading-relaxed overflow-x-auto max-h-56">
+                <pre className="p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-800 leading-relaxed overflow-x-auto max-h-56">
                   {selectedSubmission.code}
                 </pre>
               </div>
 
               {/* Block Order vs Expected Block Order */}
               {selectedSubmission.expectedBlocks && selectedSubmission.expectedBlocks.length > 0 && (
-                <div className="space-y-2 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span className="font-bold text-cyan-400 uppercase tracking-wider">
+                <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="font-bold text-orange-400 uppercase tracking-wider">
                       Ground Truth Block Order Verification
                     </span>
-                    <span className="text-[10px] text-slate-400">Admin Inspection View</span>
+                    <span className="text-[10px] text-slate-600">Admin Inspection View</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-1">
@@ -341,10 +341,10 @@ export default function AdminSubmissions() {
                   {(selectedSubmission.testCaseResults || []).map((tr, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-xs"
+                      className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs"
                     >
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-white">Test Case #{idx + 1}</span>
+                        <span className="font-bold text-slate-900">Test Case #{idx + 1}</span>
                         <div className="flex items-center gap-2">
                           {tr.isHidden && (
                             <span className="text-amber-400 font-bold">[Hidden in Contest]</span>
@@ -362,18 +362,18 @@ export default function AdminSubmissions() {
                       <div className="grid grid-cols-2 gap-3 text-[11px]">
                         <div className="space-y-0.5">
                           <span className="text-slate-500">Input:</span>
-                          <pre className="p-1.5 bg-slate-900 rounded text-slate-300">{tr.input || '(empty)'}</pre>
+                          <pre className="p-1.5 bg-white rounded text-slate-700">{tr.input || '(empty)'}</pre>
                         </div>
                         <div className="space-y-0.5">
                           <span className="text-slate-500">Expected:</span>
-                          <pre className="p-1.5 bg-slate-900 rounded text-emerald-400">{tr.expectedOutput}</pre>
+                          <pre className="p-1.5 bg-white rounded text-emerald-400">{tr.expectedOutput}</pre>
                         </div>
                       </div>
 
                       {tr.actualOutput && (
                         <div className="space-y-0.5 text-[11px]">
                           <span className="text-slate-500">Actual Output:</span>
-                          <pre className="p-1.5 bg-slate-900 rounded text-slate-300">{tr.actualOutput}</pre>
+                          <pre className="p-1.5 bg-white rounded text-slate-700">{tr.actualOutput}</pre>
                         </div>
                       )}
 

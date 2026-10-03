@@ -29,17 +29,17 @@ export default function Login() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
+      <div className="w-full max-w-md bg-white/90 border border-slate-200 p-8 rounded-2xl shadow-2xl space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-black text-white">Mind Craft Portal</h2>
-          <p className="text-xs text-slate-400">Enter arena credentials or admin authorization</p>
+          <h2 className="text-2xl font-black text-slate-900">Mind Craft Portal</h2>
+          <p className="text-xs text-slate-600">Enter arena credentials or admin authorization</p>
         </div>
 
-        <div className="flex border-b border-slate-800 text-xs font-semibold">
+        <div className="flex border-b border-slate-200 text-xs font-semibold">
           <button
             onClick={() => setTab('participant')}
             className={`flex-1 pb-3 text-center border-b-2 transition ${
-              tab === 'participant' ? 'border-emerald-400 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'
+              tab === 'participant' ? 'border-emerald-400 text-emerald-400' : 'border-transparent text-slate-600 hover:text-slate-800'
             }`}
           >
             Participant Entry
@@ -47,7 +47,7 @@ export default function Login() {
           <button
             onClick={() => setTab('admin')}
             className={`flex-1 pb-3 text-center border-b-2 transition ${
-              tab === 'admin' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-slate-400 hover:text-slate-200'
+              tab === 'admin' ? 'border-orange-400 text-orange-400' : 'border-transparent text-slate-600 hover:text-slate-800'
             }`}
           >
             Admin Sign In

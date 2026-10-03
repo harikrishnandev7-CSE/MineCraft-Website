@@ -74,17 +74,17 @@ export default function AdminLeaderboard() {
   });
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider flex items-center gap-2">
               <Trophy className="w-6 h-6 text-amber-400" />
               OFFICIAL COMPETITION LEADERBOARD
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Dynamic rank calculation based on test case weights, reveal deductions, and completion speed
             </p>
           </div>
@@ -126,13 +126,13 @@ export default function AdminLeaderboard() {
         {rankings.length >= 3 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Rank 2 */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-2 order-2 md:order-1">
-              <div className="w-10 h-10 mx-auto rounded-full bg-slate-800 flex items-center justify-center font-black text-slate-300">
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl text-center space-y-2 order-2 md:order-1">
+              <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-700">
                 #2
               </div>
-              <div className="font-bold text-white text-sm">{rankings[1]?.name}</div>
-              <div className="text-[11px] text-slate-400">{rankings[1]?.college}</div>
-              <div className="text-xl font-black text-cyan-400">{rankings[1]?.totalScore} PTS</div>
+              <div className="font-bold text-slate-900 text-sm">{rankings[1]?.name}</div>
+              <div className="text-[11px] text-slate-600">{rankings[1]?.college}</div>
+              <div className="text-xl font-black text-orange-400">{rankings[1]?.totalScore} PTS</div>
             </div>
 
             {/* Rank 1 */}
@@ -143,25 +143,25 @@ export default function AdminLeaderboard() {
               <span className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">
                 Current Champion
               </span>
-              <div className="font-black text-white text-base">{rankings[0]?.name}</div>
-              <div className="text-[11px] text-slate-400">{rankings[0]?.college}</div>
+              <div className="font-black text-slate-900 text-base">{rankings[0]?.name}</div>
+              <div className="text-[11px] text-slate-600">{rankings[0]?.college}</div>
               <div className="text-2xl font-black text-emerald-400">{rankings[0]?.totalScore} PTS</div>
             </div>
 
             {/* Rank 3 */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-2 order-3">
-              <div className="w-10 h-10 mx-auto rounded-full bg-slate-800 flex items-center justify-center font-black text-amber-600">
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl text-center space-y-2 order-3">
+              <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center font-black text-amber-600">
                 #3
               </div>
-              <div className="font-bold text-white text-sm">{rankings[2]?.name}</div>
-              <div className="text-[11px] text-slate-400">{rankings[2]?.college}</div>
-              <div className="text-xl font-black text-cyan-400">{rankings[2]?.totalScore} PTS</div>
+              <div className="font-bold text-slate-900 text-sm">{rankings[2]?.name}</div>
+              <div className="text-[11px] text-slate-600">{rankings[2]?.college}</div>
+              <div className="text-xl font-black text-orange-400">{rankings[2]?.totalScore} PTS</div>
             </div>
           </div>
         )}
 
         {/* Filter bar */}
-        <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl flex items-center justify-between gap-4 text-xs">
+        <div className="p-4 bg-white/80 border border-slate-200 rounded-2xl flex items-center justify-between gap-4 text-xs">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
             <input
@@ -169,20 +169,20 @@ export default function AdminLeaderboard() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search contestant name or college..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none"
             />
           </div>
 
-          <div className="text-slate-400 text-xs">
-            Contestants: <strong className="text-white">{filteredRankings.length}</strong>
+          <div className="text-slate-600 text-xs">
+            Contestants: <strong className="text-slate-900">{filteredRankings.length}</strong>
           </div>
         </div>
 
         {/* Leaderboard Table */}
-        <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/90 shadow-xl">
+        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white/90 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3.5">Rank</th>
                   <th className="px-4 py-3.5">Participant</th>
@@ -195,11 +195,11 @@ export default function AdminLeaderboard() {
                   <th className="px-4 py-3.5">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-slate-800 text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="p-8 text-center text-slate-400">
-                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
+                    <td colSpan="9" className="p-8 text-center text-slate-600">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-orange-400" />
                       Computing official ranks...
                     </td>
                   </tr>
@@ -211,33 +211,33 @@ export default function AdminLeaderboard() {
                   </tr>
                 ) : (
                   filteredRankings.map((r) => (
-                    <tr key={r.rank} className="hover:bg-slate-800/40 transition">
+                    <tr key={r.rank} className="hover:bg-slate-100/40 transition">
                       <td className="px-4 py-3.5">
                         <span
                           className={`font-black text-sm ${
                             r.rank === 1
                               ? 'text-amber-400'
                               : r.rank === 2
-                              ? 'text-slate-300'
+                              ? 'text-slate-700'
                               : r.rank === 3
                               ? 'text-amber-600'
-                              : 'text-cyan-400'
+                              : 'text-orange-400'
                           }`}
                         >
                           #{r.rank}
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-white text-sm">{r.name}</div>
-                        <div className="text-[10px] text-cyan-400/80 font-mono">{r.participantId}</div>
+                        <div className="font-bold text-slate-900 text-sm">{r.name}</div>
+                        <div className="text-[10px] text-orange-400/80 font-mono">{r.participantId}</div>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-300">
+                      <td className="px-4 py-3.5 text-slate-700">
                         {r.college}
                       </td>
                       <td className="px-4 py-3.5 font-black text-emerald-400 text-sm">
                         {r.totalScore} PTS
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-white">
+                      <td className="px-4 py-3.5 font-bold text-slate-900">
                         {r.challengesSolved}
                       </td>
                       <td className="px-4 py-3.5 text-cyan-300 font-semibold">
@@ -246,7 +246,7 @@ export default function AdminLeaderboard() {
                       <td className="px-4 py-3.5 text-rose-400 font-bold">
                         -{r.penalties}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-300 font-semibold">
+                      <td className="px-4 py-3.5 text-slate-700 font-semibold">
                         {r.timeFormatted}
                       </td>
                       <td className="px-4 py-3.5">
@@ -255,8 +255,8 @@ export default function AdminLeaderboard() {
                             r.status === 'Completed'
                               ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
                               : r.status === 'Active'
-                              ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              ? 'bg-cyan-950 text-orange-400 border border-cyan-800/60'
+                              : 'bg-slate-100 text-slate-600 border border-slate-300'
                           }`}
                         >
                           {r.status}

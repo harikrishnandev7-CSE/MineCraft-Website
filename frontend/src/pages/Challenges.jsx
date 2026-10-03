@@ -206,23 +206,23 @@ export default function Challenges() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 font-mono py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white text-slate-800 font-mono py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* ── HEADER BANNER ── */}
-        <div className="relative overflow-hidden p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-200 shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-widest">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold uppercase tracking-widest">
                 <Cpu className="w-3.5 h-3.5" /> MIND CRAFT // ARENA PROTOCOL
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400 tracking-tight">
                 CHOOSE YOUR CHALLENGE
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
                 Select an active coding trial to enter the arena. Solve progressive quizzes to unlock 
                 code blocks one-by-one, reconstruct the correct logical order, and execute the solution against hidden test cases.
               </p>
@@ -230,14 +230,14 @@ export default function Challenges() {
 
             {/* Quick Stats Pill */}
             <div className="flex flex-wrap sm:flex-col gap-3 min-w-[200px]">
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-4">
-                <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" /> Active Trials
+              <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-between gap-4">
+                <span className="text-[11px] text-slate-600 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-orange-400" /> Active Trials
                 </span>
-                <span className="text-base font-black text-white">{challenges.length}</span>
+                <span className="text-base font-black text-slate-800">{challenges.length}</span>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-4">
-                <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-between gap-4">
+                <span className="text-[11px] text-slate-600 flex items-center gap-1.5">
                   <Trophy className="w-3.5 h-3.5 text-amber-400" /> Total Points
                 </span>
                 <span className="text-base font-black text-amber-400">{totalPoints} PTS</span>
@@ -270,7 +270,7 @@ export default function Challenges() {
         )}
 
         {/* ── SEARCH & FILTER CONTROLS ── */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* Search bar */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -279,12 +279,12 @@ export default function Challenges() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search challenges by title, topic, or category..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder:text-slate-600 focus:outline-none focus:border-orange-400 transition"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700"
               >
                 ✕
               </button>
@@ -299,8 +299,8 @@ export default function Challenges() {
                 onClick={() => setDifficultyFilter(diff)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                   difficultyFilter === diff
-                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                    : 'bg-slate-950 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800'
+                    ? 'bg-orange-500 text-slate-950 shadow-md shadow-orange-500/20'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 {diff}
@@ -314,7 +314,7 @@ export default function Challenges() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+              className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-orange-400 cursor-pointer"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -331,22 +331,22 @@ export default function Challenges() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl animate-pulse space-y-4 h-72"
+                className="p-6 bg-slate-50/80 border border-slate-200 rounded-2xl animate-pulse space-y-4 h-72"
               >
                 <div className="flex justify-between items-center">
-                  <div className="h-5 w-20 bg-slate-800 rounded-md" />
-                  <div className="h-5 w-16 bg-slate-800 rounded-md" />
+                  <div className="h-5 w-20 bg-slate-100 rounded-md" />
+                  <div className="h-5 w-16 bg-slate-100 rounded-md" />
                 </div>
-                <div className="h-6 w-3/4 bg-slate-800 rounded-md" />
-                <div className="h-16 w-full bg-slate-800/60 rounded-md" />
-                <div className="h-10 w-full bg-slate-800 rounded-xl mt-4" />
+                <div className="h-6 w-3/4 bg-slate-100 rounded-md" />
+                <div className="h-16 w-full bg-slate-100/60 rounded-md" />
+                <div className="h-10 w-full bg-slate-100 rounded-xl mt-4" />
               </div>
             ))}
           </div>
         ) : filteredChallenges.length === 0 ? (
-          <div className="p-12 rounded-3xl bg-slate-900/30 border border-slate-800 text-center space-y-4">
+          <div className="p-12 rounded-3xl bg-slate-50/80 border border-slate-200 text-center space-y-4">
             <Cpu className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-300">No Challenges Found</h3>
+            <h3 className="text-lg font-bold text-slate-700">No Challenges Found</h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
               No challenge matches your current search or filters. Try searching for a different keyword or reset filters.
             </p>
@@ -356,7 +356,7 @@ export default function Challenges() {
                 setDifficultyFilter('ALL');
                 setCategoryFilter('ALL');
               }}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition"
             >
               Reset Filters
             </button>
@@ -370,15 +370,15 @@ export default function Challenges() {
               return (
                 <div
                   key={c.id}
-                  className={`flex flex-col justify-between p-6 bg-slate-900/70 border rounded-2xl transition-all duration-300 group hover:shadow-2xl hover:shadow-cyan-950/40 hover:-translate-y-1 relative ${
+                  className={`flex flex-col justify-between p-6 bg-slate-50/80 border rounded-2xl transition-all duration-300 group hover:shadow-2xl hover:shadow-cyan-950/40 hover:-translate-y-1 relative ${
                     isCurrent
-                      ? 'border-cyan-500/60 bg-slate-900/90 shadow-lg shadow-cyan-950/30'
-                      : 'border-slate-800 hover:border-slate-700'
+                      ? 'border-orange-500/60 bg-slate-50/80 shadow-lg shadow-cyan-950/30'
+                      : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   {/* Current Active Badge Indicator */}
                   {isCurrent && (
-                    <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full bg-cyan-500 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-md shadow-cyan-500/40">
+                    <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full bg-orange-500 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-md shadow-orange-500/40">
                       ACTIVE SESSION
                     </div>
                   )}
@@ -395,7 +395,7 @@ export default function Challenges() {
                         >
                           {c.difficulty}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-400 font-medium">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 font-medium">
                           {c.category}
                         </span>
                       </div>
@@ -405,8 +405,8 @@ export default function Challenges() {
                           <Flame className="w-3.5 h-3.5 text-amber-400" />
                           {c.points} PTS
                         </span>
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-cyan-400" />
+                        <span className="text-[11px] text-slate-600 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-orange-400" />
                           {durationMin}m
                         </span>
                       </div>
@@ -414,33 +414,33 @@ export default function Challenges() {
 
                     {/* Challenge Title */}
                     <div>
-                      <h2 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                      <h2 className="text-base font-bold text-slate-800 group-hover:text-cyan-300 transition-colors line-clamp-1">
                         {c.title}
                       </h2>
-                      <p className="text-xs text-slate-400 font-sans mt-2 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-600 font-sans mt-2 line-clamp-2 leading-relaxed">
                         {c.description}
                       </p>
                     </div>
 
                     {/* Specifications: Tasks & Blocks */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
-                      <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/60 flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80 text-[11px]">
+                      <div className="p-2 rounded-xl bg-slate-100 border border-slate-200/60 flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
                           <Code2 className="w-3.5 h-3.5" />
                         </div>
                         <div>
                           <span className="text-slate-500 text-[9px] uppercase block">Quiz Tasks</span>
-                          <span className="font-bold text-slate-200">{c.tasksCount} Tasks</span>
+                          <span className="font-bold text-slate-700">{c.tasksCount} Tasks</span>
                         </div>
                       </div>
 
-                      <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/60 flex items-center gap-2">
+                      <div className="p-2 rounded-xl bg-slate-100 border border-slate-200/60 flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
                           <Layers className="w-3.5 h-3.5" />
                         </div>
                         <div>
                           <span className="text-slate-500 text-[9px] uppercase block">Code Blocks</span>
-                          <span className="font-bold text-slate-200">{c.blocksCount} Blocks</span>
+                          <span className="font-bold text-slate-700">{c.blocksCount} Blocks</span>
                         </div>
                       </div>
                     </div>
@@ -456,7 +456,7 @@ export default function Challenges() {
                           return (
                             <span
                               key={langKey}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1 font-sans"
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1 font-sans"
                             >
                               <span>{info.icon}</span> {info.name}
                             </span>
@@ -467,13 +467,13 @@ export default function Challenges() {
                   </div>
 
                   {/* Action Button */}
-                  <div className="pt-6 mt-4 border-t border-slate-800/80">
+                  <div className="pt-6 mt-4 border-t border-slate-200/80">
                     <button
                       onClick={() => handleSolve(c)}
                       className={`w-full py-3 px-4 rounded-xl font-mono font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 ${
                         isCurrent
-                          ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30'
-                          : 'bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:via-cyan-400 hover:to-teal-300 text-slate-950 shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/40 group-hover:scale-[1.02]'
+                          ? 'bg-orange-500 hover:bg-orange-400 text-slate-950 shadow-lg shadow-orange-500/30'
+                          : 'bg-gradient-to-r from-orange-600 via-orange-500 to-teal-400 hover:from-orange-500 hover:via-orange-400 hover:to-teal-300 text-slate-950 shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 group-hover:scale-[1.02]'
                       }`}
                     >
                       <span>{isCurrent ? '[ RESUME ARENA ]' : '[ SOLVE CHALLENGE ]'}</span>

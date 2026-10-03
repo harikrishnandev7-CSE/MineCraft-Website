@@ -28,13 +28,13 @@ export default function AssemblyBoard({ blocks = [], onReorder, onRemove, onClea
   };
 
   return (
-    <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+    <div className="p-4 bg-white/60 border border-slate-200 rounded-2xl space-y-3">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div>
-          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-            <Blocks className="w-4 h-4 text-cyan-400" /> ASSEMBLE YOUR PROGRAM
+          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+            <Blocks className="w-4 h-4 text-orange-400" /> ASSEMBLE YOUR PROGRAM
           </h4>
-          <span className="text-[11px] font-mono text-cyan-400 font-semibold">
+          <span className="text-[11px] font-mono text-orange-400 font-semibold">
             Fragments: {blocks.length} — drag or use ▲▼ to reorder
           </span>
         </div>
@@ -51,8 +51,8 @@ export default function AssemblyBoard({ blocks = [], onReorder, onRemove, onClea
       </div>
 
       {blocks.length === 0 ? (
-        <div className="p-8 border-2 border-dashed border-slate-800 rounded-xl text-center space-y-2">
-          <p className="text-xs font-mono text-slate-400 font-semibold">Assembly board is empty.</p>
+        <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center space-y-2">
+          <p className="text-xs font-mono text-slate-600 font-semibold">Assembly board is empty.</p>
           <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
             Complete all quizzes and open all chests to populate the board.
           </p>

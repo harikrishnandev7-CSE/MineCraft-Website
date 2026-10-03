@@ -93,17 +93,17 @@ export default function AdminSessions({ isLiveMonitor = false }) {
   const activeCount = sessions.filter((s) => !s.isCompleted && s.status === 'ACTIVE').length;
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-mono text-slate-200">
+    <div className="flex min-h-screen bg-slate-50 font-mono text-slate-800">
       <Sidebar />
       <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-2">
-              <Radio className="w-6 h-6 text-cyan-400" />
+            <h1 className="text-2xl font-black text-slate-900 tracking-wider flex items-center gap-2">
+              <Radio className="w-6 h-6 text-orange-400" />
               {isLiveMonitor ? 'REAL-TIME COMPETITION SURVEILLANCE' : 'ACTIVE CONTESTANT SESSIONS'}
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Surveillance matrix monitoring contestant countdowns, reveals, placed blocks, and heartbeat activity
             </p>
           </div>
@@ -113,11 +113,11 @@ export default function AdminSessions({ isLiveMonitor = false }) {
               onClick={() => setAutoPoll(!autoPoll)}
               className={`px-3 py-1.5 rounded-xl border text-xs flex items-center gap-2 font-bold transition ${
                 autoPoll
-                  ? 'bg-cyan-950/60 border-cyan-800 text-cyan-400'
-                  : 'bg-slate-900 border-slate-800 text-slate-400'
+                  ? 'bg-cyan-950/60 border-cyan-800 text-orange-400'
+                  : 'bg-white border-slate-200 text-slate-600'
               }`}
             >
-              <span className={`w-2 h-2 rounded-full ${autoPoll ? 'bg-cyan-400 animate-ping' : 'bg-slate-600'}`}></span>
+              <span className={`w-2 h-2 rounded-full ${autoPoll ? 'bg-orange-400 animate-ping' : 'bg-slate-600'}`}></span>
               <span>{autoPoll ? 'Live Auto-Polling Active' : 'Auto-Poll Paused'}</span>
             </button>
 
@@ -135,34 +135,34 @@ export default function AdminSessions({ isLiveMonitor = false }) {
 
         {/* Status Metrics Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-            <span className="text-[10px] text-slate-400 uppercase font-bold">Total Sessions</span>
-            <div className="text-2xl font-black text-white">{sessions.length}</div>
+          <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] text-slate-600 uppercase font-bold">Total Sessions</span>
+            <div className="text-2xl font-black text-slate-900">{sessions.length}</div>
           </div>
 
-          <div className="p-4 bg-slate-900 border border-cyan-800/40 rounded-xl space-y-1">
-            <span className="text-[10px] text-cyan-400 uppercase font-bold">Active Contestants</span>
+          <div className="p-4 bg-white border border-cyan-800/40 rounded-xl space-y-1">
+            <span className="text-[10px] text-orange-400 uppercase font-bold">Active Contestants</span>
             <div className="text-2xl font-black text-cyan-300">{activeCount}</div>
           </div>
 
-          <div className="p-4 bg-slate-900 border border-emerald-800/40 rounded-xl space-y-1">
+          <div className="p-4 bg-white border border-emerald-800/40 rounded-xl space-y-1">
             <span className="text-[10px] text-emerald-400 uppercase font-bold">Completed Runs</span>
             <div className="text-2xl font-black text-emerald-400">
               {sessions.filter((s) => s.isCompleted).length}
             </div>
           </div>
 
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-            <span className="text-[10px] text-slate-400 uppercase font-bold">Polling Cycle</span>
-            <div className="text-2xl font-black text-slate-300">4.0s</div>
+          <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] text-slate-600 uppercase font-bold">Polling Cycle</span>
+            <div className="text-2xl font-black text-slate-700">4.0s</div>
           </div>
         </div>
 
         {/* Sessions Table */}
-        <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/90 shadow-xl">
+        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white/90 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3.5">Contestant</th>
                   <th className="px-4 py-3.5">Active Challenge</th>
@@ -174,11 +174,11 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                   <th className="px-4 py-3.5 text-right">Emergency Controls</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-slate-800 text-slate-700">
                 {loading && sessions.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="p-8 text-center text-slate-400">
-                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
+                    <td colSpan="8" className="p-8 text-center text-slate-600">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-orange-400" />
                       Loading active sessions...
                     </td>
                   </tr>
@@ -190,10 +190,10 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                   </tr>
                 ) : (
                   sessions.map((s) => (
-                    <tr key={s._id} className="hover:bg-slate-800/40 transition">
+                    <tr key={s._id} className="hover:bg-slate-100/40 transition">
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-white text-sm">{s.participant}</div>
-                        <div className="text-[10px] text-cyan-400/80 font-mono">
+                        <div className="font-bold text-slate-900 text-sm">{s.participant}</div>
+                        <div className="text-[10px] text-orange-400/80 font-mono">
                           {s.college} • {s.email}
                         </div>
                       </td>
@@ -210,7 +210,7 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                         {s.currentScore} PTS
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="font-semibold text-slate-200">{s.blocksRevealed} reveals</span>
+                        <span className="font-semibold text-slate-800">{s.blocksRevealed} reveals</span>
                       </td>
                       <td className="px-4 py-3.5">
                         <span
@@ -218,14 +218,14 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                             s.status === 'ACTIVE'
                               ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60 animate-pulse'
                               : s.status === 'COMPLETED'
-                              ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              ? 'bg-cyan-950 text-orange-400 border border-cyan-800/60'
+                              : 'bg-slate-100 text-slate-600 border border-slate-300'
                           }`}
                         >
                           {s.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-400 text-[11px]">
+                      <td className="px-4 py-3.5 text-slate-600 text-[11px]">
                         {new Date(s.lastActivityAt).toLocaleTimeString()}
                       </td>
                       <td className="px-4 py-3.5 text-right">
@@ -233,7 +233,7 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                           <button
                             onClick={() => handleExtendSession(s._id, 5)}
                             title="Add +5 Minutes"
-                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[10px] font-bold rounded-lg transition"
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-cyan-300 text-[10px] font-bold rounded-lg transition"
                           >
                             +5m
                           </button>
@@ -241,7 +241,7 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                           <button
                             onClick={() => handleExtendSession(s._id, 10)}
                             title="Add +10 Minutes"
-                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[10px] font-bold rounded-lg transition"
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-cyan-300 text-[10px] font-bold rounded-lg transition"
                           >
                             +10m
                           </button>
@@ -249,7 +249,7 @@ export default function AdminSessions({ isLiveMonitor = false }) {
                           <button
                             onClick={() => handleResetSession(s._id, s.participant)}
                             title="Reset Timer and Progress"
-                            className="p-1.5 hover:bg-slate-800 text-amber-400 rounded-lg transition"
+                            className="p-1.5 hover:bg-slate-100 text-amber-400 rounded-lg transition"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>

@@ -25,16 +25,16 @@ export default function FragmentVault({
   const fragmentMap = Object.fromEntries(fragments.map((f) => [f.id, f]));
 
   return (
-    <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-3 shadow-lg">
+    <div className="p-4 bg-white/90 border border-slate-200 rounded-2xl space-y-3 shadow-lg">
       {/* header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-        <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5 font-mono">
-          <Code2 className="w-4 h-4 text-cyan-400" />
+      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+          <Code2 className="w-4 h-4 text-orange-400" />
           Fragment Vault
         </h3>
-        <span className="text-[11px] text-slate-400 font-mono">
+        <span className="text-[11px] text-slate-600 font-mono">
           Unlocked:{' '}
-          <strong className={collectedCount === totalCount ? 'text-emerald-400' : 'text-cyan-400'}>
+          <strong className={collectedCount === totalCount ? 'text-emerald-400' : 'text-orange-400'}>
             {collectedCount}/{totalCount}
           </strong>
         </span>
@@ -51,7 +51,7 @@ export default function FragmentVault({
           return (
             <div
               key={id}
-              className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono space-y-1 animate-fragmentReveal hover:border-cyan-500/30 transition"
+              className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono space-y-1 animate-fragmentReveal hover:border-orange-500/30 transition"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider">
@@ -61,7 +61,7 @@ export default function FragmentVault({
                   <span className="text-[10px] text-slate-500">+{extra} lines</span>
                 )}
               </div>
-              <pre className="text-slate-300 whitespace-pre-wrap leading-relaxed text-[11px] overflow-hidden">
+              <pre className="text-slate-700 whitespace-pre-wrap leading-relaxed text-[11px] overflow-hidden">
                 {first}{extra > 0 ? '…' : ''}
               </pre>
             </div>
@@ -75,7 +75,7 @@ export default function FragmentVault({
           {Array.from({ length: totalCount - collectedCount }).map((_, i) => (
             <div
               key={i}
-              className="p-2.5 bg-slate-900/40 border border-dashed border-slate-800 rounded-xl flex items-center gap-2 text-[11px] font-mono text-slate-600"
+              className="p-2.5 bg-white/40 border border-dashed border-slate-200 rounded-xl flex items-center gap-2 text-[11px] font-mono text-slate-600"
             >
               <Lock className="w-3.5 h-3.5 text-slate-700" />
               <span>??? FRAGMENT LOCKED — solve a quiz to unlock</span>
