@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useChallenge } from '../hooks/useChallenge';
 import Button from '../components/common/Button';
-import { ShieldAlert, Clock, CheckCircle } from 'lucide-react';
+import { ShieldAlert, Clock, CheckCircle, Layers } from 'lucide-react';
 
 export default function Rules() {
   const [agreed, setAgreed] = useState(false);
-  const { startChallenge } = useChallenge();
   const navigate = useNavigate();
 
   const handleStart = () => {
@@ -15,19 +13,19 @@ export default function Rules() {
   };
 
   const rulesList = [
-    'Single round timed challenge — 20:00 countdown starts immediately upon entry',
+    'Strict Linear Track: Complete Easy to unlock Medium, then Medium to unlock Hard. Challenges cannot be skipped or chosen.',
+    'Single round timed challenge — 20:00 countdown starts immediately upon entering a challenge arena',
     'AI tools are strictly prohibited',
-    'Internet lookups are prohibited',
-    'External assistance is prohibited',
-    'Solve quizzes to earn keys and unlock treasure chests',
-    'Each correct quiz answer earns a key to open one chest',
-    'Wrong quiz answers add a 20-second time penalty to your ranking time',
-    'After a wrong answer, a 3-second cooldown applies before the next question',
-    'Collect all code fragments from opened chests',
-    'Arrange fragments in the correct execution order on the assembly board',
-    'Run the assembled code against sample input to verify output',
-    'Submit for hidden test-case scoring — all tests must pass for ACCEPTED',
-    'Fastest correct completion (time + penalties) determines your leaderboard rank',
+    'Internet lookups and external assistance are strictly prohibited',
+    'Solve progressive quizzes to earn keys and unlock code fragments',
+    'Each correct quiz answer unlocks one code block fragment',
+    'Wrong quiz answers add a 20-second time penalty to your official tournament time',
+    'After a wrong answer, a 3-second cooldown applies before the next attempt',
+    'Collect all fragments, then arrange them in the correct execution order on the assembly board',
+    'Run assembled code against sample tests, then submit for hidden test-case scoring',
+    'ACCEPTED result commits your official time and points. Replay is locked after acceptance to protect leaderboard integrity.',
+    'If your session expires without acceptance, you can RETRY your current challenge until solved.',
+    'Leaderboard rank is determined by total score, then lowest total time + penalties.',
   ];
 
   return (
@@ -41,26 +39,49 @@ export default function Rules() {
           MIND CRAFT – Quiz Hunt & Code Assembly
         </h1>
         <p className="text-xs text-slate-400">
-          Review the competition mechanics before initializing the clock
+          Review the competition mechanics before entering the mission track
         </p>
       </div>
 
-      {/* HOW IT WORKS */}
+      {/* HOW PROGRESSION WORKS */}
       <div className="p-5 bg-slate-900/60 border border-cyan-500/20 rounded-2xl space-y-3">
-        <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest">How It Works</h3>
+        <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+          <Layers className="w-4 h-4 text-cyan-400" /> Linear Mission Progression
+        </h3>
+        <p className="text-xs text-slate-300 leading-relaxed font-sans">
+          Participants do not select challenges arbitrarily. You must progress through the canonical 3-tier sequence:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+          <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30">
+            <span className="font-bold text-emerald-400 block">1. Easy (ch-05)</span>
+            <span className="text-[11px] text-slate-400">Available immediately. 100 PTS.</span>
+          </div>
+          <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30">
+            <span className="font-bold text-amber-400 block">2. Medium (ch-06)</span>
+            <span className="text-[11px] text-slate-400">Unlocks once Easy is ACCEPTED. 200 PTS.</span>
+          </div>
+          <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30">
+            <span className="font-bold text-rose-400 block">3. Hard (ch-07)</span>
+            <span className="text-[11px] text-slate-400">Unlocks once Medium is ACCEPTED. 300 PTS.</span>
+          </div>
+        </div>
+      </div>
+
+      {/* HOW IT WORKS */}
+      <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3">
+        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Gameplay Flow</h3>
         <ol className="space-y-2 text-xs text-slate-300 list-none">
           {[
-            '1. Choose your programming language (Python / C / C++ / Java)',
-            '2. Click a treasure chest to start a quiz about that language and problem',
-            '3. Answer correctly → earn a key → click "Open Chest" to reveal a code fragment',
-            '4. Wrong answer → +20s time penalty → 3s cooldown → different question appears',
-            '5. Repeat until all fragments are collected — then assemble them in order',
-            '6. Use ▲▼ buttons or drag-and-drop to arrange fragments',
-            '7. Click "Run Code" to test against sample input, then "Submit" for hidden tests',
-            '8. ACCEPTED = all hidden tests pass → your result is committed to the leaderboard',
+            '1. Select your preferred programming language (Python / C / C++ / Java)',
+            '2. Answer progressive programming tasks to unlock code fragments',
+            '3. Correct answer → code fragment unlocked into your fragment vault',
+            '4. Wrong answer → +20s penalty → 3s cooldown → alternate question appears',
+            '5. Collect all fragments, then assemble them in the correct execution order',
+            '6. Click "Run Code" to test against sample input, then "Submit" for hidden tests',
+            '7. ACCEPTED = advance to next challenge in sequence + commit leaderboard score',
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <CheckCircle className="w-3.5 h-3.5 text-cyan-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
               <span>{step}</span>
             </li>
           ))}
@@ -82,20 +103,6 @@ export default function Rules() {
         </ul>
       </div>
 
-      {/* DURATION BADGE */}
-      <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl flex items-center justify-between">
-        <div>
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">
-            Challenge Duration
-          </span>
-          <span className="text-3xl font-black text-white font-mono tracking-wider">20:00</span>
-        </div>
-        <div className="text-right text-xs text-slate-400">
-          <p>Countdown starts immediately upon entry</p>
-          <p className="text-rose-400 mt-1">Wrong quiz answers add +20s each</p>
-        </div>
-      </div>
-
       {/* AGREEMENT */}
       <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl space-y-5">
         <label className="flex items-center gap-3 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition">
@@ -105,7 +112,7 @@ export default function Rules() {
             onChange={(e) => setAgreed(e.target.checked)}
             className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-cyan-400 cursor-pointer"
           />
-          <span>I have read and understood all rules and mechanics</span>
+          <span>I have read and agree to all rules, linear unlock constraints, and timing protocols</span>
         </label>
 
         <Button
@@ -115,7 +122,7 @@ export default function Rules() {
           onClick={handleStart}
           className="w-full text-sm font-black"
         >
-          CHOOSE CHALLENGE
+          ENTER MISSION ROADMAP
         </Button>
       </div>
     </div>

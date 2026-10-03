@@ -33,7 +33,7 @@ export default function Result() {
         const res = await challengeApi.getProgress();
         if (cancelled) return;
         if (res.success && Array.isArray(res.progress)) {
-          const allDone = res.progress.length > 0 && res.progress.every((p) => p.status === 'COMPLETED');
+          const allDone = res.allCompleted || (res.progress.length > 0 && res.progress.every((p) => p.status === 'COMPLETED'));
           setAllCompleted(allDone);
 
           const currentId = String(challenge?.id || challenge?.slug || '').toLowerCase();
@@ -42,10 +42,10 @@ export default function Result() {
               String(p.challengeId).toLowerCase() === currentId ||
               String(p.slug || '').toLowerCase() === currentId
           );
-          const currentTier = currentItem ? currentItem.tier : 1;
+          const currentSeq = currentItem ? (currentItem.sequenceOrder || currentItem.tier || 1) : 1;
 
-          // Find the next tier challenge
-          const next = res.progress.find((p) => p.tier === currentTier + 1);
+          // Find the next sequence challenge
+          const next = res.progress.find((p) => (p.sequenceOrder || p.tier) === currentSeq + 1);
           if (next) {
             setNextChallenge(next);
             sessionStorage.setItem('just_unlocked_tier', next.difficulty);
@@ -85,7 +85,7 @@ export default function Result() {
         <p className="text-xs text-slate-400 max-w-md mx-auto">
           {isAccepted
             ? 'All test cases verified! Your solution and completion duration have been committed to the live leaderboard.'
-            : 'Challenge session concluded. Review official rankings below.'}
+            : 'Challenge session concluded. Review official rankings or retry your current challenge below.'}
         </p>
 
         {isAccepted && allCompleted && (
@@ -123,6 +123,7 @@ export default function Result() {
 
       {/* ACTIONS */}
       <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+        {/* On ACCEPTED: show NEXT CHALLENGE if not all completed */}
         {isAccepted && nextChallenge && !allCompleted && (
           <Button
             variant="primary"
@@ -138,6 +139,7 @@ export default function Result() {
           </Button>
         )}
 
+        {/* On ACCEPTED and ALL completed: primary button is View Leaderboard */}
         {isAccepted && allCompleted && (
           <Link to="/leaderboard">
             <Button
@@ -150,31 +152,38 @@ export default function Result() {
           </Link>
         )}
 
+        {/* Roadmap button */}
         <Link to="/challenges">
           <Button variant="outline" size="lg">
-            BROWSE CHALLENGES
+            MISSION ROADMAP
           </Button>
         </Link>
 
+        {/* Not all completed leaderboard link */}
         {!allCompleted && (
           <Link to="/leaderboard">
             <Button variant="secondary" size="lg">
-              VIEW LEADERBOARD →
+              LEADERBOARD →
             </Button>
           </Link>
         )}
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="text-slate-400 hover:text-white"
-          onClick={() => {
-            if (startChallenge) startChallenge();
-            navigate(`/challenge?id=${challenge?.slug || challenge?.id}`);
-          }}
-        >
-          <RotateCcw className="w-4 h-4 mr-1.5" /> REPLAY THIS
-        </Button>
+        {/* RETRY button only when NOT accepted (no restart when accepted) */}
+        {!isAccepted && (
+          <Button
+            variant="primary"
+            size="lg"
+            className="bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold"
+            onClick={async () => {
+              try {
+                if (startChallenge) await startChallenge();
+              } catch (_) {}
+              navigate(`/challenge?id=${challenge?.slug || challenge?.id}`);
+            }}
+          >
+            <RotateCcw className="w-4 h-4 mr-1.5" /> RETRY CHALLENGE
+          </Button>
+        )}
       </div>
     </div>
   );

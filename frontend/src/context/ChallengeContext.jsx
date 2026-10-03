@@ -62,13 +62,18 @@ export function ChallengeProvider({ children }) {
     let cancelled = false;
     async function loadChallenges() {
       try {
-        const res = await challengeApi.getAll();
+        const [res, progRes] = await Promise.all([
+          challengeApi.getAll().catch(() => ({ challenges: [] })),
+          challengeApi.getProgress().catch(() => null),
+        ]);
         if (cancelled) return;
         const list = res.challenges || (Array.isArray(res) ? res : []);
         setChallenges(list);
-        if (!challengeId && list.length > 0) {
-          const initialId = list[0]._id || list[0].slug || list[0].id;
-          setChallengeId(initialId);
+
+        if (!challengeId) {
+          if (progRes?.currentChallengeSlug) {
+            setChallengeId(progRes.currentChallengeSlug);
+          }
         }
       } catch (err) {
         console.warn('[ChallengeContext] Failed to load challenges:', err.message);
@@ -185,8 +190,8 @@ export function ChallengeProvider({ children }) {
           }
         }
       } catch (err) {
-        if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
-          setLockedNotice(err.response.data.message || 'This challenge is locked.');
+        if (err.response?.status === 403 && (err.response?.data?.code === 'CHALLENGE_LOCKED' || err.response?.data?.code === 'CHALLENGE_COMPLETED')) {
+          setLockedNotice(err.response.data.message || 'This challenge is not accessible.');
         }
         // Participant session recovery failure is normal if no session was started yet
       }

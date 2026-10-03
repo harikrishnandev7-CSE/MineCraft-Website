@@ -21,6 +21,7 @@ import PhaseStepper from '../components/gameplay/PhaseStepper';
 import LanguagePicker from '../components/gameplay/LanguagePicker';
 import FragmentVault from '../components/gameplay/FragmentVault';
 import ProgressCard from '../components/gameplay/ProgressCard';
+import MissionStepper from '../components/challenge/MissionStepper';
 
 // task renderer
 import TaskPanel from '../components/gameplay/TaskPanel';
@@ -95,13 +96,30 @@ export default function Challenge() {
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('info');
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [userProgress, setUserProgress] = useState([]);
 
   const showToast = useCallback((msg, type = 'info') => {
     setToastMessage(msg);
     setToastType(type);
   }, []);
 
-  // Redirect to /challenges if challenge is locked from server
+  // Fetch user progression for header stepper
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProg() {
+      if (!participant) return;
+      try {
+        const res = await challengeApi.getProgress();
+        if (!cancelled && res.success && Array.isArray(res.progress)) {
+          setUserProgress(res.progress);
+        }
+      } catch (_) {}
+    }
+    loadProg();
+    return () => { cancelled = true; };
+  }, [participant]);
+
+  // Redirect to /challenges if challenge is locked or completed from server
   useEffect(() => {
     if (lockedNotice) {
       navigate('/challenges', {
@@ -111,7 +129,7 @@ export default function Challenge() {
     }
   }, [lockedNotice, navigate]);
 
-  // Guard against direct URL access to locked challenges
+  // Guard against direct URL access to locked or already completed challenges
   useEffect(() => {
     let cancelled = false;
     async function checkDirectAccessLock() {
@@ -121,23 +139,32 @@ export default function Challenge() {
         const progRes = await challengeApi.getProgress();
         if (cancelled) return;
         if (progRes.success && Array.isArray(progRes.progress)) {
+          setUserProgress(progRes.progress);
           const item = progRes.progress.find(
             (p) =>
               String(p.challengeId).toLowerCase() === String(target).toLowerCase() ||
               String(p.slug || '').toLowerCase() === String(target).toLowerCase()
           );
+          if (item && item.status === 'COMPLETED') {
+            navigate('/challenges', {
+              replace: true,
+              state: { lockError: 'You have already completed this challenge. Replay is disabled to preserve official scores.' },
+            });
+            return;
+          }
           if (item && item.status === 'LOCKED') {
             navigate('/challenges', {
               replace: true,
               state: { lockError: item.lockedReason || 'This challenge is locked. Complete previous challenges first.' },
             });
+            return;
           }
         }
       } catch (err) {
-        if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+        if (err.response?.status === 403) {
           navigate('/challenges', {
             replace: true,
-            state: { lockError: err.response.data.message || 'Complete the previous challenge first to unlock this tier.' },
+            state: { lockError: err.response.data?.message || 'Challenge is inaccessible.' },
           });
         }
       }
@@ -171,10 +198,10 @@ export default function Challenge() {
   useEffect(() => {
     if (participant && !startTime && phase !== 'SETUP') {
       startChallenge().catch((err) => {
-        if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+        if (err.response?.status === 403) {
           navigate('/challenges', {
             replace: true,
-            state: { lockError: err.response.data.message || 'This challenge is locked.' },
+            state: { lockError: err.response.data?.message || 'This challenge is locked.' },
           });
         }
       });
@@ -228,13 +255,15 @@ export default function Challenge() {
   // ─── SETUP phase UI ─────────────────────────────────────────────────────
   if (phase === 'SETUP') {
     return (
-      <div className="max-w-lg mx-auto px-4 py-12 space-y-6 font-mono text-slate-200">
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-6 font-mono text-slate-200">
+        <MissionStepper progress={userProgress} compact />
+
         <div className="flex items-center justify-between">
           <Link
             to="/challenges"
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-400 font-mono transition"
           >
-            ← Back to All Challenges
+            ← Back to Roadmap
           </Link>
           <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
             {challenge.difficulty} // {challenge.points} PTS
@@ -265,10 +294,10 @@ export default function Challenge() {
                 await startChallenge();
                 showToast('⏱ Timer started! Good luck.', 'info');
               } catch (err) {
-                if (err.response?.status === 403 && err.response?.data?.code === 'CHALLENGE_LOCKED') {
+                if (err.response?.status === 403) {
                   navigate('/challenges', {
                     replace: true,
-                    state: { lockError: err.response.data.message || 'This challenge is locked.' },
+                    state: { lockError: err.response.data?.message || 'This challenge is locked.' },
                   });
                 }
               }
@@ -297,10 +326,10 @@ export default function Challenge() {
           <Link
             to="/challenges"
             className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 text-xs font-mono transition flex items-center gap-1.5 shrink-0"
-            title="Browse all challenges"
+            title="Back to Mission Roadmap"
           >
             <span>←</span>
-            <span className="hidden sm:inline">Challenges</span>
+            <span className="hidden sm:inline">Roadmap</span>
           </Link>
 
           <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
@@ -322,6 +351,10 @@ export default function Challenge() {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="hidden xl:block min-w-[280px]">
+            <MissionStepper progress={userProgress} compact />
+          </div>
+
           <LanguagePicker language={language} onSelect={selectLanguage} locked={languageLocked} />
 
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">

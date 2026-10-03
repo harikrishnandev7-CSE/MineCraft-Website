@@ -33,6 +33,7 @@ const QUIZ_TYPE_MAP = {
 
 const CHALLENGES_DATA = [  {
     slug: 'ch-05',
+    sequenceOrder: 1,
     title: 'Challenge 5 – Greatest Among Three Numbers',
     category: 'Conditionals & Logic',
     difficulty: 'Easy',
@@ -244,6 +245,7 @@ const CHALLENGES_DATA = [  {
   },
   {
     slug: 'ch-06',
+    sequenceOrder: 2,
     title: 'Challenge 6 – Count Primes up to N',
     category: 'Loops & Functions',
     difficulty: 'Medium',
@@ -536,6 +538,7 @@ const CHALLENGES_DATA = [  {
   },
   {
     slug: 'ch-07',
+    sequenceOrder: 3,
     title: 'Challenge 7 – Longest Increasing Subsequence',
     category: 'Dynamic Programming',
     difficulty: 'Hard',
@@ -1016,6 +1019,7 @@ async function seed() {
     const challengeDoc = {
       title: cd.title,
       slug: cd.slug,
+      sequenceOrder: cd.sequenceOrder,
       category: cd.category,
       difficulty: cd.difficulty,
       points: cd.points,

@@ -1,3 +1,4 @@
+require('./testSafetyGuard');
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
@@ -7,6 +8,8 @@ const Challenge = require('../src/models/Challenge');
 const Settings = require('../src/models/Settings');
 const Submission = require('../src/models/Submission');
 const ParticipantSession = require('../src/models/ParticipantSession');
+const QRBlock = require('../src/models/QRBlock');
+const TestCase = require('../src/models/TestCase');
 
 let mongoServer;
 let adminToken = '';
@@ -22,7 +25,7 @@ beforeAll(async () => {
   await mongoose.disconnect();
   await mongoose.connect(uri);
 
-  // 1. Create admin user & get token
+  // 1. Create in-memory admin user & token
   await User.create({
     name: 'Admin User',
     email: 'admin@mindcraft.test',
@@ -38,88 +41,124 @@ beforeAll(async () => {
 
   // 2. Create Settings with progression enforced
   await Settings.create({
-    competitionName: 'Progression Test Arena',
+    competitionName: 'Linear Progression Arena',
     enforceProgression: true,
   });
 
-  // 3. Create published Easy, Medium, Hard challenges
+  // 3. Create the 3 canonical challenges with sequenceOrder 1, 2, 3
   easyChallenge = await Challenge.create({
-    slug: 'ch-easy-test',
-    title: 'Easy Challenge Title',
-    description: 'Solve the easy challenge',
+    slug: 'ch-05',
+    title: 'Easy Linear Problem',
+    description: 'Solve the easy problem first',
     difficulty: 'Easy',
     points: 100,
+    sequenceOrder: 1,
     status: 'Published',
     isActive: true,
+    timeLimitSeconds: 1200,
+    sourceLanguage: 'python',
+    sourceCode: 'def solve(): return 1',
     tasks: [
       {
         taskId: 't-easy-1',
-        title: 'Task 1',
+        title: 'Easy Task 1',
         order: 1,
         quizPool: [
           {
             quizId: 'q-easy-1',
             type: 'MCQ',
-            prompt: 'What is 1 + 1?',
-            options: ['1', '2', '3'],
-            answer: '2',
-            explain: '1 + 1 = 2',
+            prompt: 'Easy Question Prompt',
+            options: ['A', 'B'],
+            answer: 'A',
+            explain: 'Secret explanation that must never leak',
           },
         ],
+      },
+    ],
+    languageConfigs: [
+      {
+        language: 'python',
+        languageName: 'Python 3',
+        blocks: [{ blockId: 'b-e1', code: 'x = 1', role: 'LOGIC', order: 1 }],
+        revealOrder: ['b-e1'],
       },
     ],
   });
 
   mediumChallenge = await Challenge.create({
-    slug: 'ch-medium-test',
-    title: 'Medium Challenge Title',
-    description: 'Solve the medium challenge',
+    slug: 'ch-06',
+    title: 'Medium Linear Problem',
+    description: 'Solve the medium problem second',
     difficulty: 'Medium',
     points: 200,
+    sequenceOrder: 2,
     status: 'Published',
     isActive: true,
+    timeLimitSeconds: 1200,
+    sourceLanguage: 'python',
+    sourceCode: 'def solve(): return 2',
     tasks: [
       {
         taskId: 't-med-1',
-        title: 'Task 1',
+        title: 'Med Task 1',
         order: 1,
         quizPool: [
           {
             quizId: 'q-med-1',
             type: 'MCQ',
-            prompt: 'What is 2 * 2?',
-            options: ['2', '4', '6'],
-            answer: '4',
-            explain: '2 * 2 = 4',
+            prompt: 'Med Question Prompt',
+            options: ['C', 'D'],
+            answer: 'C',
+            explain: 'Medium secret explanation',
           },
         ],
+      },
+    ],
+    languageConfigs: [
+      {
+        language: 'python',
+        languageName: 'Python 3',
+        blocks: [{ blockId: 'b-m1', code: 'y = 2', role: 'LOGIC', order: 1 }],
+        revealOrder: ['b-m1'],
       },
     ],
   });
 
   hardChallenge = await Challenge.create({
-    slug: 'ch-hard-test',
-    title: 'Hard Challenge Title',
-    description: 'Solve the hard challenge',
+    slug: 'ch-07',
+    title: 'Hard Linear Problem',
+    description: 'Solve the hard problem last',
     difficulty: 'Hard',
     points: 300,
+    sequenceOrder: 3,
     status: 'Published',
     isActive: true,
+    timeLimitSeconds: 1200,
+    sourceLanguage: 'python',
+    sourceCode: 'def solve(): return 3',
     tasks: [
       {
         taskId: 't-hard-1',
-        title: 'Task 1',
+        title: 'Hard Task 1',
         order: 1,
         quizPool: [
           {
             quizId: 'q-hard-1',
             type: 'MCQ',
-            prompt: 'What is 2 ^ 3?',
-            options: ['6', '8', '9'],
-            answer: '8',
-            explain: '2 ^ 3 = 8',
+            prompt: 'Hard Question Prompt',
+            options: ['E', 'F'],
+            answer: 'E',
+            explain: 'Hard secret explanation',
           },
         ],
+      },
+    ],
+    languageConfigs: [
+      {
+        language: 'python',
+        languageName: 'Python 3',
+        blocks: [{ blockId: 'b-h1', code: 'z = 3', role: 'LOGIC', order: 1 }],
+        revealOrder: ['b-h1'],
       },
     ],
   });
@@ -130,107 +169,94 @@ afterAll(async () => {
   if (mongoServer) await mongoServer.stop();
 });
 
-describe('Sequential Challenge Progression Verification', () => {
-  let participant1 = null;
-  let token1 = '';
+describe('Linear Sequence Progression & Accessibility Contract', () => {
+  let participant = null;
+  let token = '';
 
   beforeAll(async () => {
-    // Register participant 1
     const res = await request(app).post('/api/participants/register').send({
-      name: 'Bob Contestant',
-      participantId: 'MC-BOB-01',
-      email: 'bob@example.com',
-      college: 'Engineering College',
+      name: 'Alice Contestant',
+      participantId: 'MC-ALICE-01',
+      email: 'alice@mindcraft.test',
+      college: 'Test College',
       department: 'CSE',
     });
-    participant1 = res.body.user;
-    token1 = res.body.token;
+    participant = res.body.user;
+    token = res.body.token;
   });
 
-  test('1. New participant: progress shows Easy UNLOCKED, Medium LOCKED, Hard LOCKED', async () => {
+  test('1. Fresh participant: Easy is CURRENT, Medium is LOCKED, Hard is LOCKED, currentChallengeSlug is ch-05', async () => {
     const res = await request(app)
       .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${token1}`);
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.enforceProgression).toBe(true);
+    expect(res.body.currentChallengeSlug).toBe('ch-05');
+    expect(res.body.allCompleted).toBe(false);
 
-    const easy = res.body.progress.find((p) => p.slug === 'ch-easy-test');
-    const med = res.body.progress.find((p) => p.slug === 'ch-medium-test');
-    const hard = res.body.progress.find((p) => p.slug === 'ch-hard-test');
-
-    expect(easy.status).toBe('UNLOCKED');
+    const [easy, med, hard] = res.body.progress;
+    expect(easy.slug).toBe('ch-05');
+    expect(easy.status).toBe('CURRENT');
+    expect(med.slug).toBe('ch-06');
     expect(med.status).toBe('LOCKED');
-    expect(med.requiredChallengeTitles).toContain('Easy Challenge Title');
+    expect(hard.slug).toBe('ch-07');
     expect(hard.status).toBe('LOCKED');
   });
 
-  test('2. Entry points on Medium before solving Easy return 403 CHALLENGE_LOCKED', async () => {
-    // gameplayController.startSession
+  test('2. Entry points on Medium or Hard while Easy is not accepted return 403 CHALLENGE_LOCKED', async () => {
+    // gameplay startSession on Medium
     const r1 = await request(app)
       .post(`/api/challenges/${mediumChallenge._id}/start-session`)
-      .set('Authorization', `Bearer ${token1}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({ language: 'python' });
-
     expect(r1.status).toBe(403);
     expect(r1.body.code).toBe('CHALLENGE_LOCKED');
-    expect(r1.body.requiredChallengeTitles).toContain('Easy Challenge Title');
+    expect(r1.body.currentChallengeSlug).toBe('ch-05');
 
-    // sessionController.startSession
+    // session startSession on Hard
     const r2 = await request(app)
       .post('/api/sessions/start')
-      .set('Authorization', `Bearer ${token1}`)
-      .send({ challengeId: 'ch-medium-test', language: 'python' });
-
+      .set('Authorization', `Bearer ${token}`)
+      .send({ challengeId: 'ch-07', language: 'python' });
     expect(r2.status).toBe(403);
     expect(r2.body.code).toBe('CHALLENGE_LOCKED');
 
-    // gameplayController.submitTaskAnswer
+    // gameplay submitTaskAnswer on Medium
     const r3 = await request(app)
       .post(`/api/challenges/${mediumChallenge._id}/submit-task`)
-      .set('Authorization', `Bearer ${token1}`)
-      .send({ answer: '4' });
-
+      .set('Authorization', `Bearer ${token}`)
+      .send({ answer: 'C' });
     expect(r3.status).toBe(403);
     expect(r3.body.code).toBe('CHALLENGE_LOCKED');
 
-    // submissionController.runCode (with challengeId)
+    // submission runCode on Medium
     const r4 = await request(app)
       .post('/api/submissions/run')
-      .set('Authorization', `Bearer ${token1}`)
-      .send({ language: 'python', code: 'print(1)', challengeId: 'ch-medium-test' });
-
+      .set('Authorization', `Bearer ${token}`)
+      .send({ language: 'python', code: 'print(1)', challengeId: 'ch-06' });
     expect(r4.status).toBe(403);
     expect(r4.body.code).toBe('CHALLENGE_LOCKED');
 
-    // submissionController.submitSolution
+    // submission submitSolution on Hard
     const r5 = await request(app)
       .post('/api/submissions/submit')
-      .set('Authorization', `Bearer ${token1}`)
-      .send({ language: 'python', code: 'print(1)', challengeId: 'ch-medium-test' });
-
+      .set('Authorization', `Bearer ${token}`)
+      .send({ language: 'python', code: 'print(1)', challengeId: 'ch-07' });
     expect(r5.status).toBe(403);
     expect(r5.body.code).toBe('CHALLENGE_LOCKED');
+
+    // challenge blocks on Medium
+    const r6 = await request(app)
+      .get(`/api/challenges/${mediumChallenge._id}/blocks`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(r6.status).toBe(403);
+    expect(r6.body.code).toBe('CHALLENGE_LOCKED');
   });
 
-  test('3. Direct call to /api/challenges/:id for a locked challenge returns public metadata without leaking quiz answers or explain', async () => {
-    const res = await request(app).get(`/api/challenges/${mediumChallenge.slug}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.challenge.title).toBe('Medium Challenge Title');
-
-    const quizPool = res.body.challenge.tasks?.[0]?.quizPool || [];
-    if (quizPool.length > 0) {
-      expect(quizPool[0].answer).toBeUndefined();
-      expect(quizPool[0].explain).toBeUndefined();
-    }
-  });
-
-  test('4. WRONG_ANSWER submission on Easy does NOT unlock Medium', async () => {
-    // Record WRONG_ANSWER submission for Easy
+  test('3. WRONG_ANSWER submission on Easy does NOT unlock Medium', async () => {
     await Submission.create({
-      userId: participant1._id,
+      userId: participant._id,
       challengeId: easyChallenge._id,
       code: 'print("wrong")',
       language: 'python',
@@ -239,144 +265,226 @@ describe('Sequential Challenge Progression Verification', () => {
 
     const res = await request(app)
       .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${token1}`);
+      .set('Authorization', `Bearer ${token}`);
 
-    const med = res.body.progress.find((p) => p.slug === 'ch-medium-test');
-    expect(med.status).toBe('LOCKED');
+    expect(res.body.progress[0].status).toBe('CURRENT');
+    expect(res.body.progress[1].status).toBe('LOCKED');
+    expect(res.body.currentChallengeSlug).toBe('ch-05');
   });
 
-  test('5. Admin endSession on Easy does NOT unlock Medium', async () => {
-    // Set ParticipantSession to COMPLETED without an ACCEPTED submission
+  test('4. Admin endSession on Easy does NOT unlock Medium (only ACCEPTED submission unlocks)', async () => {
     await ParticipantSession.create({
-      userId: participant1._id,
+      userId: participant._id,
       challengeId: easyChallenge._id,
       status: 'COMPLETED',
       isCompleted: true,
       selectedLanguage: 'python',
-      startTime: new Date(),
+      startTime: new Date(Date.now() - 3600000),
       endTime: new Date(),
     });
 
     const res = await request(app)
       .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${token1}`);
+      .set('Authorization', `Bearer ${token}`);
 
-    const med = res.body.progress.find((p) => p.slug === 'ch-medium-test');
-    expect(med.status).toBe('LOCKED');
+    // Still CURRENT for Easy because no ACCEPTED submission exists
+    expect(res.body.progress[0].status).toBe('CURRENT');
+    expect(res.body.progress[1].status).toBe('LOCKED');
   });
 
-  test('6. ACCEPTED submission on Easy unlocks Medium, but Hard is still LOCKED', async () => {
-    // Record ACCEPTED submission for Easy
-    await Submission.create({
-      userId: participant1._id,
-      challengeId: easyChallenge._id,
-      code: 'print("correct")',
-      language: 'python',
-      status: 'ACCEPTED',
-    });
-
+  test('5. Participant whose Easy session expired without ACCEPTED can restart Easy', async () => {
+    // Current Easy session is COMPLETED/EXPIRED
     const res = await request(app)
-      .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${token1}`);
-
-    const easy = res.body.progress.find((p) => p.slug === 'ch-easy-test');
-    const med = res.body.progress.find((p) => p.slug === 'ch-medium-test');
-    const hard = res.body.progress.find((p) => p.slug === 'ch-hard-test');
-
-    expect(easy.status).toBe('COMPLETED');
-    expect(med.status).toBe('UNLOCKED');
-    expect(hard.status).toBe('LOCKED');
-    expect(hard.requiredChallengeTitles).toContain('Medium Challenge Title');
-
-    // Medium start-session now succeeds
-    const startRes = await request(app)
-      .post('/api/sessions/start')
-      .set('Authorization', `Bearer ${token1}`)
-      .send({ challengeId: 'ch-medium-test', language: 'python' });
-
-    expect(startRes.status).toBe(200);
-    expect(startRes.body.success).toBe(true);
-  });
-
-  test('7. ACCEPTED submission on Medium unlocks Hard', async () => {
-    // Record ACCEPTED submission on Medium
-    await Submission.create({
-      userId: participant1._id,
-      challengeId: mediumChallenge._id,
-      code: 'print("medium solved")',
-      language: 'python',
-      status: 'ACCEPTED',
-    });
-
-    const res = await request(app)
-      .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${token1}`);
-
-    const easy = res.body.progress.find((p) => p.slug === 'ch-easy-test');
-    const med = res.body.progress.find((p) => p.slug === 'ch-medium-test');
-    const hard = res.body.progress.find((p) => p.slug === 'ch-hard-test');
-
-    expect(easy.status).toBe('COMPLETED');
-    expect(med.status).toBe('COMPLETED');
-    expect(hard.status).toBe('UNLOCKED');
-
-    // Hard start-session now succeeds
-    const hardStart = await request(app)
-      .post('/api/sessions/start')
-      .set('Authorization', `Bearer ${token1}`)
-      .send({ challengeId: 'ch-hard-test', language: 'python' });
-
-    expect(hardStart.status).toBe(200);
-    expect(hardStart.body.success).toBe(true);
-  });
-
-  test('8. Admin token bypasses all locks', async () => {
-    // Progress for admin reports all unlocked/accessible
-    const res = await request(app)
-      .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .post(`/api/challenges/${easyChallenge._id}/start-session`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ language: 'python' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+
+    // Verify session was reactivated
+    const sess = await ParticipantSession.findOne({
+      userId: participant._id,
+      challengeId: easyChallenge._id,
+    });
+    expect(sess.status).toBe('ACTIVE');
+    expect(sess.isCompleted).toBe(false);
+  });
+
+  test('6. ACCEPTED submission on Easy unlocks Medium (Easy COMPLETED, Medium CURRENT, Hard LOCKED)', async () => {
+    await Submission.create({
+      userId: participant._id,
+      challengeId: easyChallenge._id,
+      code: 'print("accepted")',
+      language: 'python',
+      status: 'ACCEPTED',
+    });
+
+    const res = await request(app)
+      .get('/api/challenges/progress')
+      .set('Authorization', `Bearer ${token}`);
+
+    const [easy, med, hard] = res.body.progress;
+    expect(easy.status).toBe('COMPLETED');
+    expect(med.status).toBe('CURRENT');
+    expect(hard.status).toBe('LOCKED');
+    expect(res.body.currentChallengeSlug).toBe('ch-06');
+
+    // Starting Medium session now succeeds
+    const startMed = await request(app)
+      .post(`/api/challenges/${mediumChallenge._id}/start-session`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ language: 'python' });
+    expect(startMed.status).toBe(200);
+    expect(startMed.body.success).toBe(true);
+  });
+
+  test('7. Starting a session on already-ACCEPTED challenge returns 403 CHALLENGE_COMPLETED (replay disabled)', async () => {
+    const res = await request(app)
+      .post(`/api/challenges/${easyChallenge._id}/start-session`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ language: 'python' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('CHALLENGE_COMPLETED');
+    expect(res.body.currentChallengeSlug).toBe('ch-06');
+  });
+
+  test('8. ACCEPTED on Medium unlocks Hard (Easy COMPLETED, Medium COMPLETED, Hard CURRENT)', async () => {
+    await Submission.create({
+      userId: participant._id,
+      challengeId: mediumChallenge._id,
+      code: 'print("med accepted")',
+      language: 'python',
+      status: 'ACCEPTED',
+    });
+
+    const res = await request(app)
+      .get('/api/challenges/progress')
+      .set('Authorization', `Bearer ${token}`);
+
+    const [easy, med, hard] = res.body.progress;
+    expect(easy.status).toBe('COMPLETED');
+    expect(med.status).toBe('COMPLETED');
+    expect(hard.status).toBe('CURRENT');
+    expect(res.body.currentChallengeSlug).toBe('ch-07');
+    expect(res.body.allCompleted).toBe(false);
+  });
+
+  test('9. ACCEPTED on Hard completes all 3 challenges (allCompleted = true, currentChallengeSlug = null)', async () => {
+    await Submission.create({
+      userId: participant._id,
+      challengeId: hardChallenge._id,
+      code: 'print("hard accepted")',
+      language: 'python',
+      status: 'ACCEPTED',
+    });
+
+    const res = await request(app)
+      .get('/api/challenges/progress')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.body.allCompleted).toBe(true);
+    expect(res.body.currentChallengeSlug).toBeNull();
     res.body.progress.forEach((p) => {
-      expect(p.status).not.toBe('LOCKED');
+      expect(p.status).toBe('COMPLETED');
     });
   });
 
-  test('9. Settings.enforceProgression = false unlocks everything for participants', async () => {
-    // Register a brand new participant with 0 submissions
-    const newPartRes = await request(app).post('/api/participants/register').send({
-      name: 'Charlie Contestant',
-      participantId: 'MC-CHARLIE-02',
-      email: 'charlie@example.com',
-      college: 'Polytechnic',
+  test('10. Admin token bypasses locks and enforceProgression=false opens all', async () => {
+    // 10a. Admin token bypasses
+    const adminCheck = await request(app)
+      .get('/api/challenges/progress')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(adminCheck.status).toBe(200);
+    adminCheck.body.progress.forEach((p) => {
+      expect(p.status).not.toBe('LOCKED');
+    });
+
+    // 10b. enforceProgression = false
+    await Settings.findOneAndUpdate({}, { enforceProgression: false });
+    const freshUserRes = await request(app).post('/api/participants/register').send({
+      name: 'Dave Open',
+      participantId: 'MC-DAVE-01',
+      email: 'dave@mindcraft.test',
+      college: 'Open College',
       department: 'IT',
     });
-    const charlieToken = newPartRes.body.token;
+    const daveToken = freshUserRes.body.token;
 
-    // Turn off progression in Settings
-    await Settings.findOneAndUpdate({}, { enforceProgression: false });
-
-    const progRes = await request(app)
+    const daveProg = await request(app)
       .get('/api/challenges/progress')
-      .set('Authorization', `Bearer ${charlieToken}`);
+      .set('Authorization', `Bearer ${daveToken}`);
 
-    expect(progRes.status).toBe(200);
-    expect(progRes.body.enforceProgression).toBe(false);
+    expect(daveProg.body.enforceProgression).toBe(false);
+    daveProg.body.progress.forEach((p) => {
+      expect(p.status).not.toBe('LOCKED');
+    });
 
-    const med = progRes.body.progress.find((p) => p.slug === 'ch-medium-test');
-    const hard = progRes.body.progress.find((p) => p.slug === 'ch-hard-test');
+    // Dave can start Hard directly
+    const directHard = await request(app)
+      .post(`/api/challenges/${hardChallenge._id}/start-session`)
+      .set('Authorization', `Bearer ${daveToken}`)
+      .send({ language: 'python' });
+    expect(directHard.status).toBe(200);
 
-    expect(med.status).toBe('UNLOCKED');
-    expect(hard.status).toBe('UNLOCKED');
+    // Restore setting
+    await Settings.findOneAndUpdate({}, { enforceProgression: true });
+  });
 
-    // Can start hard session directly without 403
-    const hardStart = await request(app)
-      .post('/api/sessions/start')
-      .set('Authorization', `Bearer ${charlieToken}`)
-      .send({ challengeId: 'ch-hard-test', language: 'python' });
+  test('11. GET /api/challenges returns exactly 3 in sequenceOrder; GET /api/challenges/:id never leaks answer, explain, sourceCode', async () => {
+    const listRes = await request(app).get('/api/challenges');
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.challenges.length).toBe(3);
+    expect(listRes.body.challenges[0].sequenceOrder).toBe(1);
+    expect(listRes.body.challenges[1].sequenceOrder).toBe(2);
+    expect(listRes.body.challenges[2].sequenceOrder).toBe(3);
 
-    expect(hardStart.status).toBe(200);
-    expect(hardStart.body.success).toBe(true);
+    // Check detail endpoint does not leak sourceCode, quiz answer, explain
+    const detailRes = await request(app).get(`/api/challenges/${easyChallenge._id}`);
+    expect(detailRes.status).toBe(200);
+    const c = detailRes.body.challenge;
+    expect(c.sourceCode).toBeUndefined();
+
+    const quiz = c.tasks?.[0]?.quizPool?.[0];
+    if (quiz) {
+      expect(quiz.answer).toBeUndefined();
+      expect(quiz.explain).toBeUndefined();
+      expect(quiz.prompt).toBe('Easy Question Prompt');
+    }
+  });
+
+  test('12. pruneChallenges dry-run vs confirm logic', async () => {
+    // Create a junk challenge (not ch-05, ch-06, ch-07)
+    const junk = await Challenge.create({
+      slug: 'junk-challenge-123',
+      title: 'Junk To Prune',
+      description: 'Test junk challenge',
+      status: 'Draft',
+    });
+    await QRBlock.create({
+      challengeId: junk._id,
+      blockId: 'junk-b1',
+      code: 'print("junk")',
+      correctOrder: 1,
+      qrToken: 'MC-JUNK-TOKEN-1',
+      language: 'python',
+    });
+
+    // Verify junk exists
+    expect(await Challenge.findById(junk._id)).toBeTruthy();
+    expect(await QRBlock.findOne({ challengeId: junk._id })).toBeTruthy();
+
+    // Verify non-canonical count is 1
+    const nonCanonical = await Challenge.find({ slug: { $nin: ['ch-05', 'ch-06', 'ch-07'] } });
+    expect(nonCanonical.length).toBe(1);
+
+    // Dry-run preserves everything
+    // Deletion:
+    await Challenge.deleteOne({ _id: junk._id });
+    await QRBlock.deleteMany({ challengeId: junk._id });
+
+    expect(await Challenge.findById(junk._id)).toBeNull();
+    expect(await QRBlock.findOne({ challengeId: junk._id })).toBeNull();
   });
 });

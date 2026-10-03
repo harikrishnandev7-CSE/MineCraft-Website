@@ -205,7 +205,7 @@ const ALLOWED_CHALLENGE_FIELDS = [
   'title', 'slug', 'description', 'category', 'difficulty', 'points',
   'timeLimitSeconds', 'duration', 'sampleInput', 'sampleOutput',
   'supportedLanguages', 'sourceLanguage', 'sourceCode', 'splitStrategy',
-  'blockConfig', 'tasks', 'status', 'isActive', 'tags',
+  'blockConfig', 'tasks', 'status', 'isActive', 'tags', 'sequenceOrder',
 ];
 
 function filterChallengeFields(body) {
@@ -219,6 +219,27 @@ function filterChallengeFields(body) {
 exports.createChallenge = asyncHandler(async (req, res) => {
   const { blocks, testCases } = req.body || {};
   const challengeData = filterChallengeFields(req.body || {});
+
+  // Validate sequenceOrder if supplied
+  if (challengeData.sequenceOrder !== undefined && challengeData.sequenceOrder !== null && challengeData.sequenceOrder !== '') {
+    const seq = Number(challengeData.sequenceOrder);
+    if (![1, 2, 3].includes(seq)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sequence position must be 1 (Easy), 2 (Medium), or 3 (Hard)',
+      });
+    }
+    const duplicate = await Challenge.findOne({ sequenceOrder: seq });
+    if (duplicate) {
+      return res.status(400).json({
+        success: false,
+        message: `Sequence position ${seq} is already assigned to challenge "${duplicate.title}"`,
+      });
+    }
+    challengeData.sequenceOrder = seq;
+  } else {
+    challengeData.sequenceOrder = null;
+  }
 
   // Auto-generate slug if missing
   if (!challengeData.slug && challengeData.title) {
@@ -297,6 +318,32 @@ exports.updateChallenge = asyncHandler(async (req, res) => {
   const existing = await findAdminChallenge(req.params.id);
   if (!existing) {
     return res.status(404).json({ success: false, message: 'Challenge not found' });
+  }
+
+  // Validate sequenceOrder if supplied
+  if (updateData.sequenceOrder !== undefined) {
+    if (updateData.sequenceOrder === null || updateData.sequenceOrder === '' || updateData.sequenceOrder === 'none') {
+      updateData.sequenceOrder = null;
+    } else {
+      const seq = Number(updateData.sequenceOrder);
+      if (![1, 2, 3].includes(seq)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Sequence position must be 1 (Easy), 2 (Medium), or 3 (Hard)',
+        });
+      }
+      const duplicate = await Challenge.findOne({
+        sequenceOrder: seq,
+        _id: { $ne: existing._id },
+      });
+      if (duplicate) {
+        return res.status(400).json({
+          success: false,
+          message: `Sequence position ${seq} is already assigned to challenge "${duplicate.title}"`,
+        });
+      }
+      updateData.sequenceOrder = seq;
+    }
   }
 
   const challenge = await Challenge.findByIdAndUpdate(existing._id, updateData, { new: true });

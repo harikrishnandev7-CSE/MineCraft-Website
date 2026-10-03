@@ -170,9 +170,10 @@ exports.startSession = asyncHandler(async (req, res) => {
   }
 
 
-  if (session && session.status === 'COMPLETED') {
-    // Participant is restarting or retrying the challenge
+  if (session && (session.status === 'COMPLETED' || session.status === 'EXPIRED' || session.isCompleted)) {
+    // Participant is retrying the challenge after timeout / non-accepted conclusion
     session.status = 'ACTIVE';
+    session.isCompleted = false;
     session.selectedLanguage = language;
     session.completedTaskIds = [];
     session.currentTaskIndex = 0;

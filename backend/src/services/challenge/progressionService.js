@@ -3,20 +3,24 @@ const Submission = require('../../models/Submission');
 const Settings = require('../../models/Settings');
 
 /**
- * Returns numeric tier for a given difficulty.
- * Tier order: Easy (1) < Medium (2) < Hard (3)
+ * Returns participant-facing challenges ordered strictly by sequenceOrder (1 -> 2 -> 3).
  */
-function getTier(difficulty) {
-  switch (String(difficulty || '').toLowerCase()) {
-    case 'easy':
-      return 1;
-    case 'medium':
-      return 2;
-    case 'hard':
-      return 3;
-    default:
-      return 1;
-  }
+async function getSequence() {
+  const list = await Challenge.find({
+    isActive: true,
+    status: 'Published',
+    sequenceOrder: { $in: [1, 2, 3] },
+  })
+    .sort({ sequenceOrder: 1 })
+    .lean();
+
+  if (list.length > 0) return list;
+
+  // Fallback if sequenceOrder has not been seeded yet
+  return await Challenge.find({ isActive: true, status: 'Published' })
+    .sort({ createdAt: 1 })
+    .limit(3)
+    .lean();
 }
 
 /**
@@ -24,7 +28,7 @@ function getTier(difficulty) {
  */
 async function resolveChallenge(idOrDoc) {
   if (!idOrDoc) return null;
-  if (typeof idOrDoc === 'object' && (idOrDoc.difficulty || idOrDoc.title)) {
+  if (typeof idOrDoc === 'object' && (idOrDoc.title || idOrDoc.difficulty || idOrDoc.slug)) {
     return idOrDoc;
   }
   const str = String(idOrDoc);
@@ -38,21 +42,25 @@ async function resolveChallenge(idOrDoc) {
 }
 
 /**
- * Computes challenge progression for a given user.
- * Single query for accepted submissions, single query for published challenges.
+ * Computes strict sequential challenge progression for a given user.
+ * Exactly 1 query for published challenges, 1 query for user's accepted submissions (no N+1).
+ *
+ * Each step returned:
+ *   { challengeId, slug, title, difficulty, points, sequenceOrder, status }
+ * where status is:
+ *   - 'COMPLETED' if the user has an ACCEPTED submission for that challenge
+ *   - 'CURRENT' if it is the first uncompleted challenge in sequence
+ *   - 'LOCKED' otherwise
  */
 async function getProgressForUser(userId, userObj = null) {
   const settings = await Settings.findOne().lean();
   const enforceProgression = settings?.enforceProgression !== false;
   const isAdmin = userObj?.role === 'admin';
 
-  // 1. Fetch published challenges
-  const challenges = await Challenge.find({ isActive: true, status: 'Published' })
-    .select('_id slug title difficulty points timeLimitSeconds category')
-    .sort({ difficulty: 1, createdAt: 1 })
-    .lean();
+  // 1. Fetch participant-facing sequence
+  const challenges = await getSequence();
 
-  // 2. Fetch accepted submissions for user (if user is provided)
+  // 2. Fetch accepted submissions for user (source of truth = ACCEPTED submission only)
   const acceptedIds = new Set();
   if (userId) {
     const acceptedSubs = await Submission.find({
@@ -69,83 +77,31 @@ async function getProgressForUser(userId, userObj = null) {
     });
   }
 
-  // 3. Group challenges by tier
-  const tierMap = { 1: [], 2: [], 3: [] };
-  challenges.forEach((c) => {
-    const t = getTier(c.difficulty);
-    if (!tierMap[t]) tierMap[t] = [];
-    tierMap[t].push(c);
-  });
+  // 3. Compute status per step in strict linear order
+  let foundCurrent = false;
+  let currentChallengeSlug = null;
 
-  const availableTiers = [1, 2, 3].filter((t) => tierMap[t] && tierMap[t].length > 0);
-
-  // Check which tiers are completed / unlocked
-  const tierCompleted = {};
-  availableTiers.forEach((t) => {
-    const items = tierMap[t];
-    const allAccepted = items.every((c) => {
-      const idMatch = acceptedIds.has(String(c._id).toLowerCase());
-      const slugMatch = c.slug && acceptedIds.has(String(c.slug).toLowerCase());
-      return idMatch || slugMatch;
-    });
-    tierCompleted[t] = allAccepted;
-  });
-
-  // Calculate unlock status per tier
-  const tierUnlocked = { 1: true, 2: false, 3: false };
-  const tierRequiredTitles = { 1: [], 2: [], 3: [] };
-
-  if (!enforceProgression || isAdmin) {
-    tierUnlocked[1] = true;
-    tierUnlocked[2] = true;
-    tierUnlocked[3] = true;
-  } else {
-    // Tier 1 (Easy) is always unlocked
-    tierUnlocked[1] = true;
-
-    // For higher tiers, prerequisite is the nearest lower tier with published challenges
-    availableTiers.forEach((t) => {
-      if (t === 1) return;
-      const lowerTiers = availableTiers.filter((lt) => lt < t);
-      if (lowerTiers.length === 0) {
-        tierUnlocked[t] = true;
-      } else {
-        const prereqTier = Math.max(...lowerTiers);
-        const prereqChallenges = tierMap[prereqTier] || [];
-        const missing = prereqChallenges.filter((c) => {
-          const idMatch = acceptedIds.has(String(c._id).toLowerCase());
-          const slugMatch = c.slug && acceptedIds.has(String(c.slug).toLowerCase());
-          return !idMatch && !slugMatch;
-        });
-
-        if (missing.length === 0) {
-          tierUnlocked[t] = true;
-        } else {
-          tierUnlocked[t] = false;
-          tierRequiredTitles[t] = missing.map((c) => c.title);
-        }
-      }
-    });
-  }
-
-  // 4. Build output progress objects
-  const progress = challenges.map((c) => {
-    const tier = getTier(c.difficulty);
-    const isCompleted =
+  const progress = challenges.map((c, idx) => {
+    const isAccepted =
       acceptedIds.has(String(c._id).toLowerCase()) ||
       (c.slug && acceptedIds.has(String(c.slug).toLowerCase()));
 
-    let status = 'UNLOCKED';
-    let lockedReason = '';
-    let requiredTitles = [];
+    let status = 'LOCKED';
 
-    if (isCompleted) {
+    if (isAccepted) {
       status = 'COMPLETED';
-    } else if (enforceProgression && !isAdmin && !tierUnlocked[tier]) {
+    } else if (!enforceProgression || isAdmin) {
+      // When progression is not enforced or user is admin, everything uncompleted is open
+      status = 'CURRENT';
+      if (!currentChallengeSlug) {
+        currentChallengeSlug = c.slug;
+      }
+    } else if (!foundCurrent) {
+      status = 'CURRENT';
+      foundCurrent = true;
+      currentChallengeSlug = c.slug;
+    } else {
       status = 'LOCKED';
-      requiredTitles = tierRequiredTitles[tier] || [];
-      const reqName = requiredTitles.length > 0 ? requiredTitles[0] : (tier === 3 ? 'Medium challenge' : 'Easy challenge');
-      lockedReason = `Complete "${reqName}" first to unlock this challenge.`;
     }
 
     return {
@@ -153,89 +109,115 @@ async function getProgressForUser(userId, userObj = null) {
       slug: c.slug,
       title: c.title,
       difficulty: c.difficulty,
-      tier,
-      status, // 'LOCKED' | 'UNLOCKED' | 'COMPLETED'
-      lockedReason,
-      requiredChallengeTitles: requiredTitles,
+      points: c.points,
+      sequenceOrder: c.sequenceOrder || idx + 1,
+      status, // 'COMPLETED' | 'CURRENT' | 'LOCKED'
     };
   });
 
+  const allCompleted =
+    challenges.length > 0 &&
+    challenges.every(
+      (c) =>
+        acceptedIds.has(String(c._id).toLowerCase()) ||
+        (c.slug && acceptedIds.has(String(c.slug).toLowerCase()))
+    );
+
+  if (allCompleted) {
+    currentChallengeSlug = null;
+  }
+
   return {
     progress,
+    currentChallengeSlug,
+    allCompleted,
     enforceProgression,
   };
 }
 
 /**
- * Asserts whether a challenge is unlocked for a given user.
- * Returns { unlocked: boolean, message?: string, requiredChallengeTitles?: string[] }
+ * Asserts whether a challenge is currently accessible by the participant.
+ * Allowed ONLY if status is 'CURRENT'.
+ * Rejects 'COMPLETED' (no replay once accepted) and 'LOCKED'.
+ * Admins bypass all restrictions.
  */
-async function assertChallengeUnlocked(user, idOrDoc) {
+async function assertChallengeAccessible(user, idOrDoc) {
   // Admins bypass all locks
   if (user?.role === 'admin') {
-    return { unlocked: true };
+    return { allowed: true };
   }
 
   const challenge = await resolveChallenge(idOrDoc);
   if (!challenge) {
-    return { unlocked: true };
-  }
-
-  const tier = getTier(challenge.difficulty);
-  if (tier <= 1) {
-    return { unlocked: true };
+    return { allowed: true };
   }
 
   // Check global setting
   const settings = await Settings.findOne().lean();
   if (settings?.enforceProgression === false) {
-    return { unlocked: true };
+    return { allowed: true };
   }
 
   if (!user || !user._id) {
     return {
-      unlocked: false,
+      allowed: false,
       code: 'CHALLENGE_LOCKED',
-      message: 'Registration required. Please register and complete earlier challenges first.',
-      requiredChallengeTitles: [],
+      message: 'Registration required. Please register first.',
+      currentChallengeSlug: null,
     };
   }
 
-  const { progress } = await getProgressForUser(user._id, user);
+  const { progress, currentChallengeSlug } = await getProgressForUser(user._id, user);
   const targetId = String(challenge._id || '').toLowerCase();
   const targetSlug = String(challenge.slug || '').toLowerCase();
 
-  const item = progress.find(
+  const step = progress.find(
     (p) =>
       String(p.challengeId).toLowerCase() === targetId ||
-      String(p.slug).toLowerCase() === targetSlug
+      String(p.slug || '').toLowerCase() === targetSlug
   );
 
-  if (item && item.status === 'LOCKED') {
+  if (!step) {
+    return { allowed: true, currentChallengeSlug };
+  }
+
+  if (step.status === 'COMPLETED') {
     return {
-      unlocked: false,
-      code: 'CHALLENGE_LOCKED',
-      message: item.lockedReason || 'This challenge is locked.',
-      requiredChallengeTitles: item.requiredChallengeTitles || [],
+      allowed: false,
+      code: 'CHALLENGE_COMPLETED',
+      message: 'You have already completed this challenge. Replay is disabled to preserve official scores.',
+      currentChallengeSlug,
     };
   }
 
-  return { unlocked: true };
+  if (step.status === 'LOCKED') {
+    const prevStep = progress.find((p) => p.sequenceOrder === (step.sequenceOrder || 1) - 1);
+    const prevTitle = prevStep ? prevStep.title : 'previous challenge';
+    return {
+      allowed: false,
+      code: 'CHALLENGE_LOCKED',
+      message: `Complete "${prevTitle}" first to unlock this challenge.`,
+      currentChallengeSlug,
+    };
+  }
+
+  // status === 'CURRENT'
+  return { allowed: true, currentChallengeSlug };
 }
 
 /**
  * Reusable helper for Express controller endpoints.
- * If challenge is locked, responds with 403 and returns false.
+ * If challenge is inaccessible (LOCKED or COMPLETED), responds with 403 and returns false.
  * Otherwise returns true.
  */
-async function checkChallengeLock(req, res, idOrDoc) {
-  const check = await assertChallengeUnlocked(req.user, idOrDoc);
-  if (!check.unlocked) {
+async function checkChallengeAccessible(req, res, idOrDoc) {
+  const check = await assertChallengeAccessible(req.user, idOrDoc);
+  if (!check.allowed) {
     res.status(403).json({
       success: false,
-      code: 'CHALLENGE_LOCKED',
+      code: check.code,
       message: check.message,
-      requiredChallengeTitles: check.requiredChallengeTitles || [],
+      currentChallengeSlug: check.currentChallengeSlug,
     });
     return false;
   }
@@ -243,8 +225,11 @@ async function checkChallengeLock(req, res, idOrDoc) {
 }
 
 module.exports = {
-  getTier,
+  getSequence,
   getProgressForUser,
-  assertChallengeUnlocked,
-  checkChallengeLock,
+  assertChallengeAccessible,
+  checkChallengeAccessible,
+  // Backward compatibility aliases
+  checkChallengeLock: checkChallengeAccessible,
+  assertChallengeUnlocked: assertChallengeAccessible,
 };

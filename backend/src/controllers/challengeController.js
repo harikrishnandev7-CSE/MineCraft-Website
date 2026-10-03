@@ -58,7 +58,13 @@ function sanitizePublicChallenge(challengeDoc, visibleTests = null) {
 }
 
 exports.getChallenges = asyncHandler(async (req, res) => {
-  const challenges = await Challenge.find({ isActive: true }).select('-sourceCode');
+  const challenges = await Challenge.find({
+    isActive: true,
+    status: 'Published',
+    sequenceOrder: { $in: [1, 2, 3] },
+  })
+    .sort({ sequenceOrder: 1 })
+    .select('-sourceCode');
   const sanitized = challenges.map((c) => sanitizePublicChallenge(c));
   res.json({ success: true, challenges: sanitized });
 });
@@ -68,6 +74,8 @@ exports.getUserProgress = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     progress: result.progress,
+    currentChallengeSlug: result.currentChallengeSlug,
+    allCompleted: result.allCompleted,
     enforceProgression: result.enforceProgression,
   });
 });
